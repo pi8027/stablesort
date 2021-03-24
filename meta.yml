@@ -1,0 +1,63 @@
+---
+fullname: Stable sort algorithms in Coq
+shortname: stablesort
+organization: pi8027
+action: true
+dune: false
+
+synopsis: >-
+  Stable sort algorithms and their stability proofs in Coq
+
+description: |-
+  This library provides a generic way to prove the stability of sorting
+  algorithms. The stability lemmas provided in this library are overloaded using
+  a canonical structure (`StableSort.interface`), and stable sort functions are
+  characterized in this interface by the parametricity axiom and binary trees
+  representing the divide-and-conquer structure of sort. One may prove the
+  stability of a new sorting function by using the parametricity translation
+  (Paramcoq) and providing a lemma corresponding to the binary tree
+  construction. This library also provides optimized sorting algorithms: one for
+  the call-by-need evaluation (`CBN.sort`) and another for the call-by-value
+  evaluation (`CBV.sort`).
+
+authors:
+- name: Kazuhiko Sakaguchi
+  initial: true
+
+opam-file-maintainer: sakaguchi@coins.tsukuba.ac.jp
+
+license:
+  fullname: CeCILL-B Free Software License Agreement
+  identifier: CECILL-B
+  file: CeCILL-B
+
+supported_coq_versions:
+  text: 8.11 or later
+  opam: '{(>= "8.11" & < "8.14~") | (= "dev")}'
+
+tested_coq_nix_versions:
+
+tested_coq_opam_versions:
+- version: 'coq-8.11'
+  repo: 'mathcomp/mathcomp-dev'
+- version: 'coq-8.12'
+  repo: 'mathcomp/mathcomp-dev'
+- version: 'coq-8.13'
+  repo: 'mathcomp/mathcomp-dev'
+- version: 'coq-dev'
+  repo: 'mathcomp/mathcomp-dev'
+
+dependencies:
+- opam:
+    name: coq-mathcomp-ssreflect
+    version: '{(= "dev")}'
+  description: |-
+    Development version of [MathComp](https://math-comp.github.io)
+- opam:
+    name: coq-paramcoq
+    version: '{(>= "1.1.2") | (= "dev")}'
+  description: |-
+    [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.2 or later
+
+namespace: stablesort
+---

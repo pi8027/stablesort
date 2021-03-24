@@ -1,0 +1,6 @@
+theories/stablesort.v
+theories/param.v
+
+-arg -w -arg -notation-overridden
+
+-R theories stablesort

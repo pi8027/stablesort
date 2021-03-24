@@ -1,0 +1,39 @@
+# This file was generated from `meta.yml`, please do not edit manually.
+# Follow the instructions on https://github.com/coq-community/templates to regenerate.
+
+opam-version: "2.0"
+maintainer: "sakaguchi@coins.tsukuba.ac.jp"
+version: "dev"
+
+homepage: "https://github.com/pi8027/stablesort"
+dev-repo: "git+https://github.com/pi8027/stablesort.git"
+bug-reports: "https://github.com/pi8027/stablesort/issues"
+license: "CECILL-B"
+
+synopsis: "Stable sort algorithms and their stability proofs in Coq"
+description: """
+This library provides a generic way to prove the stability of sorting
+algorithms. The stability lemmas provided in this library are overloaded using
+a canonical structure (`StableSort.interface`), and stable sort functions are
+characterized in this interface by the parametricity axiom and binary trees
+representing the divide-and-conquer structure of sort. One may prove the
+stability of a new sorting function by using the parametricity translation
+(Paramcoq) and providing a lemma corresponding to the binary tree
+construction. This library also provides optimized sorting algorithms: one for
+the call-by-need evaluation (`CBN.sort`) and another for the call-by-value
+evaluation (`CBV.sort`)."""
+
+build: [make "-j%{jobs}%" ]
+install: [make "install"]
+depends: [
+  "coq" {(>= "8.11" & < "8.14~") | (= "dev")}
+  "coq-mathcomp-ssreflect" {(= "dev")}
+  "coq-paramcoq" {(>= "1.1.2") | (= "dev")}
+]
+
+tags: [
+  "logpath:stablesort"
+]
+authors: [
+  "Kazuhiko Sakaguchi"
+]
