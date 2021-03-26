@@ -9,26 +9,46 @@ Unset Printing Implicit Defensive.
 (* TODO: backport to MathComp                                                 *)
 (******************************************************************************)
 
-Lemma all_merge (T : Type) (P : {pred T}) (leT : rel T) (s1 s2 : seq T) :
+Local Lemma mergeA (T : Type) (leT : rel T) :
+  total leT -> transitive leT -> associative (merge leT).
+Proof.
+move=> leT_total leT_tr.
+elim=> // x xs IHxs; elim=> // y ys IHys; elim=> [|z zs IHzs] /=.
+  by case: ifP.
+case: ifP; case: ifP => /= lexy leyz.
+- by rewrite lexy (leT_tr _ _ _ lexy leyz) -IHxs /= leyz.
+- by rewrite lexy leyz -IHys.
+- case: ifP => lexz; first by rewrite -IHxs //= leyz.
+  by rewrite -!/(merge _ (_ :: _)) IHzs /= lexy.
+- suff->: leT x z = false by rewrite leyz // -!/(merge _ (_ :: _)) IHzs /= lexy.
+  by apply/contraFF/leT_tr: leyz; have := leT_total x y; rewrite lexy.
+Qed.
+
+Local Lemma all_merge (T : Type) (P : {pred T}) (leT : rel T) (s1 s2 : seq T) :
   all P (merge leT s1 s2) = all P s1 && all P s2.
 Proof.
 elim: s1 s2 => //= x s1 IHs1; elim=> [|y s2 IHs2]; rewrite ?andbT //=.
 by case: ifP => _; rewrite /= ?IHs1 ?IHs2 //=; bool_congr.
 Qed.
 
-Lemma pairwise_sorted (T : Type) (leT : rel T) (s : seq T) :
+Local Lemma pairwise_sorted (T : Type) (leT : rel T) (s : seq T) :
   pairwise leT s -> sorted leT s.
-Proof.
-by case: s => // x s; elim: s x => //= y s IHs x /andP[/andP[-> xs] /IHs].
-Qed.
+Proof. by elim: s => //= x s IHs /andP[/path_min_sorted -> /IHs]. Qed.
 
-Lemma path_relI (T : Type) (leT leT' : rel T) (x : T) (s : seq T) :
+Local Lemma path_relI (T : Type) (leT leT' : rel T) (x : T) (s : seq T) :
   path leT x s && path leT' x s = path [rel x y | leT x y && leT' x y] x s.
 Proof. by elim: s x => //= y s IHs x; rewrite andbACA IHs. Qed.
 
-Lemma sorted_relI (T : Type) (leT leT' : rel T) (s : seq T) :
+Local Lemma sorted_relI (T : Type) (leT leT' : rel T) (s : seq T) :
   sorted leT s && sorted leT' s = sorted [rel x y | leT x y && leT' x y] s.
 Proof. by case: s; last apply: path_relI. Qed.
+
+Local Lemma nilp_rev (T : Type) (s : seq T) : nilp (rev s) = nilp s.
+Proof. by move: s (rev s) (size_rev s) => [|? ?] []. Qed.
+
+Local Lemma ifnilE (T A : Type) (s : seq T) (a b : A) :
+  (if s is [::] then a else b) = if nilp s then a else b.
+Proof. by case: s. Qed.
 
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
@@ -80,9 +100,21 @@ elim: t => [b l IHl r IHr|[] s] /=; rewrite ?size_rev //.
 by case: b; rewrite ?(size_rev, size_merge, size_cat) IHl IHr // addnC.
 Qed.
 
-Lemma tree_nil (t : tree) : sort_tree t = [::] <-> flatten_tree t = [::].
+Lemma tree_nilp (t : tree) : nilp (sort_tree t) = nilp (flatten_tree t).
+Proof. by move: (sort_tree t) (flatten_tree t) (size_tree t) => [|? ?] []. Qed.
+
+Variant tree_nil_spec (t : tree) : seq T -> seq T -> bool -> bool -> Type :=
+  | TreeNil    : flatten_tree t = [::] -> sort_tree t = [::] ->
+                 tree_nil_spec t [::] [::] true true
+  | TreeNotNil : flatten_tree t <> [::] -> sort_tree t <> [::] ->
+                 tree_nil_spec t (flatten_tree t) (sort_tree t) false false.
+
+Lemma tree_nilP (t : tree) :
+  tree_nil_spec t (flatten_tree t) (sort_tree t)
+                (nilp (flatten_tree t)) (nilp (sort_tree t)).
 Proof.
-by move: (sort_tree t) (flatten_tree t) (size_tree t) => [|? ?] [|? ?].
+case: nilP (tree_nilp t); case: nilP => //; last by constructor.
+by move=> /[dup] ? -> /[dup] ? ->; constructor.
 Qed.
 
 End Trees.
@@ -405,23 +437,23 @@ Qed.
 
 End StableSortTheory.
 
-Arguments map_sort                sort {T T' f leT' leT}.
-Arguments sort_map                sort {T T' f leT}.
+Arguments map_sort                sort {T T' f leT' leT} _ _.
+Arguments sort_map                sort {T T' f leT} s.
 Arguments all_sort                sort {T} P leT s.
 Arguments size_sort               sort {T} leT s.
 Arguments sort_nil                sort {T} leT.
-Arguments pairwise_sort           sort {T leT s}.
-Arguments sorted_sort             sort {T leT} leT_tr {s}.
-Arguments sorted_sort_in          sort {T P leT} leT_tr {s}.
-Arguments perm_sort               sort {T} leT s.
-Arguments mem_sort                sort {T} leT s.
+Arguments pairwise_sort           sort {T leT s} _.
+Arguments sorted_sort             sort {T leT} leT_tr {s} _.
+Arguments sorted_sort_in          sort {T P leT} leT_tr {s} _ _.
+Arguments perm_sort               sort {T} leT s _.
+Arguments mem_sort                sort {T} leT s _.
 Arguments sort_uniq               sort {T} leT s.
 Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
 Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
 Arguments sort_stable             sort {T leT leT'} leT_total leT_tr {s} _.
 Arguments sort_stable_in          sort {T P leT leT'} leT_total leT_tr {s} _ _.
 Arguments sort_sorted             sort {T leT} leT_total s.
-Arguments sort_sorted_in          sort {T P leT} leT_total {s}.
+Arguments sort_sorted_in          sort {T P leT} leT_total {s} _.
 Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
 Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
 Arguments mask_sort               sort {T leT} leT_total leT_tr s m.
@@ -441,19 +473,11 @@ Arguments sorted_subseq_sort_in   sort {T leT t s} leT_total leT_tr _ _.
 
 Module Insertion.
 
-Section Definitions.
-
-Variable (T : Type) (leT : rel T).
-
-Fixpoint insert (x : T) (s : seq T) :=
-  if s is y :: s' then
-    if leT x y then x :: y :: s' else y :: insert x s'
-  else
-    [:: x].
-
-Fixpoint sort (s : seq T) := if s is x :: s then insert x (sort s) else [::].
-
-End Definitions.
+Fixpoint sort (T : Type) (leT : rel T) (s : seq T) :=
+  if s isn't x :: s then [::] else
+    (fix insert s := if s isn't y :: s' then [:: x] else
+                       if leT x y then x :: y :: s' else y :: insert s')
+      (sort leT s).
 
 Import StableSort.
 
@@ -483,7 +507,7 @@ Import StableSort.
 
 Parametricity Recursive sort.
 
-Section NaiveMergesort.
+Section Proofs.
 
 Variable (T : Type) (leT : rel T).
 
@@ -496,10 +520,10 @@ Lemma merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
     map sort_tree stack'}.
 Proof.
 elim: stack t => [|t' stack IHstack] t /=; first by exists [:: t].
-case Dt': (sort_tree t') => [|x s].
-  by move/tree_nil: Dt' => ->; exists (t :: stack); rewrite //= cats0.
-rewrite -{x s}Dt'; case: (IHstack (branch_tree true t' t)) => stack'.
-by rewrite /= catA => -> ->; exists (empty_tree :: stack'); rewrite //= cats0.
+rewrite ifnilE -catA; case: tree_nilP => _ _.
+  by exists (t :: stack); rewrite //= cats0.
+case: (IHstack (branch_tree true t' t)) => /= {IHstack}stack -> ->.
+by exists (empty_tree :: stack); rewrite //= cats0.
 Qed.
 
 Lemma merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
@@ -520,10 +544,10 @@ have {1}->: s = catss [::] ++ s by [].
 have ->: [::] = map (@sort_tree _ leT) [::] by [].
 elim: s [::] => [|x s IHs] stack /=; first exact: merge_sort_popP empty_tree _.
 case: (merge_sort_pushP (leaf_tree true [:: x] erefl) stack).
-by rewrite (catA _ [:: _]) => stack' /= -> ->; exact: IHs.
+by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
 Qed.
 
-End NaiveMergesort.
+End Proofs.
 
 Definition sort_stable := Interface sort sort_R sortP.
 
@@ -726,20 +750,17 @@ Let merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
     catss (t :: stack) = catss stack' &
     merge_sort_push leT (sort_tree t) (trec_stack stack) = trec_stack stack'}.
 Proof.
-move: stack t; fix IHstack 1; move=> [|t' [|t'' stack]] t /=.
+move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
 - by exists [:: t].
-- rewrite !revmergeE; case Dt': (sort_tree t') => [|x s].
-    by move/tree_nil: Dt' ->; exists [:: t].
-  by exists [:: empty_tree; branch_tree true t' t]; rewrite /= -?Dt' ?cats0.
-- rewrite !revmergeE; case Dt': (sort_tree t') => [|x s].
-    by move/tree_nil: Dt' ->; exists [:: t, t'' & stack]; rewrite ?cats0.
-  rewrite -{x s}Dt'; case Dt'': (rev (sort_tree t'')) => [|x s].
-    move/(canRL revK)/tree_nil: Dt'' ->.
-    by exists [:: empty_tree, branch_tree true t' t & stack];
-      rewrite ?revmergeE //= !cats0 catA.
-  rewrite -{x s}Dt'' /= -!catA.
-  case: (IHstack stack (branch_tree false t'' (branch_tree true t' t))).
-  move=> {}stack /= -> ->.
+- rewrite !revmergeE ifnilE tree_nilp; have [->|_] := nilP.
+    by exists [:: t].
+  by exists [:: empty_tree; branch_tree true t' t]; rewrite //= cats0.
+- rewrite !revmergeE !ifnilE nilp_rev !tree_nilp; have [->|_] := nilP.
+    by exists [:: t, t'' & stack]; rewrite ?cats0.
+  rewrite -!catA; have [->|_] := nilP.
+    by exists [:: empty_tree, branch_tree true t' t & stack]; rewrite /= ?cats0.
+  have [/= {}stack -> ->] :=
+    IHstack (branch_tree false t'' (branch_tree true t' t)) stack.
   by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
 Qed.
 
@@ -748,18 +769,13 @@ Let merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
     catss stack ++ flatten_tree t = flatten_tree t' &
     merge_sort_pop leT (sort_tree t) (trec_stack stack) = sort_tree t'}.
 Proof.
-move: stack t; fix IHstack 1; move=> [|t' [|t'' stack]] t /=.
-- by exists t.
-- rewrite revmergeE revK; case Dt': (sort_tree t') => [|x s].
-    by move/tree_nil: Dt' ->; exists t.
-  by rewrite -{x s}Dt'; exists (branch_tree true t' t).
-- rewrite !revmergeE; case Dt': (sort_tree t') => [|x s]; last first.
-    rewrite -{x s}Dt' -!catA.
-    exact: IHstack stack (branch_tree false t'' (branch_tree true t' t)).
-  move/tree_nil: Dt' ->; rewrite cats0.
-  case Dt'': (rev (sort_tree t'')) => [|x s].
-    move/(canRL revK)/tree_nil: Dt'' ->; rewrite cats0; exact: IHstack.
-  by rewrite -{x s}Dt'' -catA; apply: IHstack stack (branch_tree false t'' t).
+move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]]; first by exists t.
+  exists (branch_tree true t' t); rewrite //= revmergeE revK.
+  by case: sort_tree.
+rewrite /= -!catA !revmergeE !ifnilE nilp_rev.
+case: tree_nilP => _ _; first case: tree_nilP => _ _; first exact: IHstack.
+  exact: IHstack (branch_tree false t'' t) _.
+exact: IHstack (branch_tree false t'' (branch_tree true t' t)) _.
 Qed.
 
 Lemma sortP (s : seq T) :
@@ -779,7 +795,7 @@ elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
   by rewrite /= revK => ->; exists t.
 rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
   move=> path_acc.
-  have: path (fun y x => leT x y == ord) y (x :: acc)  by rewrite /= lexy eqxx.
+  have: path (fun y x => leT x y == ord) y (x :: acc) by rewrite /= lexy eqxx.
   by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
 case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
