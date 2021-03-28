@@ -153,6 +153,335 @@ End StableSort.
 Export StableSort.Exports.
 
 (******************************************************************************)
+(* Insertion sort                                                             *)
+(******************************************************************************)
+
+Module Insertion.
+Section Insertion.
+
+Variables (T : Type) (leT : rel T).
+
+Definition sort := foldr (fun x => merge leT [:: x]) [::].
+
+Import StableSort.
+
+Lemma sortP (s : seq T) :
+  {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
+Proof.
+elim: s => [|x _ [t -> /= ->]]; first by exists empty_tree.
+by exists (branch_tree true (leaf_tree true [:: x] erefl) t).
+Qed.
+
+End Insertion.
+
+Parametricity Recursive sort.
+
+Definition sort_stable := StableSort.Interface sort sort_R sortP.
+
+End Insertion.
+
+Canonical Insertion.sort_stable.
+
+(******************************************************************************)
+(* path.sort of MathComp                                                      *)
+(******************************************************************************)
+
+Module NaiveMergesort.
+Section NaiveMergesort.
+
+Variable (T : Type) (leT : rel T).
+
+Import StableSort.
+
+Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
+
+Lemma merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
+  {stack' : seq (tree leT) |
+    catss (t :: stack) = catss stack' &
+    merge_sort_push leT (sort_tree t) (map sort_tree stack) =
+    map sort_tree stack'}.
+Proof.
+elim: stack t => [|t' stack IHstack] t /=; first by exists [:: t].
+rewrite ifnilE -catA; case: tree_nilP => _ _.
+  by exists (t :: stack); rewrite //= cats0.
+case: (IHstack (branch_tree true t' t)) => /= {IHstack}stack -> ->.
+by exists (empty_tree :: stack); rewrite //= cats0.
+Qed.
+
+Lemma merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
+  {t' : tree leT |
+    catss (t :: stack) = flatten_tree t' &
+    merge_sort_pop leT (sort_tree t) (map sort_tree stack) = sort_tree t'}.
+Proof.
+elim: stack t => [|t' stack IHstack] t; first by exists t; rewrite //= cats0.
+case: (IHstack (branch_tree true t' t)) => t''.
+by rewrite /= catA => -> ->; exists t''.
+Qed.
+
+Lemma sortP (s : seq T) :
+  {t : tree leT | s = flatten_tree t & sort leT s = sort_tree t}.
+Proof.
+rewrite sortE.
+have {1}->: s = catss [::] ++ s by [].
+have ->: [::] = map (@sort_tree _ leT) [::] by [].
+elim: s [::] => [|x s IHs] stack /=; first exact: merge_sort_popP empty_tree _.
+case: (merge_sort_pushP (leaf_tree true [:: x] erefl) stack).
+by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
+Qed.
+
+End NaiveMergesort.
+
+Parametricity Recursive sort.
+
+Definition sort_stable := StableSort.Interface sort sort_R sortP.
+
+End NaiveMergesort.
+
+Canonical NaiveMergesort.sort_stable.
+
+(******************************************************************************)
+(* A variant of mergesort optimized for the call-by-need evaluation:          *)
+(* - bottom up,                                                               *)
+(* - structurally recursive (as in path.sort of MathComp),                    *)
+(* - reusing sorted slices (as in Data.List.sort of GHC), and                 *)
+(* - not tail recursive.                                                      *)
+(******************************************************************************)
+
+Module CBN.
+Section CBN.
+
+Variables (T : Type) (leT : rel T).
+
+Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
+
+(*
+Fixpoint merge_sort_push s stack :=
+  match stack with
+  | [::] :: stack' | [::] as stack' => s :: stack'
+  | s' :: stack' => [::] :: merge_sort_push (merge leT s' s) stack'
+  end.
+
+Fixpoint merge_sort_pop s1 stack :=
+  if stack is s2 :: stack' then merge_sort_pop (merge leT s2 s1) stack' else s1.
+*)
+
+Fixpoint merge_sort_rec (stack : seq (seq T)) x s :=
+  let inner_rec := fix inner_rec mode acc x s :=
+    if s is y :: s then
+      if eqb (leT x y) mode then
+        inner_rec mode (x :: acc) y s
+      else
+        let stack := merge_sort_push leT (condrev mode (x :: acc)) stack in
+        merge_sort_rec stack y s
+    else
+      merge_sort_pop leT (condrev mode (x :: acc)) stack
+  in
+  if s is y :: s then
+    inner_rec (leT x y) [:: x] y s else merge_sort_pop leT [:: x] stack.
+
+Definition sort s := if s is x :: s then merge_sort_rec [::] x s else [::].
+
+(* Proofs *)
+
+Import StableSort.
+
+Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
+
+Let merge_sort_pushP := @NaiveMergesort.merge_sort_pushP T leT.
+Let merge_sort_popP := @NaiveMergesort.merge_sort_popP T leT.
+
+Lemma sortP (s : seq T) :
+  {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
+Proof.
+case: s => /= [|x s]; first by exists empty_tree.
+have {1}->: x :: s = catss [::] ++ x :: s by [].
+have ->: [::] = map (@sort_tree _ leT) [::] by [].
+move: [::] x s; fix IHs 3 => stack x [|y s] /=.
+  exact: merge_sort_popP (leaf_tree true [:: x] erefl) _.
+set lexy := leT x y.
+have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
+have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
+elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
+  rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
+  case: (merge_sort_popP (leaf_tree ord _ sorted_acc) stack) => /= t ->.
+  by rewrite /= revK => ->; exists t.
+rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
+  move=> path_acc.
+  have: path (fun y x => leT x y == ord) y (x :: acc)  by rewrite /= lexy eqxx.
+  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
+rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
+case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
+by rewrite -/catss /= catA revK => -> ->; apply: IHs.
+Qed.
+
+End CBN.
+
+Parametricity Recursive sort.
+
+Definition sort_stable := StableSort.Interface sort sort_R sortP.
+
+End CBN.
+
+Canonical CBN.sort_stable.
+
+(******************************************************************************)
+(* A variant of mergesort optimized for the call-by-value evaluation:         *)
+(* - bottom up,                                                               *)
+(* - structurally recursive (as in path.sort of MathComp),                    *)
+(* - reusing sorted slices (as in Data.List.sort of GHC), and                 *)
+(* - tail recursive (as in List.stable_sort of OCaml).                        *)
+(******************************************************************************)
+
+Module CBV.
+Section CBV.
+
+Fixpoint revmerge T (leT : rel T) (xs : seq T) : seq T -> seq T -> seq T :=
+  if xs is x :: xs'
+  then fix revmerge' (ys acc : seq T) :=
+         if ys is y :: ys'
+         then if leT x y then
+                revmerge leT xs' ys (x :: acc)
+              else
+                revmerge' ys' (y :: acc)
+         else catrev xs acc
+  else catrev.
+
+Lemma revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :
+  revmerge leT s1 s2 [::] = rev (merge leT s1 s2).
+Proof.
+rewrite -[RHS]cats0.
+elim: s1 s2 [::] => [|x s1 IHs1]; elim=> [|y s2 IHs2] s3 //=;
+  try by rewrite catrevE rev_cons cat_rcons.
+by case: ifP => //= _; rewrite ?(IHs1, IHs2) rev_cons cat_rcons.
+Qed.
+
+Variables (T : Type) (leT : rel T).
+
+Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
+
+Fixpoint merge_sort_push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
+  match stack with
+    | [::] :: stack' | [::] as stack' => xs :: stack'
+    | ys :: [::] :: stack | ys :: ([::] as stack) =>
+      [::] :: revmerge leT ys xs [::] :: stack
+    | ys :: zs :: stack =>
+      [::] :: [::] ::
+           merge_sort_push
+           (revmerge (fun x y => leT y x) (revmerge leT ys xs [::]) zs [::])
+           stack
+  end.
+
+Fixpoint merge_sort_pop (xs : seq T) (stack : seq (seq T)) : seq T :=
+  match stack with
+    | [::] => xs
+    | [:: ys] => rev (revmerge leT ys xs [::])
+    | [::] :: [::] :: stack => merge_sort_pop xs stack
+ (* | [::] :: zs :: stack => *)
+ (*   merge_sort_pop (revmerge (fun x y => leT y x) (rev xs) zs [::]) stack *)
+    | ys :: zs :: stack =>
+      merge_sort_pop
+        (revmerge (fun x y => leT y x) (revmerge leT ys xs [::]) zs [::])
+        stack
+  end.
+
+Fixpoint merge_sort_rec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
+  let inner_rec := fix inner_rec mode acc x s :=
+    if s is y :: s then
+      if eqb (leT x y) mode then
+        inner_rec mode (x :: acc) y s
+      else
+        let stack := merge_sort_push (condrev mode (x :: acc)) stack in
+        merge_sort_rec stack y s
+    else
+      merge_sort_pop (condrev mode (x :: acc)) stack
+  in
+  if s is y :: s then
+    inner_rec (leT x y) [:: x] y s else merge_sort_pop [:: x] stack.
+
+Definition sort s : seq T :=
+  if s is x :: s then merge_sort_rec [::] x s else [::].
+
+(* Proofs *)
+
+Import StableSort.
+
+Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
+
+Let Fixpoint trec_stack (stack : seq (tree leT)) :=
+  match stack with
+  | [::] => [::]
+  | [:: t] => [:: sort_tree t]
+  | t :: t' :: stack => sort_tree t :: rev (sort_tree t') :: trec_stack stack
+  end.
+
+Let merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
+  {stack' : seq (tree leT) |
+    catss (t :: stack) = catss stack' &
+    merge_sort_push (sort_tree t) (trec_stack stack) = trec_stack stack'}.
+Proof.
+move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
+- by exists [:: t].
+- rewrite !revmergeE ifnilE tree_nilp; have [->|_] := nilP.
+    by exists [:: t].
+  by exists [:: empty_tree; branch_tree true t' t]; rewrite //= cats0.
+- rewrite !revmergeE !ifnilE nilp_rev !tree_nilp; have [->|_] := nilP.
+    by exists [:: t, t'' & stack]; rewrite ?cats0.
+  rewrite -!catA; have [->|_] := nilP.
+    by exists [:: empty_tree, branch_tree true t' t & stack]; rewrite /= ?cats0.
+  have [/= {}stack -> ->] :=
+    IHstack (branch_tree false t'' (branch_tree true t' t)) stack.
+  by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
+Qed.
+
+Let merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
+  {t' : tree leT |
+    catss stack ++ flatten_tree t = flatten_tree t' &
+    merge_sort_pop (sort_tree t) (trec_stack stack) = sort_tree t'}.
+Proof.
+move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]]; first by exists t.
+  exists (branch_tree true t' t); rewrite //= revmergeE revK.
+  by case: sort_tree.
+rewrite /= -!catA !revmergeE !ifnilE nilp_rev.
+case: tree_nilP => _ _; first case: tree_nilP => _ _; first exact: IHstack.
+  exact: IHstack (branch_tree false t'' t) _.
+exact: IHstack (branch_tree false t'' (branch_tree true t' t)) _.
+Qed.
+
+Lemma sortP (s : seq T) :
+  {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
+Proof.
+case: s => /= [|x s]; first by exists empty_tree.
+have {1}->: x :: s = catss [::] ++ x :: s by [].
+have ->: [::] = trec_stack [::] by [].
+move: [::] x s; fix IHs 3 => stack x [|y s] /=.
+  exact: merge_sort_popP (leaf_tree true [:: x] erefl) _.
+set lexy := leT x y.
+have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
+have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
+elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
+  rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
+  case: (merge_sort_popP (leaf_tree ord _ sorted_acc) stack) => t ->.
+  by rewrite /= revK => ->; exists t.
+rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
+  move=> path_acc.
+  have: path (fun y x => leT x y == ord) y (x :: acc) by rewrite /= lexy eqxx.
+  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
+rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
+case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
+by rewrite -/catss /= catA revK => -> ->; apply: IHs.
+Qed.
+
+End CBV.
+
+Parametricity Recursive sort.
+
+Definition sort_stable := StableSort.Interface sort sort_R sortP.
+
+End CBV.
+
+Canonical CBV.sort_stable.
+
+(******************************************************************************)
 (* Theory of stable sort functions                                            *)
 (******************************************************************************)
 
@@ -317,102 +646,6 @@ move=> /in2_sig leT_total /in3_sig leT_tr p _ /all_sigP[s ->].
 by rewrite !(sort_map, filter_map) filter_sort.
 Qed.
 
-Section Stability_mask.
-
-Variables (T : Type) (leT : rel T).
-Variables (leT_total : total leT) (leT_tr : transitive leT).
-
-Lemma mask_sort (s : seq T) (m : bitseq) :
-  {m_s : bitseq | mask m_s (sort _ leT s) = sort _ leT (mask m s)}.
-Proof.
-case Ds: {-}s => [|x s1]; first by exists [::]; rewrite Ds mask0 sort_nil.
-rewrite -(mkseq_nth x s) -map_mask !sort_map.
-exists [seq i \in mask m (iota 0 (size s)) |
-            i <- sort _ (xrelpre (nth x s) leT) (iota 0 (size s))].
-rewrite -map_mask -filter_mask [in RHS]mask_filter ?iota_uniq ?filter_sort //.
-by move=> ? ? ?; exact: leT_tr.
-Qed.
-
-Lemma sorted_mask_sort (s : seq T) (m : bitseq) :
-  sorted leT (mask m s) -> {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
-Proof. by move/(sorted_sort leT_tr) <-; exact: mask_sort. Qed.
-
-End Stability_mask.
-
-Section Stability_mask_in.
-
-Variables (T : Type) (P : {pred T}) (leT : rel T).
-Hypothesis leT_total : {in P &, total leT}.
-Hypothesis leT_tr : {in P & &, transitive leT}.
-
-Let le_sT := relpre (val : sig P -> _) leT.
-Let le_sT_total : total le_sT := in2_sig leT_total.
-Let le_sT_tr : transitive le_sT := in3_sig leT_tr.
-
-Lemma mask_sort_in (s : seq T) (m : bitseq) :
-  all P s -> {m_s : bitseq | mask m_s (sort _ leT s) = sort _ leT (mask m s)}.
-Proof.
-move=> /all_sigP [{}s ->]; case: (mask_sort (leT := le_sT) _ _ s m) => //.
-by move=> m' m'E; exists m'; rewrite -map_mask !sort_map -map_mask m'E.
-Qed.
-
-Lemma sorted_mask_sort_in (s : seq T) (m : bitseq) :
-  all P s -> sorted leT (mask m s) ->
-  {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
-Proof.
-move=> ? /(sorted_sort_in leT_tr _) <-; [exact: mask_sort_in | exact: all_mask].
-Qed.
-
-End Stability_mask_in.
-
-Section Stability_subseq.
-
-Variables (T : eqType) (leT : rel T).
-Variables (leT_total : total leT) (leT_tr : transitive leT).
-
-Lemma subseq_sort : {homo sort _ leT : t s / subseq t s}.
-Proof.
-move=> _ s /subseqP [m _ ->].
-case: (mask_sort leT_total leT_tr s m) => m' <-; exact: mask_subseq.
-Qed.
-
-Lemma sorted_subseq_sort (t s : seq T) :
-  subseq t s -> sorted leT t -> subseq t (sort _ leT s).
-Proof. by move=> subseq_ts /(sorted_sort leT_tr) <-; exact: subseq_sort. Qed.
-
-(* TODO: *)
-(* Lemma mem2_sort s x y : leT x y -> mem2 s x y -> mem2 (sort _ leT s) x y. *)
-
-End Stability_subseq.
-
-Section Stability_subseq_in.
-
-Variables (T : eqType) (leT : rel T).
-
-Lemma subseq_sort_in (t s : seq T) :
-  {in s &, total leT} -> {in s & &, transitive leT} ->
-  subseq t s -> subseq (sort _ leT t) (sort _ leT s).
-Proof.
-move=> leT_total leT_tr /subseqP [m _ ->].
-have [m' <-] := mask_sort_in leT_total leT_tr m (allss _).
-exact: mask_subseq.
-Qed.
-
-Lemma sorted_subseq_sort_in (t s : seq T) :
-  {in s &, total leT} -> {in s & &, transitive leT} ->
-  subseq t s -> sorted leT t -> subseq t (sort _ leT s).
-Proof.
-move=> ? leT_tr ? /(sorted_sort_in leT_tr) <-; last exact/allP/mem_subseq.
-exact: subseq_sort_in.
-Qed.
-
-(* TODO: *)
-(* Lemma mem2_sort_in s : *)
-(*   {in s &, total leT} -> {in s & &, transitive leT} -> *)
-(*   forall x y, leT x y -> mem2 s x y -> mem2 (sort _ leT s) x y. *)
-
-End Stability_subseq_in.
-
 Lemma perm_sortP (T : eqType) (leT : rel T) :
   total leT -> transitive leT -> antisymmetric leT ->
   forall s1 s2, reflect (sort _ leT s1 = sort _ leT s2) (perm_eq s1 s2).
@@ -450,362 +683,186 @@ Arguments mem_sort                sort {T} leT s _.
 Arguments sort_uniq               sort {T} leT s.
 Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
 Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
-Arguments sort_stable             sort {T leT leT'} leT_total leT_tr {s} _.
-Arguments sort_stable_in          sort {T P leT leT'} leT_total leT_tr {s} _ _.
+Arguments sort_stable             sort {T leT leT'} leT_total leT'_tr {s} _.
+Arguments sort_stable_in          sort {T P leT leT'} leT_total leT'_tr {s} _ _.
 Arguments sort_sorted             sort {T leT} leT_total s.
 Arguments sort_sorted_in          sort {T P leT} leT_total {s} _.
 Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
 Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
+Arguments perm_sortP              sort {T leT} leT_total leT_tr leT_asym s1 s2.
+Arguments perm_sort_inP           sort {T leT s1 s2} leT_total leT_tr leT_asym.
+
+Section StableSortTheory.
+
+Lemma eq_sort (sort1 sort2 : stableSort) (T : Type) (leT : rel T) :
+  total leT -> transitive leT -> sort1 _ leT =1 sort2 _ leT.
+Proof.
+move=> leT_total leT_tr s; case Ds: s => [|x s1]; first by rewrite !sort_nil.
+pose leN := relpre (nth x s) leT.
+pose lt_lex := [rel n m | leN n m && (leN m n ==> (n < m))].
+have lt_lex_tr: transitive lt_lex.
+  rewrite /lt_lex /leN => ? ? ? /= /andP [xy xy'] /andP [yz yz'].
+  rewrite (leT_tr _ _ _ xy yz); apply/implyP => zx; move: xy' yz'.
+  by rewrite (leT_tr _ _ _ yz zx) (leT_tr _ _ _ zx xy); apply: ltn_trans.
+rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
+apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /leN //=.
+- by move=> ?; rewrite /= ltnn implybF andbN.
+- exact/sort_stable/iota_ltn_sorted/ltn_trans.
+- exact/sort_stable/iota_ltn_sorted/ltn_trans.
+- by move=> ?; rewrite !mem_sort.
+Qed.
+
+Lemma eq_in_sort
+      (sort1 sort2 : stableSort) (T : Type) (P : {pred T}) (leT : rel T) :
+  {in P &, total leT} -> {in P & &, transitive leT} ->
+  forall s, all P s -> sort1 _ leT s = sort2 _ leT s.
+Proof.
+move=> /in2_sig ? /in3_sig ? s /all_sigP[{}s ->].
+by rewrite !sort_map; congr map; exact: eq_sort.
+Qed.
+
+Variable (sort : stableSort).
+
+Section Stability.
+
+Variables (T : Type) (leT : rel T).
+Variables (leT_total : total leT) (leT_tr : transitive leT).
+
+Lemma eq_sort_insert : sort _ leT =1 Insertion.sort leT.
+Proof. exact: eq_sort. Qed.
+
+Lemma sort_cat (s1 s2 : seq T) :
+  sort _ leT (s1 ++ s2) = merge leT (sort _ leT s1) (sort _ leT s2).
+Proof. by rewrite !eq_sort_insert; elim: s1 => //= x s1 ->; rewrite mergeA. Qed.
+
+Lemma mask_sort (s : seq T) (m : bitseq) :
+  {m_s : bitseq | mask m_s (sort _ leT s) = sort _ leT (mask m s)}.
+Proof.
+case Ds: {-}s => [|x s1]; first by exists [::]; rewrite Ds mask0 sort_nil.
+rewrite -(mkseq_nth x s) -map_mask !sort_map.
+exists [seq i \in mask m (iota 0 (size s)) |
+            i <- sort _ (xrelpre (nth x s) leT) (iota 0 (size s))].
+rewrite -map_mask -filter_mask [in RHS]mask_filter ?iota_uniq ?filter_sort //.
+by move=> ? ? ?; exact: leT_tr.
+Qed.
+
+Lemma sorted_mask_sort (s : seq T) (m : bitseq) :
+  sorted leT (mask m s) -> {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
+Proof. by move/(sorted_sort sort leT_tr) <-; exact: mask_sort. Qed.
+
+End Stability.
+
+Section Stability_in.
+
+Variables (T : Type) (P : {pred T}) (leT : rel T).
+Hypothesis leT_total : {in P &, total leT}.
+Hypothesis leT_tr : {in P & &, transitive leT}.
+
+Let le_sT := relpre (val : sig P -> _) leT.
+Let le_sT_total : total le_sT := in2_sig leT_total.
+Let le_sT_tr : transitive le_sT := in3_sig leT_tr.
+
+Lemma eq_in_sort_insert (s : seq T) :
+  all P s -> sort _ leT s = Insertion.sort leT s.
+Proof. exact: eq_in_sort. Qed.
+
+Lemma sort_cat_in (s1 s2 : seq T) : all P s1 -> all P s2 ->
+  sort _ leT (s1 ++ s2) = merge leT (sort _ leT s1) (sort _ leT s2).
+Proof.
+move=> /all_sigP [{}s1 ->] /all_sigP [{}s2 ->].
+by rewrite -map_cat !sort_map merge_map; congr map; apply: sort_cat.
+Qed.
+
+Lemma mask_sort_in (s : seq T) (m : bitseq) :
+  all P s -> {m_s : bitseq | mask m_s (sort _ leT s) = sort _ leT (mask m s)}.
+Proof.
+move=> /all_sigP [{}s ->]; case: (mask_sort (leT := le_sT) _ _ s m) => //.
+by move=> m' m'E; exists m'; rewrite -map_mask !sort_map -map_mask m'E.
+Qed.
+
+Lemma sorted_mask_sort_in (s : seq T) (m : bitseq) :
+  all P s -> sorted leT (mask m s) ->
+  {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
+Proof.
+move=> ? /(sorted_sort_in sort leT_tr _) <-; last exact: all_mask.
+exact: mask_sort_in.
+Qed.
+
+End Stability_in.
+
+Section Stability_subseq.
+
+Variables (T : eqType) (leT : rel T).
+Variables (leT_total : total leT) (leT_tr : transitive leT).
+
+Lemma subseq_sort : {homo sort _ leT : t s / subseq t s}.
+Proof.
+move=> _ s /subseqP [m _ ->].
+have [m' <-] := mask_sort leT_total leT_tr s m; exact: mask_subseq.
+Qed.
+
+Lemma sorted_subseq_sort (t s : seq T) :
+  subseq t s -> sorted leT t -> subseq t (sort _ leT s).
+Proof.
+by move=> subseq_ts /(sorted_sort sort leT_tr) <-; exact: subseq_sort.
+Qed.
+
+Lemma mem2_sort (s : seq T) (x y : T) :
+    leT x y -> mem2 s x y -> mem2 (sort _ leT s) x y.
+Proof.
+move=> lexy; rewrite !mem2E => /subseq_sort; rewrite !eq_sort_insert //.
+by case: (_ == _); rewrite //= lexy.
+Qed.
+
+End Stability_subseq.
+
+Section Stability_subseq_in.
+
+Variables (T : eqType) (leT : rel T).
+
+Lemma subseq_sort_in (t s : seq T) :
+  {in s &, total leT} -> {in s & &, transitive leT} ->
+  subseq t s -> subseq (sort _ leT t) (sort _ leT s).
+Proof.
+move=> leT_total leT_tr /subseqP [m _ ->].
+have [m' <-] := mask_sort_in leT_total leT_tr m (allss _); exact: mask_subseq.
+Qed.
+
+Lemma sorted_subseq_sort_in (t s : seq T) :
+  {in s &, total leT} -> {in s & &, transitive leT} ->
+  subseq t s -> sorted leT t -> subseq t (sort _ leT s).
+Proof.
+move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact/allP/mem_subseq.
+exact: subseq_sort_in.
+Qed.
+
+Lemma mem2_sort_in (s : seq T) :
+  {in s &, total leT} -> {in s & &, transitive leT} ->
+  forall x y, leT x y -> mem2 s x y -> mem2 (sort _ leT s) x y.
+Proof.
+move=> leT_total leT_tr x y lexy; rewrite !mem2E.
+move=> /[dup] /mem_subseq /allP ? /subseq_sort_in.
+rewrite !(eq_in_sort_insert leT_total leT_tr) //.
+by case: (_ == _); rewrite /= ?lexy; apply.
+Qed.
+
+End Stability_subseq_in.
+
+End StableSortTheory.
+
+Arguments eq_sort                 sort1 sort2 {T leT} leT_total leT_tr _.
+Arguments eq_in_sort              sort1 sort2 {T P leT} leT_total leT_tr {s} _.
+Arguments eq_sort_insert          sort {T leT} leT_total leT_tr _.
+Arguments sort_cat                sort {T leT} leT_total leT_tr s1 s2.
 Arguments mask_sort               sort {T leT} leT_total leT_tr s m.
 Arguments sorted_mask_sort        sort {T leT} leT_total leT_tr {s m} _.
+Arguments eq_in_sort_insert       sort {T P leT} leT_total leT_tr {s} _.
+Arguments sort_cat_in             sort {T P leT} leT_total leT_tr {s1 s2} _ _.
 Arguments mask_sort_in            sort {T P leT} leT_total leT_tr {s} m _.
 Arguments sorted_mask_sort_in     sort {T P leT} leT_total leT_tr {s m} _ _.
-Arguments subseq_sort             sort {T leT} leT_total leT_tr [x y] _.
+Arguments subseq_sort             sort {T leT} leT_total leT_tr {x y} _.
 Arguments sorted_subseq_sort      sort {T leT} leT_total leT_tr {t s} _ _.
-(* About mem2_sort. *)
+Arguments mem2_sort               sort {T leT} leT_total leT_tr {s x y} _ _.
 Arguments subseq_sort_in          sort {T leT t s} leT_total leT_tr _.
 Arguments sorted_subseq_sort_in   sort {T leT t s} leT_total leT_tr _ _.
-(* About mem2_sort_in. *)
-
-(******************************************************************************)
-(* Insertion sort                                                             *)
-(******************************************************************************)
-
-Module Insertion.
-
-Fixpoint sort (T : Type) (leT : rel T) (s : seq T) :=
-  if s isn't x :: s then [::] else
-    (fix insert s := if s isn't y :: s' then [:: x] else
-                       if leT x y then x :: y :: s' else y :: insert s')
-      (sort leT s).
-
-Import StableSort.
-
-Parametricity Recursive sort.
-
-Lemma sortP (T : Type) (leT : rel T) (s : seq T) :
-  {t : tree leT | s = flatten_tree t & sort leT s = sort_tree t}.
-Proof.
-elim: s => [|x _ [t -> /= ->]]; first by exists empty_tree.
-exists (branch_tree true (leaf_tree true [:: x] erefl) t) => //=.
-by elim: {t} sort_tree => //= y s ->; case: ifP.
-Qed.
-
-Definition sort_stable := Interface sort sort_R sortP.
-
-End Insertion.
-
-Canonical Insertion.sort_stable.
-
-(******************************************************************************)
-(* path.sort of MathComp                                                      *)
-(******************************************************************************)
-
-Module NaiveMergesort.
-
-Import StableSort.
-
-Parametricity Recursive sort.
-
-Section Proofs.
-
-Variable (T : Type) (leT : rel T).
-
-Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
-
-Lemma merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
-  {stack' : seq (tree leT) |
-    catss (t :: stack) = catss stack' &
-    merge_sort_push leT (sort_tree t) (map sort_tree stack) =
-    map sort_tree stack'}.
-Proof.
-elim: stack t => [|t' stack IHstack] t /=; first by exists [:: t].
-rewrite ifnilE -catA; case: tree_nilP => _ _.
-  by exists (t :: stack); rewrite //= cats0.
-case: (IHstack (branch_tree true t' t)) => /= {IHstack}stack -> ->.
-by exists (empty_tree :: stack); rewrite //= cats0.
-Qed.
-
-Lemma merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
-  {t' : tree leT |
-    catss stack ++ flatten_tree t = flatten_tree t' &
-    merge_sort_pop leT (sort_tree t) (map sort_tree stack) = sort_tree t'}.
-Proof.
-elim: stack t => [|t' stack IHstack] t; first by exists t; rewrite //= cats0.
-case: (IHstack (branch_tree true t' t)) => t''.
-by rewrite /= catA => -> ->; exists t''.
-Qed.
-
-Lemma sortP (s : seq T) :
-  {t : tree leT | s = flatten_tree t & sort leT s = sort_tree t}.
-Proof.
-rewrite sortE.
-have {1}->: s = catss [::] ++ s by [].
-have ->: [::] = map (@sort_tree _ leT) [::] by [].
-elim: s [::] => [|x s IHs] stack /=; first exact: merge_sort_popP empty_tree _.
-case: (merge_sort_pushP (leaf_tree true [:: x] erefl) stack).
-by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
-Qed.
-
-End Proofs.
-
-Definition sort_stable := Interface sort sort_R sortP.
-
-End NaiveMergesort.
-
-Canonical NaiveMergesort.sort_stable.
-
-(******************************************************************************)
-(* A variant of mergesort optimized for the call-by-need evaluation:          *)
-(* - bottom up,                                                               *)
-(* - structurally recursive (as in path.sort of MathComp),                    *)
-(* - reusing sorted slices (as in Data.List.sort of GHC), and                 *)
-(* - not tail recursive.                                                      *)
-(******************************************************************************)
-
-Module CBN.
-
-Section Definitions.
-
-Variables (T : Type) (leT : rel T).
-
-Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
-
-(*
-Fixpoint merge_sort_push s stack :=
-  match stack with
-  | [::] :: stack' | [::] as stack' => s :: stack'
-  | s' :: stack' => [::] :: merge_sort_push (merge leT s' s) stack'
-  end.
-
-Fixpoint merge_sort_pop s1 stack :=
-  if stack is s2 :: stack' then merge_sort_pop (merge leT s2 s1) stack' else s1.
-*)
-
-Let merge_sort_push := path.merge_sort_push leT.
-Let merge_sort_pop := path.merge_sort_pop leT.
-
-Fixpoint merge_sort_rec (stack : seq (seq T)) x s :=
-  let inner_rec := fix inner_rec mode acc x s :=
-    if s is y :: s then
-      if eqb (leT x y) mode then
-        inner_rec mode (x :: acc) y s
-      else
-        let stack := merge_sort_push (condrev mode (x :: acc)) stack in
-        merge_sort_rec stack y s
-    else
-      merge_sort_pop (condrev mode (x :: acc)) stack
-  in
-  if s is y :: s then
-    inner_rec (leT x y) [:: x] y s else merge_sort_pop [:: x] stack.
-
-Definition sort s := if s is x :: s then merge_sort_rec [::] x s else [::].
-
-End Definitions.
-
-Import StableSort.
-
-Parametricity Recursive sort.
-
-Section Proofs.
-
-Variable (T : Type) (leT : rel T).
-
-Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
-
-Let merge_sort_pushP := @NaiveMergesort.merge_sort_pushP T leT.
-Let merge_sort_popP := @NaiveMergesort.merge_sort_popP T leT.
-
-Lemma sortP (s : seq T) :
-  {t : tree leT | s = flatten_tree t & sort leT s = sort_tree t}.
-Proof.
-case: s => /= [|x s]; first by exists empty_tree.
-have {1}->: x :: s = catss [::] ++ x :: s by [].
-have ->: [::] = map (@sort_tree _ leT) [::] by [].
-move: [::] x s; fix IHs 3 => stack x [|y s] /=.
-  exact: merge_sort_popP (leaf_tree true [:: x] erefl) _.
-set lexy := leT x y.
-have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
-have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
-elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
-  rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
-  case: (merge_sort_popP (leaf_tree ord _ sorted_acc) stack) => t ->.
-  by rewrite /= revK => ->; exists t.
-rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
-  move=> path_acc.
-  have: path (fun y x => leT x y == ord) y (x :: acc)  by rewrite /= lexy eqxx.
-  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
-rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
-case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
-by rewrite -/catss /= catA revK => -> ->; apply: IHs.
-Qed.
-
-End Proofs.
-
-Definition sort_stable := Interface sort sort_R sortP.
-
-End CBN.
-
-Canonical CBN.sort_stable.
-
-(******************************************************************************)
-(* A variant of mergesort optimized for the call-by-value evaluation:         *)
-(* - bottom up,                                                               *)
-(* - structurally recursive (as in path.sort of MathComp),                    *)
-(* - reusing sorted slices (as in Data.List.sort of GHC), and                 *)
-(* - tail recursive (as in List.stable_sort of OCaml).                        *)
-(******************************************************************************)
-
-Module CBV.
-
-Section Definitions.
-
-Fixpoint revmerge T (leT : rel T) (xs : seq T) : seq T -> seq T -> seq T :=
-  if xs is x :: xs'
-  then fix revmerge' (ys acc : seq T) :=
-         if ys is y :: ys'
-         then if leT x y then
-                revmerge leT xs' ys (x :: acc)
-              else
-                revmerge' ys' (y :: acc)
-         else catrev xs acc
-  else catrev.
-
-Variables (T : Type) (leT : rel T).
-
-Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
-
-Fixpoint merge_sort_push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
-  match stack with
-    | [::] :: stack' | [::] as stack' => xs :: stack'
-    | ys :: [::] :: stack | ys :: ([::] as stack) =>
-      [::] :: revmerge leT ys xs [::] :: stack
-    | ys :: zs :: stack =>
-      [::] :: [::] ::
-           merge_sort_push
-           (revmerge (fun x y => leT y x) (revmerge leT ys xs [::]) zs [::])
-           stack
-  end.
-
-Fixpoint merge_sort_pop (xs : seq T) (stack : seq (seq T)) : seq T :=
-  match stack with
-    | [::] => xs
-    | [:: ys] => rev (revmerge leT ys xs [::])
-    | [::] :: [::] :: stack => merge_sort_pop xs stack
- (* | [::] :: zs :: stack => *)
- (*   merge_sort_pop (revmerge (fun x y => leT y x) (rev xs) zs [::]) stack *)
-    | ys :: zs :: stack =>
-      merge_sort_pop
-        (revmerge (fun x y => leT y x) (revmerge leT ys xs [::]) zs [::])
-        stack
-  end.
-
-Fixpoint merge_sort_rec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
-  let inner_rec := fix inner_rec mode acc x s :=
-    if s is y :: s then
-      if eqb (leT x y) mode then
-        inner_rec mode (x :: acc) y s
-      else
-        let stack := merge_sort_push (condrev mode (x :: acc)) stack in
-        merge_sort_rec stack y s
-    else
-      merge_sort_pop (condrev mode (x :: acc)) stack
-  in
-  if s is y :: s then
-    inner_rec (leT x y) [:: x] y s else merge_sort_pop [:: x] stack.
-
-Definition sort s : seq T :=
-  if s is x :: s then merge_sort_rec [::] x s else [::].
-
-End Definitions.
-
-Import StableSort.
-
-Parametricity Recursive sort.
-
-Lemma revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :
-  revmerge leT s1 s2 [::] = rev (merge leT s1 s2).
-Proof.
-rewrite -[RHS]cats0.
-elim: s1 s2 [::] => [|x s1 IHs1]; elim=> [|y s2 IHs2] s3 //=;
-  try by rewrite catrevE rev_cons cat_rcons.
-by case: ifP => //= _; rewrite ?(IHs1, IHs2) rev_cons cat_rcons.
-Qed.
-
-Section Proofs.
-
-Variable (T : Type) (leT : rel T).
-
-Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
-
-Let Fixpoint trec_stack (stack : seq (tree leT)) :=
-  match stack with
-  | [::] => [::]
-  | [:: t] => [:: sort_tree t]
-  | t :: t' :: stack => sort_tree t :: rev (sort_tree t') :: trec_stack stack
-  end.
-
-Let merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
-  {stack' : seq (tree leT) |
-    catss (t :: stack) = catss stack' &
-    merge_sort_push leT (sort_tree t) (trec_stack stack) = trec_stack stack'}.
-Proof.
-move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
-- by exists [:: t].
-- rewrite !revmergeE ifnilE tree_nilp; have [->|_] := nilP.
-    by exists [:: t].
-  by exists [:: empty_tree; branch_tree true t' t]; rewrite //= cats0.
-- rewrite !revmergeE !ifnilE nilp_rev !tree_nilp; have [->|_] := nilP.
-    by exists [:: t, t'' & stack]; rewrite ?cats0.
-  rewrite -!catA; have [->|_] := nilP.
-    by exists [:: empty_tree, branch_tree true t' t & stack]; rewrite /= ?cats0.
-  have [/= {}stack -> ->] :=
-    IHstack (branch_tree false t'' (branch_tree true t' t)) stack.
-  by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
-Qed.
-
-Let merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
-  {t' : tree leT |
-    catss stack ++ flatten_tree t = flatten_tree t' &
-    merge_sort_pop leT (sort_tree t) (trec_stack stack) = sort_tree t'}.
-Proof.
-move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]]; first by exists t.
-  exists (branch_tree true t' t); rewrite //= revmergeE revK.
-  by case: sort_tree.
-rewrite /= -!catA !revmergeE !ifnilE nilp_rev.
-case: tree_nilP => _ _; first case: tree_nilP => _ _; first exact: IHstack.
-  exact: IHstack (branch_tree false t'' t) _.
-exact: IHstack (branch_tree false t'' (branch_tree true t' t)) _.
-Qed.
-
-Lemma sortP (s : seq T) :
-  {t : tree leT | s = flatten_tree t & sort leT s = sort_tree t}.
-Proof.
-case: s => /= [|x s]; first by exists empty_tree.
-have {1}->: x :: s = catss [::] ++ x :: s by [].
-have ->: [::] = trec_stack [::] by [].
-move: [::] x s; fix IHs 3 => stack x [|y s] /=.
-  exact: merge_sort_popP (leaf_tree true [:: x] erefl) _.
-set lexy := leT x y.
-have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
-have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
-elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
-  rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
-  case: (merge_sort_popP (leaf_tree ord _ sorted_acc) stack) => t ->.
-  by rewrite /= revK => ->; exists t.
-rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
-  move=> path_acc.
-  have: path (fun y x => leT x y == ord) y (x :: acc) by rewrite /= lexy eqxx.
-  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
-rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
-case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
-by rewrite -/catss /= catA revK => -> ->; apply: IHs.
-Qed.
-
-End Proofs.
-
-Definition sort_stable := Interface sort sort_R sortP.
-
-End CBV.
-
-Canonical CBV.sort_stable.
+Arguments mem2_sort_in            sort {T leT s} leT_total leT_tr x y _ _.
