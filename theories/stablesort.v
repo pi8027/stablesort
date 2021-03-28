@@ -371,17 +371,17 @@ Fixpoint merge_sort_push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
            stack
   end.
 
-Fixpoint merge_sort_pop (xs : seq T) (stack : seq (seq T)) : seq T :=
-  match stack with
-    | [::] => xs
-    | [:: ys] => rev (revmerge leT ys xs [::])
-    | [::] :: [::] :: stack => merge_sort_pop xs stack
- (* | [::] :: zs :: stack => *)
- (*   merge_sort_pop (revmerge (fun x y => leT y x) (rev xs) zs [::]) stack *)
-    | ys :: zs :: stack =>
-      merge_sort_pop
-        (revmerge (fun x y => leT y x) (revmerge leT ys xs [::]) zs [::])
-        stack
+Fixpoint merge_sort_pop
+         (mode : bool) (xs : seq T) (stack : seq (seq T)) : seq T :=
+  match stack, mode with
+    | [::], true => rev xs
+    | [::], false => xs
+    | [::] :: [::] :: stack, _ => merge_sort_pop mode xs stack
+    | [::] :: stack, _ => merge_sort_pop (~~ mode) (rev xs) stack
+    | ys :: stack, true =>
+      merge_sort_pop false (revmerge (fun x y => leT y x) xs ys [::]) stack
+    | ys :: stack, false =>
+      merge_sort_pop true (revmerge leT ys xs [::]) stack
   end.
 
 Fixpoint merge_sort_rec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
@@ -393,10 +393,10 @@ Fixpoint merge_sort_rec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
         let stack := merge_sort_push (condrev mode (x :: acc)) stack in
         merge_sort_rec stack y s
     else
-      merge_sort_pop (condrev mode (x :: acc)) stack
+      merge_sort_pop false (condrev mode (x :: acc)) stack
   in
   if s is y :: s then
-    inner_rec (leT x y) [:: x] y s else merge_sort_pop [:: x] stack.
+    inner_rec (leT x y) [:: x] y s else merge_sort_pop false [:: x] stack.
 
 Definition sort s : seq T :=
   if s is x :: s then merge_sort_rec [::] x s else [::].
@@ -407,17 +407,15 @@ Import StableSort.
 
 Let catss := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
 
-Let Fixpoint trec_stack (stack : seq (tree leT)) :=
-  match stack with
-  | [::] => [::]
-  | [:: t] => [:: sort_tree t]
-  | t :: t' :: stack => sort_tree t :: rev (sort_tree t') :: trec_stack stack
-  end.
+Let Fixpoint trec_stack (mode : bool) (stack : seq (tree leT)) : seq (seq T) :=
+  if stack isn't t :: stack then [::] else
+    condrev mode (sort_tree t) :: trec_stack (~~ mode) stack.
 
 Let merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
   {stack' : seq (tree leT) |
     catss (t :: stack) = catss stack' &
-    merge_sort_push (sort_tree t) (trec_stack stack) = trec_stack stack'}.
+    merge_sort_push (sort_tree t) (trec_stack false stack)
+    = trec_stack false stack'}.
 Proof.
 move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
 - by exists [:: t].
@@ -433,18 +431,26 @@ move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
   by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
 Qed.
 
-Let merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
+Lemma nilp_condrev (r : bool) (s : seq T) : nilp (condrev r s) = nilp s.
+Proof. by case: r; rewrite ?nilp_rev. Qed.
+
+Let merge_sort_popP (mode : bool) (t : tree leT) (stack : seq (tree leT)) :
   {t' : tree leT |
     catss stack ++ flatten_tree t = flatten_tree t' &
-    merge_sort_pop (sort_tree t) (trec_stack stack) = sort_tree t'}.
+    merge_sort_pop mode (condrev mode (sort_tree t)) (trec_stack mode stack)
+    = sort_tree t'}.
 Proof.
-move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]]; first by exists t.
-  exists (branch_tree true t' t); rewrite //= revmergeE revK.
-  by case: sort_tree.
-rewrite /= -!catA !revmergeE !ifnilE nilp_rev.
-case: tree_nilP => _ _; first case: tree_nilP => _ _; first exact: IHstack.
-  exact: IHstack (branch_tree false t'' t) _.
-exact: IHstack (branch_tree false t'' (branch_tree true t' t)) _.
+move: mode t stack; fix IHstack 3; move=> mode t [|t' stack] /=.
+  by exists t => //; case: mode; rewrite ?revK.
+rewrite -catA !revmergeE ifnilE nilp_condrev.
+case: tree_nilP => _ _; last first.
+  by case: mode (IHstack (~~ mode) (branch_tree (~~ mode) t' t) stack).
+case: stack => [|t'' stack] /=.
+  by exists t => //; case: mode; rewrite ?revK.
+rewrite !revmergeE !ifnilE !nilp_condrev !negbK revK.
+case: tree_nilP => _ _; first by rewrite cats0; apply: IHstack.
+rewrite -catA.
+by case: mode (IHstack mode (branch_tree mode t'' t) stack); rewrite //= revK.
 Qed.
 
 Lemma sortP (s : seq T) :
@@ -452,7 +458,7 @@ Lemma sortP (s : seq T) :
 Proof.
 case: s => /= [|x s]; first by exists empty_tree.
 have {1}->: x :: s = catss [::] ++ x :: s by [].
-have ->: [::] = trec_stack [::] by [].
+have ->: [::] = trec_stack false [::] by [].
 move: [::] x s; fix IHs 3 => stack x [|y s] /=.
   exact: merge_sort_popP (leaf_tree true [:: x] erefl) _.
 set lexy := leT x y.
@@ -460,7 +466,7 @@ have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
 have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
 elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
   rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
-  case: (merge_sort_popP (leaf_tree ord _ sorted_acc) stack) => t ->.
+  case: (merge_sort_popP false (leaf_tree ord _ sorted_acc) stack) => t ->.
   by rewrite /= revK => ->; exists t.
 rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
   move=> path_acc.
