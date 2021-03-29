@@ -28,9 +28,9 @@ evaluation (`CBV.sort`).
 - Author(s):
   - Kazuhiko Sakaguchi (initial)
 - License: [CeCILL-B Free Software License Agreement](CeCILL-B)
-- Compatible Coq versions: 8.11 or later
+- Compatible Coq versions: 8.10 or later
 - Additional dependencies:
-  - Development version of [MathComp](https://math-comp.github.io)
+  - [MathComp](https://math-comp.github.io) 1.12.0 or later
   - [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.2 or later
 - Coq namespace: `stablesort`
 - Related publication(s): none

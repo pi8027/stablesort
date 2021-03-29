@@ -1,5 +1,6 @@
-theories/stablesort.v
+theories/mathcomp_ext.v
 theories/param.v
+theories/stablesort.v
 
 -arg -w -arg -notation-overridden
 

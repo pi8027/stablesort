@@ -1,54 +1,10 @@
+From stablesort Require Import mathcomp_ext.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From stablesort Require Import param.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-(******************************************************************************)
-(* TODO: backport to MathComp                                                 *)
-(******************************************************************************)
-
-Local Lemma mergeA (T : Type) (leT : rel T) :
-  total leT -> transitive leT -> associative (merge leT).
-Proof.
-move=> leT_total leT_tr.
-elim=> // x xs IHxs; elim=> // y ys IHys; elim=> [|z zs IHzs] /=.
-  by case: ifP.
-case: ifP; case: ifP => /= lexy leyz.
-- by rewrite lexy (leT_tr _ _ _ lexy leyz) -IHxs /= leyz.
-- by rewrite lexy leyz -IHys.
-- case: ifP => lexz; first by rewrite -IHxs //= leyz.
-  by rewrite -!/(merge _ (_ :: _)) IHzs /= lexy.
-- suff->: leT x z = false by rewrite leyz // -!/(merge _ (_ :: _)) IHzs /= lexy.
-  by apply/contraFF/leT_tr: leyz; have := leT_total x y; rewrite lexy.
-Qed.
-
-Local Lemma all_merge (T : Type) (P : {pred T}) (leT : rel T) (s1 s2 : seq T) :
-  all P (merge leT s1 s2) = all P s1 && all P s2.
-Proof.
-elim: s1 s2 => //= x s1 IHs1; elim=> [|y s2 IHs2]; rewrite ?andbT //=.
-by case: ifP => _; rewrite /= ?IHs1 ?IHs2 //=; bool_congr.
-Qed.
-
-Local Lemma pairwise_sorted (T : Type) (leT : rel T) (s : seq T) :
-  pairwise leT s -> sorted leT s.
-Proof. by elim: s => //= x s IHs /andP[/path_min_sorted -> /IHs]. Qed.
-
-Local Lemma path_relI (T : Type) (leT leT' : rel T) (x : T) (s : seq T) :
-  path leT x s && path leT' x s = path [rel x y | leT x y && leT' x y] x s.
-Proof. by elim: s x => //= y s IHs x; rewrite andbACA IHs. Qed.
-
-Local Lemma sorted_relI (T : Type) (leT leT' : rel T) (s : seq T) :
-  sorted leT s && sorted leT' s = sorted [rel x y | leT x y && leT' x y] s.
-Proof. by case: s; last apply: path_relI. Qed.
-
-Local Lemma nilp_rev (T : Type) (s : seq T) : nilp (rev s) = nilp s.
-Proof. by move: s (rev s) (size_rev s) => [|? ?] []. Qed.
-
-Local Lemma ifnilE (T A : Type) (s : seq T) (a b : A) :
-  (if s is [::] then a else b) = if nilp s then a else b.
-Proof. by case: s. Qed.
 
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
