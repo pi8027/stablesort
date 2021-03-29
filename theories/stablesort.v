@@ -175,7 +175,7 @@ Proof.
 elim: stack t => [|t' stack IHstack] t /=; first by exists [:: t].
 rewrite ifnilE -catA; case: tree_nilP => _ _.
   by exists (t :: stack); rewrite //= cats0.
-case: (IHstack (branch_tree true t' t)) => /= {IHstack}stack -> ->.
+have [/= {IHstack}stack -> ->] := IHstack (branch_tree true t' t).
 by exists (empty_tree :: stack); rewrite //= cats0.
 Qed.
 
@@ -185,8 +185,8 @@ Lemma merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
     merge_sort_pop leT (sort_tree t) (map sort_tree stack) = sort_tree t'}.
 Proof.
 elim: stack t => [|t' stack IHstack] t; first by exists t; rewrite //= cats0.
-case: (IHstack (branch_tree true t' t)) => t''.
-by rewrite /= catA => -> ->; exists t''.
+rewrite /= -catA.
+by have [/= t'' -> ->] := IHstack (branch_tree true t' t); exists t''.
 Qed.
 
 Lemma sortP (s : seq T) :
@@ -221,8 +221,8 @@ Canonical NaiveMergesort.sort_stable.
 (* that it reuses sorted slices. In the call-by-need evaluation, this         *)
 (* algorithm should allow us to take the first few elements of the output     *)
 (* without computing the rest of the output, so that it is O(n) time          *)
-(* complexity. However, non-tail-recursive merge linearly consumes the stack  *)
-(* in the call-by-value evaluation.                                           *)
+(* complexity. However, the non-tail-recursive merge function linearly        *)
+(* consumes the stack in the call-by-value evaluation.                        *)
 (******************************************************************************)
 
 Module CBN.
@@ -308,7 +308,7 @@ Canonical CBN.sort_stable.
 (* - bottom up,                                                               *)
 (* - structurally recursive (as in [path.sort] of MathComp),                  *)
 (* - reusing sorted slices (as in [Data.List.sort] of GHC), and               *)
-(* - tail recursive (as in List.stable_sort of OCaml).                        *)
+(* - tail recursive (as in [List.stable_sort] of OCaml).                      *)
 (* This algorithm is similar to above [CBN.sort] except that the merging      *)
 (* function [revmerge] is tail-recursive and puts its result in the reverse   *)
 (* order. Merging with the converse relation of [leT] allows us to merge two  *)
@@ -333,7 +333,7 @@ Fixpoint revmerge T (leT : rel T) (xs : seq T) : seq T -> seq T -> seq T :=
          else catrev xs acc
   else catrev.
 
-Lemma revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :
+Let revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :
   revmerge leT s1 s2 [::] = rev (merge leT s1 s2).
 Proof.
 rewrite -[RHS]cats0.
@@ -418,12 +418,12 @@ move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
   by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
 Qed.
 
-Lemma nilp_condrev (r : bool) (s : seq T) : nilp (condrev r s) = nilp s.
+Let nilp_condrev (r : bool) (s : seq T) : nilp (condrev r s) = nilp s.
 Proof. by case: r; rewrite ?nilp_rev. Qed.
 
 Let merge_sort_popP (mode : bool) (t : tree leT) (stack : seq (tree leT)) :
   {t' : tree leT |
-    flatten_stack stack ++ flatten_tree t = flatten_tree t' &
+    flatten_stack (t :: stack) = flatten_tree t' &
     merge_sort_pop mode (condrev mode (sort_tree t)) (sort_stack mode stack)
     = sort_tree t'}.
 Proof.
@@ -453,7 +453,7 @@ have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
 have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
 elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
   rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
-  case: (merge_sort_popP false (leaf_tree ord _ sorted_acc) stack) => t ->.
+  case: (merge_sort_popP false (leaf_tree ord _ sorted_acc) stack) => /= t ->.
   by rewrite /= revK => ->; exists t.
 rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
   move=> path_acc.
@@ -507,7 +507,7 @@ Variant sort_spec : seq T -> seq T -> Type :=
 
 Local Lemma sortP (s : seq T) : sort_spec s (sort _ leT s).
 Proof.
-by case: sort => ? ? sortP; case: (sortP _ leT s) => t -> /= ->; constructor.
+by case: sort => ? ? sortP; have [/= t -> ->] := sortP _ leT s; constructor.
 Qed.
 
 Lemma all_sort (s : seq T) : all P (sort _ leT s) = all P s.
