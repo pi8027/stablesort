@@ -45,6 +45,9 @@ elim: s1 s2 => [|x s1 IHs1] [|y s2]; rewrite ?cats0 //=.
 by rewrite allrel_consl /= -andbA => /and3P [-> _ /IHs1->].
 Qed.
 
+Lemma eq_sorted (T : Type) (e e' : rel T) : e =2 e' -> sorted e =1 sorted e'.
+Proof. by move=> ee' [] //; apply: eq_path. Qed.
+
 Lemma sorted_pairwise (T : Type) (leT : rel T) :
   transitive leT -> forall s : seq T, sorted leT s = pairwise leT s.
 Proof.

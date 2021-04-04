@@ -6,6 +6,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(* COMPATIBILITY HACK: [mathcomp_ext] has to be imported *before* MathComp    *)
+(* libraries since [pairwise] has to be imported from MathComp if available.  *)
+(* However, [eq_sorted] has to be imported from [mathcomp_ext] to override a  *)
+(* deprecation alias in MathComp; hence, we declare the following notation.   *)
+Local Notation eq_sorted := mathcomp_ext.eq_sorted (only parsing).
+
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
 (******************************************************************************)
@@ -480,6 +486,31 @@ Canonical CBV.sort_stable.
 
 Section StableSortTheory.
 
+Let lexord (T : Type) (leT leT' : rel T) :=
+  [rel x y | leT x y && (leT y x ==> leT' x y)].
+
+Let lexord_total (T : Type) (leT leT' : rel T) :
+  total leT -> total leT' -> total (lexord leT leT').
+Proof.
+move=> leT_total leT'_total x y /=.
+by move: (leT_total x y) (leT'_total x y) => /orP[->|->] /orP[->|->];
+  rewrite /= ?implybE ?orbT ?andbT //= (orbAC, orbA) (orNb, orbN).
+Qed.
+
+Let lexord_trans (T : Type) (leT leT' : rel T) :
+  transitive leT -> transitive leT' -> transitive (lexord leT leT').
+Proof.
+move=> leT_tr leT'_tr y x z /= /andP[lexy leyx] /andP[leyz lezy].
+rewrite (leT_tr _ _ _ lexy leyz); apply/implyP => lezx; move: leyx lezy.
+by rewrite (leT_tr _ _ _ leyz lezx) (leT_tr _ _ _ lezx lexy); exact: leT'_tr.
+Qed.
+
+Let lexordA (T : Type) (leT leT' leT'' : rel T) :
+  lexord leT (lexord leT' leT'') =2 lexord (lexord leT leT') leT''.
+Proof. by move=> x y /=; case: (leT x y) (leT y x) => [] []. Qed.
+
+Section StableSortTheory_Part1.
+
 Variable (sort : stableSort).
 
 Local Lemma param_sort : StableSort.sort_ty_R sort sort.
@@ -559,7 +590,7 @@ End EqSortSeq.
 
 Lemma sort_pairwise_stable (T : Type) (leT leT' : rel T) :
   total leT -> forall s : seq T, pairwise leT' s ->
-  sorted [rel x y | leT x y && (leT y x ==> leT' x y)] (sort _ leT s).
+  sorted (lexord leT leT') (sort _ leT s).
 Proof.
 move=> leT_total s; case: {s}sortP; elim=> [b l IHl r IHr|b s] /=.
   rewrite ?pairwise_cat => /and3P[hlr /IHl ? /IHr ?].
@@ -574,7 +605,7 @@ Qed.
 
 Lemma sort_pairwise_stable_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
   {in P &, total leT} -> forall s : seq T, all P s -> pairwise leT' s ->
-  sorted [rel x y | leT x y && (leT y x ==> leT' x y)] (sort _ leT s).
+  sorted (lexord leT leT') (sort _ leT s).
 Proof.
 move=> /in2_sig leT_total _ /all_sigP[s ->].
 by rewrite sort_map pairwise_map sorted_map; apply: sort_pairwise_stable.
@@ -582,7 +613,7 @@ Qed.
 
 Lemma sort_stable (T : Type) (leT leT' : rel T) :
   total leT -> transitive leT' -> forall s : seq T, sorted leT' s ->
-  sorted [rel x y | leT x y && (leT y x ==> leT' x y)] (sort _ leT s).
+  sorted (lexord leT leT') (sort _ leT s).
 Proof.
 move=> leT_total leT'_tr s; rewrite sorted_pairwise //.
 exact: sort_pairwise_stable.
@@ -591,7 +622,7 @@ Qed.
 Lemma sort_stable_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
   {in P &, total leT} -> {in P & &, transitive leT'} ->
   forall s : seq T, all P s -> sorted leT' s ->
-  sorted [rel x y | leT x y && (leT y x ==> leT' x y)] (sort _ leT s).
+  sorted (lexord leT leT') (sort _ leT s).
 Proof.
 move=> /in2_sig leT_total /in3_sig leT_tr _ /all_sigP[s ->].
 by rewrite sort_map !sorted_map; apply: sort_stable.
@@ -616,14 +647,11 @@ Lemma filter_sort (T : Type) (leT : rel T) :
     filter p (sort _ leT s) = sort _ leT (filter p s).
 Proof.
 move=> leT_total leT_tr p s; case Ds: s => [|x s1]; first by rewrite sort_nil.
-pose leN := relpre (nth x s) leT.
-pose lt_lex := [rel n m | leN n m && (leN m n ==> (n < m))].
+pose lt_lex := lexord (relpre (nth x s) leT) ltn.
 have lt_lex_tr: transitive lt_lex.
-  rewrite /lt_lex /leN => ? ? ? /= /andP [xy xy'] /andP [yz yz'].
-  rewrite (leT_tr _ _ _ xy yz); apply/implyP => zx; move: xy' yz'.
-  by rewrite (leT_tr _ _ _ yz zx) (leT_tr _ _ _ zx xy); apply: ltn_trans.
+  by apply/lexord_trans/ltn_trans => ? ? ?; apply/leT_tr.
 rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /leN //=.
+apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /lexord //=.
 - by move=> ?; rewrite /= ltnn implybF andbN.
 - exact/sorted_filter/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/sorted_filter/iota_ltn_sorted/ltn_trans/ltn_trans.
@@ -637,6 +665,37 @@ Lemma filter_sort_in (T : Type) (P : {pred T}) (leT : rel T) :
 Proof.
 move=> /in2_sig leT_total /in3_sig leT_tr p _ /all_sigP[s ->].
 by rewrite !(sort_map, filter_map) filter_sort.
+Qed.
+
+Lemma sort_sort (T : Type) (leT leT' : rel T) :
+  total leT -> transitive leT -> total leT' -> transitive leT' ->
+  forall s : seq T, sort _ leT (sort _ leT' s) = sort _ (lexord leT leT') s.
+Proof.
+move=> leT_total leT_tr leT'_total leT'_tr s.
+case Ds: s => [|x s1]; first by rewrite !sort_nil.
+pose lt_lex' := lexord (relpre (nth x s) leT') ltn.
+pose lt_lex := lexord (relpre (nth x s) leT) lt_lex'.
+have lt_lex'_tr: transitive lt_lex'.
+  by apply/lexord_trans/ltn_trans => ? ? ?; apply: leT'_tr.
+have lt_lex_tr : transitive lt_lex.
+  by apply/lexord_trans/lt_lex'_tr => ? ? ?; apply: leT_tr.
+rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
+apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /lexord //=.
+- by move=> ?; rewrite /= ltnn !(implybF, andbN).
+- exact/sort_stable/sort_stable/iota_ltn_sorted/ltn_trans.
+- under eq_sorted => ? ? do rewrite lexordA.
+  exact/sort_stable/iota_ltn_sorted/ltn_trans/lexord_total.
+- by move=> ?; rewrite !mem_sort.
+Qed.
+
+Lemma sort_sort_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
+  {in P &, total leT} -> {in P & &, transitive leT} ->
+  {in P &, total leT'} -> {in P & &, transitive leT'} ->
+  forall s : seq T,
+    all P s -> sort _ leT (sort _ leT' s) = sort _ (lexord leT leT') s.
+Proof.
+move=> /in2_sig leT_total /in3_sig leT_tr /in2_sig leT'_total /in3_sig leT'_tr.
+by move=> _ /all_sigP[s ->]; rewrite !sort_map sort_sort.
 Qed.
 
 Lemma perm_sortP (T : eqType) (leT : rel T) :
@@ -661,44 +720,17 @@ have /all_sigP[{s1s2}s2 ->] : all (mem s1) s2 by rewrite -(perm_all _ s1s2).
 by rewrite !sort_map => /(perm_map_inj val_inj) /(perm_sortP leT_total)->.
 Qed.
 
-End StableSortTheory.
-
-Arguments map_sort                sort {T T' f leT' leT} _ _.
-Arguments sort_map                sort {T T' f leT} s.
-Arguments all_sort                sort {T} P leT s.
-Arguments size_sort               sort {T} leT s.
-Arguments sort_nil                sort {T} leT.
-Arguments pairwise_sort           sort {T leT s} _.
-Arguments sorted_sort             sort {T leT} leT_tr {s} _.
-Arguments sorted_sort_in          sort {T P leT} leT_tr {s} _ _.
-Arguments perm_sort               sort {T} leT s _.
-Arguments mem_sort                sort {T} leT s _.
-Arguments sort_uniq               sort {T} leT s.
-Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
-Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
-Arguments sort_stable             sort {T leT leT'} leT_total leT'_tr {s} _.
-Arguments sort_stable_in          sort {T P leT leT'} leT_total leT'_tr {s} _ _.
-Arguments sort_sorted             sort {T leT} leT_total s.
-Arguments sort_sorted_in          sort {T P leT} leT_total {s} _.
-Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
-Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
-Arguments perm_sortP              sort {T leT} leT_total leT_tr leT_asym s1 s2.
-Arguments perm_sort_inP           sort {T leT s1 s2} leT_total leT_tr leT_asym.
-
-Section StableSortTheory.
+End StableSortTheory_Part1.
 
 Lemma eq_sort (sort1 sort2 : stableSort) (T : Type) (leT : rel T) :
   total leT -> transitive leT -> sort1 _ leT =1 sort2 _ leT.
 Proof.
 move=> leT_total leT_tr s; case Ds: s => [|x s1]; first by rewrite !sort_nil.
-pose leN := relpre (nth x s) leT.
-pose lt_lex := [rel n m | leN n m && (leN m n ==> (n < m))].
+pose lt_lex := lexord (relpre (nth x s) leT) ltn.
 have lt_lex_tr: transitive lt_lex.
-  rewrite /lt_lex /leN => ? ? ? /= /andP [xy xy'] /andP [yz yz'].
-  rewrite (leT_tr _ _ _ xy yz); apply/implyP => zx; move: xy' yz'.
-  by rewrite (leT_tr _ _ _ yz zx) (leT_tr _ _ _ zx xy); apply: ltn_trans.
+  by apply/lexord_trans/ltn_trans => ? ? ?; apply/leT_tr.
 rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /leN //=.
+apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /lexord //=.
 - by move=> ?; rewrite /= ltnn implybF andbN.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
@@ -713,6 +745,8 @@ Proof.
 move=> /in2_sig ? /in3_sig ? s /all_sigP[{}s ->].
 by rewrite !sort_map; congr map; exact: eq_sort.
 Qed.
+
+Section StableSortTheory_Part2.
 
 Variable (sort : stableSort).
 
@@ -841,8 +875,35 @@ Qed.
 
 End Stability_subseq_in.
 
+End StableSortTheory_Part2.
+
 End StableSortTheory.
 
+Arguments map_sort                sort {T T' f leT' leT} _ _.
+Arguments sort_map                sort {T T' f leT} s.
+Arguments all_sort                sort {T} P leT s.
+Arguments size_sort               sort {T} leT s.
+Arguments sort_nil                sort {T} leT.
+Arguments pairwise_sort           sort {T leT s} _.
+Arguments sorted_sort             sort {T leT} leT_tr {s} _.
+Arguments sorted_sort_in          sort {T P leT} leT_tr {s} _ _.
+Arguments perm_sort               sort {T} leT s _.
+Arguments mem_sort                sort {T} leT s _.
+Arguments sort_uniq               sort {T} leT s.
+Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
+Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
+Arguments sort_stable             sort {T leT leT'} leT_total leT'_tr {s} _.
+Arguments sort_stable_in          sort {T P leT leT'} leT_total leT'_tr {s} _ _.
+Arguments sort_sorted             sort {T leT} leT_total s.
+Arguments sort_sorted_in          sort {T P leT} leT_total {s} _.
+Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
+Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
+Arguments sort_sort               sort {T leT leT'}
+                                  leT_total leT_tr leT'_total leT'_tr s.
+Arguments sort_sort_in            sort {T P leT leT'}
+                                  leT_total leT_tr leT'_total leT'_tr {s} _.
+Arguments perm_sortP              sort {T leT} leT_total leT_tr leT_asym s1 s2.
+Arguments perm_sort_inP           sort {T leT s1 s2} leT_total leT_tr leT_asym.
 Arguments eq_sort                 sort1 sort2 {T leT} leT_total leT_tr _.
 Arguments eq_in_sort              sort1 sort2 {T P leT} leT_total leT_tr {s} _.
 Arguments eq_sort_insert          sort {T leT} leT_total leT_tr _.
