@@ -328,16 +328,16 @@ Canonical CBN.sort_stable.
 Module CBV.
 Section CBV.
 
-Fixpoint revmerge T (leT : rel T) (xs : seq T) : seq T -> seq T -> seq T :=
+Fixpoint revmerge T (leT : rel T) (xs ys acc : seq T) : seq T :=
   if xs is x :: xs'
-  then fix revmerge' (ys acc : seq T) :=
-         if ys is y :: ys'
-         then if leT x y then
-                revmerge leT xs' ys (x :: acc)
-              else
-                revmerge' ys' (y :: acc)
-         else catrev xs acc
-  else catrev.
+  then (fix revmerge' (ys acc : seq T) :=
+          if ys is y :: ys'
+          then if leT x y then
+                 revmerge leT xs' ys (x :: acc)
+               else
+                 revmerge' ys' (y :: acc)
+          else catrev xs acc) ys acc
+  else catrev ys acc.
 
 Let revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :
   revmerge leT s1 s2 [::] = rev (merge leT s1 s2).
@@ -569,7 +569,7 @@ Lemma sorted_sort_in (T : Type) (P : {pred T}) (leT : rel T) :
   {in P & &, transitive leT} ->
   forall s : seq T, all P s -> sorted leT s -> sort _ leT s = s.
 Proof.
-move=> /in3_sig ? s /all_sigP[? ->].
+move=> /in3_sig ? _ /all_sigP[s ->].
 by rewrite sort_map sorted_map => /sorted_sort->.
 Qed.
 
@@ -626,19 +626,6 @@ Lemma sort_stable_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
 Proof.
 move=> /in2_sig leT_total /in3_sig leT_tr _ /all_sigP[s ->].
 by rewrite sort_map !sorted_map; apply: sort_stable.
-Qed.
-
-Lemma sort_sorted (T : Type) (leT : rel T) :
-  total leT -> forall s : seq T, sorted leT (sort _ leT s).
-Proof.
-move=> leT_total s; apply/sub_sorted/sort_stable => //= [? ? /andP[] //|].
-by case: s => // x s; elim: s x => /=.
-Qed.
-
-Lemma sort_sorted_in (T : Type) (P : {pred T}) (leT : rel T) :
-  {in P &, total leT} -> forall s : seq T, all P s -> sorted leT (sort _ leT s).
-Proof.
-by move=> /in2_sig ? s /all_sigP[? ->]; rewrite sort_map sorted_map sort_sorted.
 Qed.
 
 Lemma filter_sort (T : Type) (leT : rel T) :
@@ -698,6 +685,19 @@ move=> /in2_sig leT_total /in3_sig leT_tr /in2_sig leT'_total /in3_sig leT'_tr.
 by move=> _ /all_sigP[s ->]; rewrite !sort_map sort_sort.
 Qed.
 
+Lemma sort_sorted (T : Type) (leT : rel T) :
+  total leT -> forall s : seq T, sorted leT (sort _ leT s).
+Proof.
+move=> leT_total s; apply/sub_sorted/sort_stable => //= [? ? /andP[] //|].
+by case: s => // x s; elim: s x => /=.
+Qed.
+
+Lemma sort_sorted_in (T : Type) (P : {pred T}) (leT : rel T) :
+  {in P &, total leT} -> forall s : seq T, all P s -> sorted leT (sort _ leT s).
+Proof.
+by move=> /in2_sig ? _ /all_sigP[s ->]; rewrite sort_map sorted_map sort_sorted.
+Qed.
+
 Lemma perm_sortP (T : eqType) (leT : rel T) :
   total leT -> transitive leT -> antisymmetric leT ->
   forall s1 s2, reflect (sort _ leT s1 = sort _ leT s2) (perm_eq s1 s2).
@@ -742,7 +742,7 @@ Lemma eq_in_sort
   {in P &, total leT} -> {in P & &, transitive leT} ->
   forall s, all P s -> sort1 _ leT s = sort2 _ leT s.
 Proof.
-move=> /in2_sig ? /in3_sig ? s /all_sigP[{}s ->].
+move=> /in2_sig ? /in3_sig ? _ /all_sigP[s ->].
 by rewrite !sort_map; congr map; exact: eq_sort.
 Qed.
 
@@ -894,14 +894,14 @@ Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
 Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
 Arguments sort_stable             sort {T leT leT'} leT_total leT'_tr {s} _.
 Arguments sort_stable_in          sort {T P leT leT'} leT_total leT'_tr {s} _ _.
-Arguments sort_sorted             sort {T leT} leT_total s.
-Arguments sort_sorted_in          sort {T P leT} leT_total {s} _.
 Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
 Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
 Arguments sort_sort               sort {T leT leT'}
                                   leT_total leT_tr leT'_total leT'_tr s.
 Arguments sort_sort_in            sort {T P leT leT'}
                                   leT_total leT_tr leT'_total leT'_tr {s} _.
+Arguments sort_sorted             sort {T leT} leT_total s.
+Arguments sort_sorted_in          sort {T P leT} leT_total {s} _.
 Arguments perm_sortP              sort {T leT} leT_total leT_tr leT_asym s1 s2.
 Arguments perm_sort_inP           sort {T leT s1 s2} leT_total leT_tr leT_asym.
 Arguments eq_sort                 sort1 sort2 {T leT} leT_total leT_tr _.

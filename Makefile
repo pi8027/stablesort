@@ -4,12 +4,12 @@ KNOWNTARGETS := Makefile.coq
 # depending on them won't invoke the submake
 # Warning: These files get declared as PHONY, so any targets depending
 # on them always get rebuilt
-KNOWNFILES   := Makefile _CoqProject
+KNOWNFILES   := Makefile Make
 
 .DEFAULT_GOAL := invoke-coqmakefile
 
-Makefile.coq: Makefile _CoqProject
-	$(COQBIN)coq_makefile -f _CoqProject -o Makefile.coq
+Makefile.coq: Makefile Make
+	$(COQBIN)coq_makefile -f Make -o Makefile.coq
 
 invoke-coqmakefile: Makefile.coq
 	$(MAKE) --no-print-directory -f Makefile.coq $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))

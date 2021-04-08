@@ -1,7 +1,3 @@
-theories/mathcomp_ext.v
-theories/param.v
-theories/stablesort.v
+-R theories stablesort
 
 -arg -w -arg -notation-overridden
-
--R theories stablesort
