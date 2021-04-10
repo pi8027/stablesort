@@ -1,0 +1,6 @@
+benchmark/benchmark.v
+benchmark/extraction.v
+
+-R theories stablesort
+
+-arg -w -arg -notation-overridden
