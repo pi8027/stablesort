@@ -160,13 +160,45 @@ End Insertion.
 Canonical Insertion.sort_stable.
 
 (******************************************************************************)
-(* [path.sort] of MathComp                                                    *)
+(* [CBN.sort] is a variant of mergesort, which is:                            *)
+(* - bottom up,                                                               *)
+(* - structurally recursive, and                                              *)
+(* - not tail recursive.                                                      *)
+(* This algorithm is exactly the same as [path.sort] of MathComp and included *)
+(* in this library for the sake of self-containedness. In the call-by-need    *)
+(* evaluation, this algorithm should allow us to take the first few elements  *)
+(* of the output without computing the rest of the output, so that it is O(n) *)
+(* time complexity. However, the non-tail-recursive merge function linearly   *)
+(* consumes the stack in the call-by-value evaluation.                        *)
 (******************************************************************************)
 
-Module NaiveMergesort.
-Section NaiveMergesort.
+Module CBN.
+Section CBN.
 
 Variable (T : Type) (leT : rel T).
+
+Fixpoint merge_sort_push s stack :=
+  match stack with
+  | [::] :: stack' | [::] as stack' => s :: stack'
+  | s' :: stack' => [::] :: merge_sort_push (merge leT s' s) stack'
+  end.
+
+Fixpoint merge_sort_pop s1 stack :=
+  if stack is s2 :: stack' then merge_sort_pop (merge leT s2 s1) stack' else s1.
+
+Fixpoint merge_sort_rec ss s :=
+  if s is [:: x1, x2 & s'] then
+    let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
+    merge_sort_rec (merge_sort_push s1 ss) s'
+  else merge_sort_pop s ss.
+
+Definition sort := merge_sort_rec [::].
+
+Fixpoint sort_rec1 ss s :=
+  if s is x :: s then sort_rec1 (merge_sort_push [:: x] ss) s else
+  merge_sort_pop [::] ss.
+
+Lemma sortE s : sort s = sort_rec1 [::] s. Proof. exact: sortE. Qed.
 
 Import StableSort.
 
@@ -175,7 +207,7 @@ Let flatten_stack := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
 Lemma merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
   {stack' : seq (tree leT) |
     flatten_stack (t :: stack) = flatten_stack stack' &
-    merge_sort_push leT (sort_tree t) (map sort_tree stack) =
+    merge_sort_push (sort_tree t) (map sort_tree stack) =
     map sort_tree stack'}.
 Proof.
 elim: stack t => [|t' stack IHstack] t /=; first by exists [:: t].
@@ -188,7 +220,7 @@ Qed.
 Lemma merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
   {t' : tree leT |
     flatten_stack (t :: stack) = flatten_tree t' &
-    merge_sort_pop leT (sort_tree t) (map sort_tree stack) = sort_tree t'}.
+    merge_sort_pop (sort_tree t) (map sort_tree stack) = sort_tree t'}.
 Proof.
 elim: stack t => [|t' stack IHstack] t; first by exists t; rewrite //= cats0.
 rewrite /= -catA.
@@ -196,7 +228,7 @@ by have [/= t'' -> ->] := IHstack (branch_tree true t' t); exists t''.
 Qed.
 
 Lemma sortP (s : seq T) :
-  {t : tree leT | s = flatten_tree t & sort leT s = sort_tree t}.
+  {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
 Proof.
 rewrite sortE.
 have {1}->: s = flatten_stack [::] ++ s by [].
@@ -206,48 +238,36 @@ case: (merge_sort_pushP (leaf_tree true [:: x] erefl) stack).
 by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
 Qed.
 
-End NaiveMergesort.
+End CBN.
 
 Parametricity Recursive sort.
 
 Definition sort_stable := StableSort.Interface sort sort_R sortP.
 
-End NaiveMergesort.
+End CBN.
 
-Canonical NaiveMergesort.sort_stable.
+Canonical CBN.sort_stable.
 
 (******************************************************************************)
-(* [CBN.sort] is a variant of mergesort optimized for the call-by-need        *)
-(* evaluation, which is:                                                      *)
+(* [CBNOpt.sort] is a variant of mergesort, which is:                         *)
 (* - bottom up,                                                               *)
 (* - structurally recursive (as in [path.sort] of MathComp),                  *)
-(* - reusing sorted slices (as in [Data.List.sort] of GHC), and               *)
-(* - not tail recursive.                                                      *)
-(* This algorithm is basically the same as [path.sort] of MathComp except     *)
-(* that it reuses sorted slices. In the call-by-need evaluation, this         *)
-(* algorithm should allow us to take the first few elements of the output     *)
-(* without computing the rest of the output, so that it is O(n) time          *)
-(* complexity. However, the non-tail-recursive merge function linearly        *)
-(* consumes the stack in the call-by-value evaluation.                        *)
+(* - not tail recursive, and                                                  *)
+(* - reusing sorted slices (as in [Data.List.sort] of GHC).                   *)
+(* This algorithm is basically the same as [CBN.sort] except that it reuses   *)
+(* sorted slices. This should improve the time and space complexities when    *)
+(* the input is a concatenation of a few large sorted chunks.                 *)
 (******************************************************************************)
 
-Module CBN.
-Section CBN.
+Module CBNOpt.
+Section CBNOpt.
 
 Variables (T : Type) (leT : rel T).
 
 Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
 
-(*
-Fixpoint merge_sort_push s stack :=
-  match stack with
-  | [::] :: stack' | [::] as stack' => s :: stack'
-  | s' :: stack' => [::] :: merge_sort_push (merge leT s' s) stack'
-  end.
-
-Fixpoint merge_sort_pop s1 stack :=
-  if stack is s2 :: stack' then merge_sort_pop (merge leT s2 s1) stack' else s1.
-*)
+Notation merge_sort_push := (CBN.merge_sort_push leT).
+Notation merge_sort_pop := (CBN.merge_sort_pop leT).
 
 Fixpoint merge_sort_rec (stack : seq (seq T)) x s :=
   let inner_rec := fix inner_rec mode acc x s :=
@@ -255,13 +275,13 @@ Fixpoint merge_sort_rec (stack : seq (seq T)) x s :=
       if eqb (leT x y) mode then
         inner_rec mode (x :: acc) y s
       else
-        let stack := merge_sort_push leT (condrev mode (x :: acc)) stack in
+        let stack := merge_sort_push (condrev mode (x :: acc)) stack in
         merge_sort_rec stack y s
     else
-      merge_sort_pop leT (condrev mode (x :: acc)) stack
+      merge_sort_pop (condrev mode (x :: acc)) stack
   in
   if s is y :: s then
-    inner_rec (leT x y) [:: x] y s else merge_sort_pop leT [:: x] stack.
+    inner_rec (leT x y) [:: x] y s else merge_sort_pop [:: x] stack.
 
 Definition sort s := if s is x :: s then merge_sort_rec [::] x s else [::].
 
@@ -271,8 +291,8 @@ Import StableSort.
 
 Let flatten_stack := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
 
-Let merge_sort_pushP := @NaiveMergesort.merge_sort_pushP T leT.
-Let merge_sort_popP := @NaiveMergesort.merge_sort_popP T leT.
+Let merge_sort_pushP := @CBN.merge_sort_pushP T leT.
+Let merge_sort_popP := @CBN.merge_sort_popP T leT.
 
 Lemma sortP (s : seq T) :
   {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
@@ -298,22 +318,20 @@ case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
 by rewrite /= catA revK => -> ->; apply: IHs.
 Qed.
 
-End CBN.
+End CBNOpt.
 
 Parametricity Recursive sort.
 
 Definition sort_stable := StableSort.Interface sort sort_R sortP.
 
-End CBN.
+End CBNOpt.
 
-Canonical CBN.sort_stable.
+Canonical CBNOpt.sort_stable.
 
 (******************************************************************************)
-(* [CBV.sort] is a variant of mergesort optimized for the call-by-value       *)
-(* evaluation, which is:                                                      *)
+(* [CBV.sort] is a variant of mergesort, which is:                            *)
 (* - bottom up,                                                               *)
-(* - structurally recursive (as in [path.sort] of MathComp),                  *)
-(* - reusing sorted slices (as in [Data.List.sort] of GHC), and               *)
+(* - structurally recursive (as in [path.sort] of MathComp), and              *)
 (* - tail recursive (as in [List.stable_sort] of OCaml).                      *)
 (* This algorithm is similar to above [CBN.sort] except that the merging      *)
 (* function [revmerge] is tail-recursive and puts its result in the reverse   *)
@@ -377,6 +395,110 @@ Fixpoint merge_sort_pop
       merge_sort_pop true (revmerge leT ys xs [::]) stack
   end.
 
+Fixpoint merge_sort_rec ss s :=
+  if s is [:: x1, x2 & s'] then
+    let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
+    merge_sort_rec (merge_sort_push s1 ss) s'
+  else merge_sort_pop false s ss.
+
+Definition sort := merge_sort_rec [::].
+
+(* Proofs *)
+
+Import StableSort.
+
+Let flatten_stack := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
+
+Let Fixpoint sort_stack (mode : bool) (stack : seq (tree leT)) : seq (seq T) :=
+  if stack isn't t :: stack then [::] else
+    condrev mode (sort_tree t) :: sort_stack (~~ mode) stack.
+
+Lemma merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
+  {stack' : seq (tree leT) |
+    flatten_stack (t :: stack) = flatten_stack stack' &
+    merge_sort_push (sort_tree t) (sort_stack false stack)
+    = sort_stack false stack'}.
+Proof.
+move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
+- by exists [:: t].
+- rewrite !revmergeE ifnilE tree_nilp; have [->|_] := nilP.
+    by exists [:: t].
+  by exists [:: empty_tree; branch_tree true t' t]; rewrite //= cats0.
+- rewrite !revmergeE !ifnilE nilp_rev !tree_nilp; have [->|_] := nilP.
+    by exists [:: t, t'' & stack]; rewrite ?cats0.
+  rewrite -!catA; have [->|_] := nilP.
+    by exists [:: empty_tree, branch_tree true t' t & stack]; rewrite /= ?cats0.
+  have [/= {}stack -> ->] :=
+    IHstack (branch_tree false t'' (branch_tree true t' t)) stack.
+  by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
+Qed.
+
+Let nilp_condrev (r : bool) (s : seq T) : nilp (condrev r s) = nilp s.
+Proof. by case: r; rewrite ?nilp_rev. Qed.
+
+Lemma merge_sort_popP (mode : bool) (t : tree leT) (stack : seq (tree leT)) :
+  {t' : tree leT |
+    flatten_stack (t :: stack) = flatten_tree t' &
+    merge_sort_pop mode (condrev mode (sort_tree t)) (sort_stack mode stack)
+    = sort_tree t'}.
+Proof.
+move: mode t stack; fix IHstack 3; move=> mode t [|t' stack] /=.
+  by exists t => //; case: mode; rewrite ?revK.
+rewrite -catA !revmergeE ifnilE nilp_condrev.
+case: tree_nilP => _ _; last first.
+  by case: mode (IHstack (~~ mode) (branch_tree (~~ mode) t' t) stack).
+case: stack => [|t'' stack] /=.
+  by exists t => //; case: mode; rewrite ?revK.
+rewrite !revmergeE !ifnilE !nilp_condrev !negbK revK.
+case: tree_nilP => _ _; first by rewrite cats0; apply: IHstack.
+rewrite -catA.
+by case: mode (IHstack mode (branch_tree mode t'' t) stack); rewrite //= revK.
+Qed.
+
+Lemma sortP (s : seq T) :
+  {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
+Proof.
+rewrite /sort.
+have {1}->: s = flatten_stack [::] ++ s by [].
+have ->: [::] = sort_stack false [::] by [].
+move: [::] s; fix IHs 2 => stack [|x [|y s]] /=.
+- exact: merge_sort_popP (leaf_tree true [::] erefl) _.
+- exact: merge_sort_popP (leaf_tree true [:: x] erefl) _.
+case: (merge_sort_pushP (leaf_tree (leT x y) [:: x; y] _) stack).
+  by rewrite /= eqxx.
+by rewrite (catA _ [:: _; _]) => /= _ {}stack -> ->; apply: IHs.
+Qed.
+
+End CBV.
+
+Parametricity Recursive sort.
+
+Definition sort_stable := StableSort.Interface sort sort_R sortP.
+
+End CBV.
+
+Canonical CBV.sort_stable.
+
+(******************************************************************************)
+(* [CBVOpt.sort] is a variant of mergesort, which is:                         *)
+(* - bottom up,                                                               *)
+(* - structurally recursive (as in [path.sort] of MathComp),                  *)
+(* - tail recursive (as in [List.stable_sort] of OCaml), and                  *)
+(* - reusing sorted slices (as in [Data.List.sort] of GHC).                   *)
+(* This algorithm is equipped with both optimization techniques introduced in *)
+(* [CBNOpt.sort] and [CBV.sort].                                              *)
+(******************************************************************************)
+
+Module CBVOpt.
+Section CBVOpt.
+
+Variables (T : Type) (leT : rel T).
+
+Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
+
+Notation merge_sort_push := (CBV.merge_sort_push leT).
+Notation merge_sort_pop := (CBV.merge_sort_pop leT).
+
 Fixpoint merge_sort_rec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
   let inner_rec := fix inner_rec mode acc x s :=
     if s is y :: s then
@@ -404,47 +526,8 @@ Let Fixpoint sort_stack (mode : bool) (stack : seq (tree leT)) : seq (seq T) :=
   if stack isn't t :: stack then [::] else
     condrev mode (sort_tree t) :: sort_stack (~~ mode) stack.
 
-Let merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
-  {stack' : seq (tree leT) |
-    flatten_stack (t :: stack) = flatten_stack stack' &
-    merge_sort_push (sort_tree t) (sort_stack false stack)
-    = sort_stack false stack'}.
-Proof.
-move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
-- by exists [:: t].
-- rewrite !revmergeE ifnilE tree_nilp; have [->|_] := nilP.
-    by exists [:: t].
-  by exists [:: empty_tree; branch_tree true t' t]; rewrite //= cats0.
-- rewrite !revmergeE !ifnilE nilp_rev !tree_nilp; have [->|_] := nilP.
-    by exists [:: t, t'' & stack]; rewrite ?cats0.
-  rewrite -!catA; have [->|_] := nilP.
-    by exists [:: empty_tree, branch_tree true t' t & stack]; rewrite /= ?cats0.
-  have [/= {}stack -> ->] :=
-    IHstack (branch_tree false t'' (branch_tree true t' t)) stack.
-  by exists [:: empty_tree, empty_tree & stack]; rewrite /= ?cats0.
-Qed.
-
-Let nilp_condrev (r : bool) (s : seq T) : nilp (condrev r s) = nilp s.
-Proof. by case: r; rewrite ?nilp_rev. Qed.
-
-Let merge_sort_popP (mode : bool) (t : tree leT) (stack : seq (tree leT)) :
-  {t' : tree leT |
-    flatten_stack (t :: stack) = flatten_tree t' &
-    merge_sort_pop mode (condrev mode (sort_tree t)) (sort_stack mode stack)
-    = sort_tree t'}.
-Proof.
-move: mode t stack; fix IHstack 3; move=> mode t [|t' stack] /=.
-  by exists t => //; case: mode; rewrite ?revK.
-rewrite -catA !revmergeE ifnilE nilp_condrev.
-case: tree_nilP => _ _; last first.
-  by case: mode (IHstack (~~ mode) (branch_tree (~~ mode) t' t) stack).
-case: stack => [|t'' stack] /=.
-  by exists t => //; case: mode; rewrite ?revK.
-rewrite !revmergeE !ifnilE !nilp_condrev !negbK revK.
-case: tree_nilP => _ _; first by rewrite cats0; apply: IHstack.
-rewrite -catA.
-by case: mode (IHstack mode (branch_tree mode t'' t) stack); rewrite //= revK.
-Qed.
+Let merge_sort_pushP := @CBV.merge_sort_pushP T leT.
+Let merge_sort_popP := @CBV.merge_sort_popP T leT.
 
 Lemma sortP (s : seq T) :
   {t : tree leT | s = flatten_tree t & sort s = sort_tree t}.
@@ -470,15 +553,15 @@ case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
 by rewrite /= catA revK => -> ->; apply: IHs.
 Qed.
 
-End CBV.
+End CBVOpt.
 
 Parametricity Recursive sort.
 
 Definition sort_stable := StableSort.Interface sort sort_R sortP.
 
-End CBV.
+End CBVOpt.
 
-Canonical CBV.sort_stable.
+Canonical CBVOpt.sort_stable.
 
 (******************************************************************************)
 (* Theory of stable sort functions                                            *)

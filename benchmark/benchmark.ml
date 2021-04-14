@@ -44,12 +44,12 @@ for i_ = 0 to i_max - 1 do
       let input = gen_list (seeds.(i_ * j_max + j)) i in
       with_timer_median 5 (fun _ -> test i input) in
     let time1 = benchmark (fun n xs -> List.stable_sort compare xs) in
-    let time2 = benchmark (fun n xs -> Mergesort_ocaml.CBV.sort compare xs) in
-    let time3 = benchmark (fun n xs -> Mergesort_coq.CBV.sort (<=) xs) in
+    let time2 = benchmark (fun n xs -> Mergesort_coq.CBV.sort (<=) xs) in
+    let time3 = benchmark (fun n xs -> Mergesort_coq.CBVOpt.sort (<=) xs) in
     Printf.printf
       "[%9d, %d] List.stable_sort: %10.6fs, \
-                 CBV.sort (OCaml): %10.6fs (%+06.2f%%), \
-                 CBV.sort (Coq): %10.6fs (%+06.2f%%)\n%!"
+                 CBV.sort: %10.6fs (%+06.2f%%), \
+                 CBVOpt.sort: %10.6fs (%+06.2f%%)\n%!"
       i j time1
       time2 ((time2 /. time1 -. 1.) *. 100.)
       time3 ((time3 /. time1 -. 1.) *. 100.)

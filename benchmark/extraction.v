@@ -16,7 +16,9 @@ Extract Inlined Constant eqb => "(Prelude.==)".
 Extract Inductive list => "([])" ["([])" "(:)"].
 
 Extraction "benchmark/MergesortCoqCbn.hs" CBN.sort.
+Extraction "benchmark/MergesortCoqCbnOpt.hs" CBNOpt.sort.
 Extraction "benchmark/MergesortCoqCbv.hs" CBV.sort.
+Extraction "benchmark/MergesortCoqCbvOpt.hs" CBVOpt.sort.
 
 (******************************************************************************)
 
@@ -32,4 +34,5 @@ Extract Inductive list => "list" ["[]" "(::)"].
 Extract Inlined Constant catrev => "List.rev_append".
 Extract Inlined Constant rev => "List.rev".
 
-Extraction "benchmark/mergesort_coq.ml" CBN.sort CBV.sort.
+Extraction "benchmark/mergesort_coq.ml"
+           CBN.sort CBNOpt.sort CBV.sort CBVOpt.sort.
