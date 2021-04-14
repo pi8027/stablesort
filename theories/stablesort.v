@@ -177,26 +177,26 @@ Section CBN.
 
 Variable (T : Type) (leT : rel T).
 
-Fixpoint merge_sort_push s stack :=
+Fixpoint merge_sort_push (s : seq T) (stack : seq (seq T)) : seq (seq T) :=
   match stack with
   | [::] :: stack' | [::] as stack' => s :: stack'
   | s' :: stack' => [::] :: merge_sort_push (merge leT s' s) stack'
   end.
 
-Fixpoint merge_sort_pop s1 stack :=
+Fixpoint merge_sort_pop (s1 : seq T) (stack : seq (seq T)) : seq T :=
   if stack is s2 :: stack' then merge_sort_pop (merge leT s2 s1) stack' else s1.
 
-Fixpoint merge_sort_rec ss s :=
+Fixpoint merge_sort_rec (stack : seq (seq T)) (s : seq T) :=
   if s is [:: x1, x2 & s'] then
     let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
-    merge_sort_rec (merge_sort_push s1 ss) s'
-  else merge_sort_pop s ss.
+    merge_sort_rec (merge_sort_push s1 stack) s'
+  else merge_sort_pop s stack.
 
-Definition sort := merge_sort_rec [::].
+Definition sort : seq T -> seq T := merge_sort_rec [::].
 
-Fixpoint sort_rec1 ss s :=
-  if s is x :: s then sort_rec1 (merge_sort_push [:: x] ss) s else
-  merge_sort_pop [::] ss.
+Fixpoint sort_rec1 (stack : seq (seq T)) (s : seq T) :=
+  if s is x :: s then sort_rec1 (merge_sort_push [:: x] stack) s else
+  merge_sort_pop [::] stack.
 
 Lemma sortE s : sort s = sort_rec1 [::] s. Proof. exact: sortE. Qed.
 
@@ -269,7 +269,7 @@ Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
 Notation merge_sort_push := (CBN.merge_sort_push leT).
 Notation merge_sort_pop := (CBN.merge_sort_pop leT).
 
-Fixpoint merge_sort_rec (stack : seq (seq T)) x s :=
+Fixpoint merge_sort_rec (stack : seq (seq T)) (x : T) (s : seq T) :=
   let inner_rec := fix inner_rec mode acc x s :=
     if s is y :: s then
       if eqb (leT x y) mode then
@@ -346,15 +346,14 @@ Canonical CBNOpt.sort_stable.
 Module CBV.
 Section CBV.
 
-Fixpoint revmerge T (leT : rel T) (xs ys acc : seq T) : seq T :=
-  if xs is x :: xs'
-  then (fix revmerge' (ys acc : seq T) :=
-          if ys is y :: ys'
-          then if leT x y then
-                 revmerge leT xs' ys (x :: acc)
-               else
-                 revmerge' ys' (y :: acc)
-          else catrev xs acc) ys acc
+Fixpoint revmerge (T : Type) (leT : rel T) (xs ys acc : seq T) : seq T :=
+  if xs is x :: xs' then
+    (fix revmerge' (ys acc : seq T) :=
+       if ys is y :: ys' then
+         if leT x y then
+           revmerge leT xs' ys (x :: acc) else revmerge' ys' (y :: acc)
+       else
+         catrev xs acc) ys acc
   else catrev ys acc.
 
 Let revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :

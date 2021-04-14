@@ -96,8 +96,7 @@ pred benchmark-case
 benchmark-case RedStr Red Config Size TS MS :- std.do! [
   coq.env.begin-section "Sec",
   random-N-list Size Size Input,
-  ID is "input_" ^ { std.any->string {new_int} },
-  @local! => coq.env.add-const ID Input {{ list N }} @transparent! C,
+  @local! => coq.env.add-const "input" Input {{ list N }} @transparent! C,
   std.map Config
     (c\ r\ sigma Name Func Comp CompTy Time Words Mem TStr MStr\ std.do! [
       c = pr Name Func,
