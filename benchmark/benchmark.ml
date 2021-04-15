@@ -16,43 +16,49 @@ let median (xs : float list) : float =
 ;;
 
 let with_timer_median n f =
-  let (time1, r) = with_timer f in
-  let time_list = ref [time1] in
-  for i = 1 to n - 1 do
+  let time_list = ref [] in
+  for i = 1 to n do
     let (time, _) = with_timer f in time_list := time :: !time_list
   done;
   median !time_list
 ;;
 
-let gen_list s elems =
-  let rec glrec n acc =
-    if n = 0 then
-      List.rev acc
-    else
-      let x = Random.int elems in glrec (n - 1) (x :: acc)
-  in
-  Random.init s; glrec elems []
+let gen_list seed elems =
+  Random.init seed; List.init elems (fun _ -> Random.int elems)
 ;;
 
-let i_max = 100 in
-let j_max = 1 in
-let seeds = Array.init (i_max * j_max) (fun _ -> Random.bits ()) in
-for i_ = 0 to i_max - 1 do
-  let i = (i_ + 1) * 1000000 in
-  for j = 0 to j_max - 1 do
-    let benchmark (test : int -> int list -> int list) =
-      let input = gen_list (seeds.(i_ * j_max + j)) i in
-      with_timer_median 5 (fun _ -> test i input) in
-    let time1 = benchmark (fun n xs -> List.stable_sort compare xs) in
-    let time2 = benchmark (fun n xs -> Mergesort_coq.CBV.sort (<=) xs) in
-    let time3 = benchmark (fun n xs -> Mergesort_coq.CBVOpt.sort (<=) xs) in
-    Printf.printf
-      "[%9d, %d] List.stable_sort: %10.6fs, \
-                 CBV.sort: %10.6fs (%+06.2f%%), \
-                 CBVOpt.sort: %10.6fs (%+06.2f%%)\n%!"
-      i j time1
-      time2 ((time2 /. time1 -. 1.) *. 100.)
-      time3 ((time3 /. time1 -. 1.) *. 100.)
-  done
-done
+let benchmark
+    (size : int list) (config : (string * (int list -> int list)) list) =
+  let res = ref (List.map (fun _ -> []) config) in
+  List.iter (fun (seed, size) ->
+      let input = gen_list seed size in
+      let r =
+        List.map (fun (name, sort) ->
+            (name, with_timer_median 5 (fun _ -> sort input))) config
+      in
+      begin match r with
+        | (name1, time1) :: r ->
+          Printf.printf "[%9d] %s: %10.6fs" size name1 time1;
+          List.iter (fun (name', time') ->
+              Printf.printf ", %s: %10.6fs (%+07.2f%%)"
+                name' time' ((time' /. time1 -. 1.) *. 100.)
+            ) r;
+          Printf.printf "\n%!"
+        | [] -> raise (Invalid_argument "config should not be empty")
+      end;
+      res := List.map2 (fun (_, t) ts -> (size, t) :: ts) r !res
+    ) (List.map (fun s -> (Random.bits (), s)) size);
+  List.iter (fun res ->
+      Printf.printf "\\addplot coordinates {";
+      List.iter (fun (size, time) -> Printf.printf "(%d, %f) " size time) res;
+      Printf.printf "};\n";
+    ) !res
+;;
+
+benchmark (List.init 100 (fun i -> 10000 * (i + 1)))
+  [("List.stable.sort", List.stable_sort (compare : int -> int -> int));
+   ("CBN.sort", Mergesort_coq.CBN.sort ((<=) : int -> int -> bool));
+   ("CBNOpt.sort", Mergesort_coq.CBNOpt.sort ((<=) : int -> int -> bool));
+   ("CBV.sort", Mergesort_coq.CBV.sort ((<=) : int -> int -> bool));
+   ("CBVOpt.sort", Mergesort_coq.CBVOpt.sort ((<=) : int -> int -> bool))]
 ;;
