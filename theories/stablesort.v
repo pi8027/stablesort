@@ -160,6 +160,138 @@ End Insertion.
 Canonical Insertion.sort_stable.
 
 (******************************************************************************)
+(* Merge functions                                                            *)
+(******************************************************************************)
+
+Module Merge.
+
+Fixpoint merge (T : Type) (leT : rel T) (xs ys : seq T) :=
+  if xs is x :: xs' then
+    (fix merge' ys :=
+       if ys is y :: ys' then
+         if leT x y then x :: merge leT xs' ys else y :: merge' ys'
+       else xs) ys
+  else ys.
+
+Lemma mergeE (T : Type) (leT : rel T) : merge leT =2 path.merge leT.
+Proof. by elim=> // x xs IHxs; elim=> //= y ys IHys; rewrite IHxs IHys. Qed.
+
+Fixpoint revmerge (T : Type) (leT : rel T) (xs ys accu : seq T) : seq T :=
+  if xs is x :: xs' then
+    (fix revmerge' (ys accu : seq T) :=
+       if ys is y :: ys' then
+         if leT x y then
+           revmerge leT xs' ys (x :: accu) else revmerge' ys' (y :: accu)
+       else
+         catrev xs accu) ys accu
+  else catrev ys accu.
+
+Lemma revmergeE (T : Type) (leT : rel T) (xs ys : seq T) :
+  revmerge leT xs ys [::] = rev (path.merge leT xs ys).
+Proof.
+rewrite -[RHS]cats0.
+elim: xs ys [::] => [|x xs IHxs]; elim=> [|y ys IHys] accu //=;
+  try by rewrite catrevE rev_cons cat_rcons.
+by case: ifP => _; rewrite rev_cons cat_rcons.
+Qed.
+
+Definition mergeord {T : Type} (p1 p2 : seq T * seq T) : Prop :=
+  if p2 is (x :: xs, y :: ys) then
+    (xs, y :: ys) = p1 \/ (x :: xs, ys) = p1 else False.
+
+Fixpoint wf_mergeord (T : Type) (xs ys : seq T) : Acc mergeord (xs, ys) :=
+  if xs is x :: xs' then
+    (fix wf_mergeord' (ys : seq T) : Acc mergeord (x :: xs', ys) :=
+       if ys is y :: ys' then
+         Acc_intro
+           (x :: xs', y :: ys')
+           (fun _ H =>
+              match H with
+                | or_introl H0 =>
+                  let: erefl in (_ = y1) := H0 return Acc mergeord y1 in
+                  wf_mergeord xs' (y :: ys')
+                | or_intror H0 =>
+                  let: erefl in (_ = y1) := H0 return Acc mergeord y1 in
+                  wf_mergeord' ys'
+              end)
+       else
+         Acc_intro (x :: xs', [::]) (fun _ => False_ind _)) ys
+  else
+    Acc_intro ([::], ys) (fun _ => False_ind _).
+
+Fixpoint merge_acc_ (T : Type) (leT : rel T)
+                    (xs ys : seq T) (fuel : Acc mergeord (xs, ys)) :=
+  match fuel, xs, ys return xs = _ -> ys = _ -> _ with
+    | _, [::], ys => fun _ _ => ys
+    | _, xs, [::] => fun _ _ => xs
+    | Acc_intro fuel, x :: xs', y :: ys' =>
+      fun (xsE : x :: xs' = xs) (ysE : y :: ys' = ys) =>
+      if leT x y then
+        x :: @merge_acc_ T leT xs' ys
+          (fuel _ match xsE in _ = xs0, ysE in _ = ys0
+                        return mergeord (xs', ys0) (xs0, ys0) with
+                    erefl, erefl => or_introl erefl
+                  end)
+      else
+        y :: @merge_acc_ T leT xs ys'
+          (fuel _ match xsE in _ = xs0, ysE in _ = ys0
+                        return mergeord (xs0, ys') (xs0, ys0) with
+                    erefl, erefl => or_intror erefl
+                  end)
+  end erefl erefl.
+
+Definition merge_acc (T : Type) (leT : rel T) (xs ys : seq T) :=
+  @merge_acc_ T leT xs ys (wf_mergeord xs ys).
+
+Lemma merge_accE (T : Type) (leT : rel T) (xs ys : seq T) :
+  merge_acc leT xs ys = path.merge leT xs ys.
+Proof.
+rewrite /merge_acc; move: xs ys (wf_mergeord xs ys).
+elim=> [|x xs IHxs]; elim=> [|y ys IHys] [acc] //=.
+by case: ifP; rewrite (IHxs, IHys).
+Qed.
+
+Fixpoint revmerge_acc_ (T : Type) (leT : rel T)
+                       (xs ys accu : seq T) (fuel : Acc mergeord (xs, ys)) :=
+  match fuel, xs, ys return xs = _ -> ys = _ -> _ with
+    | _, [::], ys => fun _ _ => catrev ys accu
+    | _, xs, [::] => fun _ _ => catrev xs accu
+    | Acc_intro fuel, x :: xs', y :: ys' =>
+      fun (xsE : x :: xs' = xs) (ysE : y :: ys' = ys) =>
+      if leT x y then
+        @revmerge_acc_ T leT xs' ys (x :: accu)
+          (fuel _ match xsE in _ = xs0, ysE in _ = ys0
+                        return mergeord (xs', ys0) (xs0, ys0) with
+                    erefl, erefl => or_introl erefl
+                  end)
+      else
+        @revmerge_acc_ T leT xs ys' (y :: accu)
+          (fuel _ match xsE in _ = xs0, ysE in _ = ys0
+                        return mergeord (xs0, ys') (xs0, ys0) with
+                    erefl, erefl => or_intror erefl
+                  end)
+  end erefl erefl.
+
+Definition revmerge_acc (T : Type) (leT : rel T) (xs ys : seq T) :=
+  @revmerge_acc_ T leT xs ys [::] (wf_mergeord xs ys).
+
+Lemma revmerge_accE (T : Type) (leT : rel T) (xs ys : seq T) :
+  revmerge_acc leT xs ys = rev (path.merge leT xs ys).
+Proof.
+rewrite /revmerge_acc -[RHS]cats0; move: xs ys [::] (wf_mergeord xs ys).
+elim=> [|x xs IHxs]; elim=> [|y ys IHys] accu [acc] //=;
+  try by rewrite catrevE rev_cons cat_rcons.
+by case: ifP => _; rewrite rev_cons cat_rcons.
+Qed.
+
+Parametricity Recursive merge.
+Parametricity Recursive revmerge.
+Parametricity Recursive merge_acc.
+Parametricity Recursive revmerge_acc.
+
+End Merge.
+
+(******************************************************************************)
 (* [CBN.sort] is a variant of mergesort, which is:                            *)
 (* - bottom up,                                                               *)
 (* - structurally recursive, and                                              *)
@@ -174,6 +306,8 @@ Canonical Insertion.sort_stable.
 
 Module CBN.
 Section CBN.
+
+Import Merge.
 
 Variable (T : Type) (leT : rel T).
 
@@ -198,7 +332,14 @@ Fixpoint sort_rec1 (stack : seq (seq T)) (s : seq T) :=
   if s is x :: s then sort_rec1 (merge_sort_push [:: x] stack) s else
   merge_sort_pop [::] stack.
 
-Lemma sortE s : sort s = sort_rec1 [::] s. Proof. exact: sortE. Qed.
+Lemma sortE s : sort s = sort_rec1 [::] s.
+Proof.
+transitivity (sort_rec1 [:: nil] s); last by case: s.
+rewrite /sort; move: [::] {2}_.+1 (ltnSn (size s)./2) => ss n.
+by elim: n => // n IHn in ss s *; case: s => [|x [|y s]] //= /IHn->.
+Qed.
+
+(* Proofs *)
 
 Import StableSort.
 
@@ -211,7 +352,7 @@ Lemma merge_sort_pushP (t : tree leT) (stack : seq (tree leT)) :
     map sort_tree stack'}.
 Proof.
 elim: stack t => [|t' stack IHstack] t /=; first by exists [:: t].
-rewrite ifnilE -catA; case: tree_nilP => _ _.
+rewrite mergeE ifnilE -catA; case: tree_nilP => _ _.
   by exists (t :: stack); rewrite //= cats0.
 have [/= {IHstack}stack -> ->] := IHstack (branch_tree true t' t).
 by exists (empty_tree :: stack); rewrite //= cats0.
@@ -223,7 +364,7 @@ Lemma merge_sort_popP (t : tree leT) (stack : seq (tree leT)) :
     merge_sort_pop (sort_tree t) (map sort_tree stack) = sort_tree t'}.
 Proof.
 elim: stack t => [|t' stack IHstack] t; first by exists t; rewrite //= cats0.
-rewrite /= -catA.
+rewrite /= mergeE -catA.
 by have [/= t'' -> ->] := IHstack (branch_tree true t' t); exists t''.
 Qed.
 
@@ -249,6 +390,40 @@ End CBN.
 Canonical CBN.sort_stable.
 
 (******************************************************************************)
+
+Module CBNAcc.
+Section CBNAcc.
+
+Import Merge.
+
+Variable (T : Type) (leT : rel T).
+
+Fixpoint merge_sort_push (s : seq T) (stack : seq (seq T)) : seq (seq T) :=
+  match stack with
+  | [::] :: stack' | [::] as stack' => s :: stack'
+  | s' :: stack' => [::] :: merge_sort_push (merge_acc leT s' s) stack'
+  end.
+
+Fixpoint merge_sort_pop (s1 : seq T) (stack : seq (seq T)) : seq T :=
+  if stack is s2 :: stack' then
+    merge_sort_pop (merge_acc leT s2 s1) stack'
+  else s1.
+
+Fixpoint merge_sort_rec (stack : seq (seq T)) (s : seq T) :=
+  if s is [:: x1, x2 & s'] then
+    let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
+    merge_sort_rec (merge_sort_push s1 stack) s'
+  else merge_sort_pop s stack.
+
+Definition sort : seq T -> seq T := merge_sort_rec [::].
+
+End CBNAcc.
+
+Parametricity Recursive sort.
+
+End CBNAcc.
+
+(******************************************************************************)
 (* [CBNOpt.sort] is a variant of mergesort, which is:                         *)
 (* - bottom up,                                                               *)
 (* - structurally recursive (as in [path.sort] of MathComp),                  *)
@@ -261,6 +436,8 @@ Canonical CBN.sort_stable.
 
 Module CBNOpt.
 Section CBNOpt.
+
+Import Merge.
 
 Variables (T : Type) (leT : rel T).
 
@@ -346,28 +523,9 @@ Canonical CBNOpt.sort_stable.
 Module CBV.
 Section CBV.
 
-Fixpoint revmerge (T : Type) (leT : rel T) (xs ys acc : seq T) : seq T :=
-  if xs is x :: xs' then
-    (fix revmerge' (ys acc : seq T) :=
-       if ys is y :: ys' then
-         if leT x y then
-           revmerge leT xs' ys (x :: acc) else revmerge' ys' (y :: acc)
-       else
-         catrev xs acc) ys acc
-  else catrev ys acc.
-
-Let revmergeE (T : Type) (leT : rel T) (s1 s2 : seq T) :
-  revmerge leT s1 s2 [::] = rev (merge leT s1 s2).
-Proof.
-rewrite -[RHS]cats0.
-elim: s1 s2 [::] => [|x s1 IHs1]; elim=> [|y s2 IHs2] s3 //=;
-  try by rewrite catrevE rev_cons cat_rcons.
-by case: ifP => //= _; rewrite ?(IHs1, IHs2) rev_cons cat_rcons.
-Qed.
+Import Merge.
 
 Variables (T : Type) (leT : rel T).
-
-Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
 
 Fixpoint merge_sort_push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
   match stack with
@@ -405,6 +563,8 @@ Definition sort := merge_sort_rec [::].
 (* Proofs *)
 
 Import StableSort.
+
+Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
 
 Let flatten_stack := foldr (fun x => cat^~ (@flatten_tree _ leT x)) nil.
 
@@ -479,6 +639,53 @@ End CBV.
 Canonical CBV.sort_stable.
 
 (******************************************************************************)
+
+Module CBVAcc.
+Section CBVAcc.
+
+Import Merge.
+
+Variables (T : Type) (leT : rel T).
+
+Fixpoint merge_sort_push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
+  match stack with
+    | [::] :: stack' | [::] as stack' => xs :: stack'
+    | ys :: [::] :: stack | ys :: ([::] as stack) =>
+      [::] :: revmerge_acc leT ys xs :: stack
+    | ys :: zs :: stack =>
+      [::] :: [::] ::
+           merge_sort_push
+           (revmerge_acc (fun x y => leT y x) (revmerge_acc leT ys xs) zs) stack
+  end.
+
+Fixpoint merge_sort_pop
+         (mode : bool) (xs : seq T) (stack : seq (seq T)) : seq T :=
+  match stack, mode with
+    | [::], true => rev xs
+    | [::], false => xs
+    | [::] :: [::] :: stack, _ => merge_sort_pop mode xs stack
+    | [::] :: stack, _ => merge_sort_pop (~~ mode) (rev xs) stack
+    | ys :: stack, true =>
+      merge_sort_pop false (revmerge_acc (fun x y => leT y x) xs ys) stack
+    | ys :: stack, false =>
+      merge_sort_pop true (revmerge_acc leT ys xs) stack
+  end.
+
+Fixpoint merge_sort_rec ss s :=
+  if s is [:: x1, x2 & s'] then
+    let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
+    merge_sort_rec (merge_sort_push s1 ss) s'
+  else merge_sort_pop false s ss.
+
+Definition sort := merge_sort_rec [::].
+
+End CBVAcc.
+
+Parametricity Recursive sort.
+
+End CBVAcc.
+
+(******************************************************************************)
 (* [CBVOpt.sort] is a variant of mergesort, which is:                         *)
 (* - bottom up,                                                               *)
 (* - structurally recursive (as in [path.sort] of MathComp),                  *)
@@ -490,6 +697,8 @@ Canonical CBV.sort_stable.
 
 Module CBVOpt.
 Section CBVOpt.
+
+Import Merge.
 
 Variables (T : Type) (leT : rel T).
 
@@ -841,7 +1050,7 @@ Lemma eq_sort_insert : sort _ leT =1 Insertion.sort leT.
 Proof. exact: eq_sort. Qed.
 
 Lemma sort_cat (s1 s2 : seq T) :
-  sort _ leT (s1 ++ s2) = merge leT (sort _ leT s1) (sort _ leT s2).
+  sort _ leT (s1 ++ s2) = path.merge leT (sort _ leT s1) (sort _ leT s2).
 Proof. by rewrite !eq_sort_insert; elim: s1 => //= x s1 ->; rewrite mergeA. Qed.
 
 Lemma mask_sort (s : seq T) (m : bitseq) :
