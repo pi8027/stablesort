@@ -1,3 +1,4 @@
 -R theories stablesort
+-Q benchmark benchmark
 
 -arg -w -arg -notation-overridden

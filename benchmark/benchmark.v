@@ -9,43 +9,35 @@ Elpi Accumulate lp:{{
 kind triple type -> type -> type -> type.
 type triple A -> B -> C -> triple A B C.
 
-% [positive-constant N T] states that [T] is a Coq term of type [positive]
-% corresponding to [N].
-pred positive-constant o:int, o:term.
-positive-constant N _ :- N < 1, !, fail.
-positive-constant 1 {{ lib:num.pos.xH }} :- !.
-positive-constant N {{ lib:num.pos.xO lp:T }} :-
-  0 is N mod 2, !, positive-constant {calc (N div 2)} T.
-positive-constant N {{ lib:num.pos.xI lp:T }} :-
-  1 is N mod 2, !, positive-constant {calc (N div 2)} T.
+% [eucldiv N D M R] N = D * M + R
+pred eucldiv o:int, i:int, o:int, i:int.
+eucldiv N D M R :- var N, var M, !, declare_constraint (eucldiv N D M R) [N, M].
+eucldiv N D M R :- var N, N is D * M + R.
+eucldiv N D M R :- var M, M is N div D, R is N mod D.
 
-% [n-constant N T] states that [T] is a Coq term of type [BinNums.N]
-% corresponding to [N].
+pred positive-constant o:int, o:term.
+positive-constant 1 {{ lib:num.pos.xH }}.
+positive-constant N {{ lib:num.pos.xO lp:T }} :-
+  eucldiv N 2 M 0, positive-constant M T.
+positive-constant N {{ lib:num.pos.xI lp:T }} :-
+  eucldiv N 2 M 1, positive-constant M T.
+
 pred n-constant o:int, o:term.
-n-constant N _ :- N < 0, !, fail.
+n-constant N _ :- not (var N), N < 0, !, fail.
 n-constant 0 {{ lib:num.N.N0 }} :- !.
-n-constant N {{ lib:num.N.Npos lp:T }} :- !, positive-constant {calc N} T.
+n-constant N {{ lib:num.N.Npos lp:T }} :- !, positive-constant N T.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-pred random-N-inner-list i:int, i:int, o:term.
-random-N-inner-list 0 _ {{ @nil N }} :- !.
-random-N-inner-list N Bound {{ @cons N lp:H lp:T }} :- std.do! [
-  n-constant {random.int Bound} H,
-  random-N-inner-list {calc (N - 1)} Bound T
-].
-
-pred random-N-list-rec i:int, i:int, o:term.
-random-N-list-rec N _ _ :- N < 0, !, fail.
-random-N-list-rec N Bound Out :- N =< 10000, !, random-N-inner-list N Bound Out.
-random-N-list-rec N Bound {{ @cat N lp:Out1 lp:Out2 }} :- !,
-  random-N-inner-list 10000 Bound Out1, !,
-  random-N-list-rec {calc (N - 10000)} Bound Out2.
 
 % [random-N-list N Bound NS] unifies [NS] with a list of size [N] consists of
 % random values of type [BinNums.N] between [0] and [Bound - 1].
 pred random-N-list i:int, i:int, o:term.
-random-N-list N Bound Out :- !, random-N-list-rec N Bound Out.
+random-N-list N _ _ :- N < 0, !, fail.
+random-N-list 0 _ {{ @nil N }} :- !.
+random-N-list N Bound {{ @cons N lp:H lp:T }} :- std.do! [
+  n-constant {random.int Bound} H,
+  random-N-list {calc (N - 1)} Bound T
+].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,13 +88,17 @@ pred benchmark-case
 benchmark-case RedStr Red Config Size TS MS :- std.do! [
   coq.env.begin-section "Sec",
   random-N-list Size Size Input,
-  @local! => coq.env.add-const "input" Input {{ list N }} @transparent! C,
+  if (RedStr = "native_compute")
+     (Cname is "input" ^ {std.any->string {new_int} },
+      @global! => coq.env.add-const Cname Input {{ list N }} @transparent! C,
+      Red (global (const C)) _ _)
+     (@local! => coq.env.add-const "input" Input {{ list N }} @transparent! C),
   std.map Config
     (c\ r\ sigma Name Func Comp CompTy Time Words Mem TStr MStr\ std.do! [
       c = pr Name Func,
       Comp = {{ lp:Func lp:{{ global (const C) }} }},
       std.assert-ok! (coq.typecheck Comp CompTy) "bad term",
-      time-median 5 (Red Comp CompTy _) Time Words,
+      time-median 3 (Red Comp CompTy _) Time Words,
       std.any->string Time TStr,
       Mem is Words / (128.0 * 1024.0), % memory consumption in MBs
       std.any->string Mem MStr,
@@ -127,19 +123,26 @@ benchmark-case RedStr Red Config Size TS MS :- std.do! [
 ].
 
 pred benchmark
-  i:string, i:(term -> term -> term -> prop),
-  i:list (pair string term), i:int, i:int, i:int,
+  i:string, i:(term -> term -> term -> prop), i:list (pair string term), i:term,
   o:list (list string), o:list (list string).
-benchmark _ _ Config 0 _ _ SS SS :- !,
+benchmark RedStr Red Config Size TSS MSS :-
+  benchmark_aux RedStr Red Config {coq.reduction.lazy.whd_all Size} TSS MSS.
+
+pred benchmark_aux
+  i:string, i:(term -> term -> term -> prop), i:list (pair string term), i:term,
+  o:list (list string), o:list (list string).
+benchmark_aux _ _ Config {{ @nil _ }} SS SS :- !,
   std.map Config (_\ r\ r = []) SS.
-benchmark RedStr Red Config Repeat Incr CurrentSize TSS' MSS' :- std.do! [
-  0 < Repeat,
-  NextSize is CurrentSize + Incr,
-  benchmark-case RedStr Red Config NextSize TS MS,
-  benchmark RedStr Red Config {calc (Repeat - 1)} Incr NextSize TSS MSS,
-  std.map2 TS TSS (t\ ts\ ts'\ ts' = [t|ts]) TSS',
-  std.map2 MS MSS (m\ ms\ ms'\ ms' = [m|ms]) MSS'
-].
+benchmark_aux RedStr Red Config {{ @cons _ lp:SizeH lp:Size }} TSS' MSS' :-
+  std.do! [
+    n-constant SizeH' {coq.reduction.cbv.norm SizeH},
+    benchmark-case RedStr Red Config SizeH' TS MS,
+    benchmark RedStr Red Config Size TSS MSS,
+    std.map2 TS TSS (t\ ts\ ts'\ ts' = [t|ts]) TSS',
+    std.map2 MS MSS (m\ ms\ ms'\ ms' = [m|ms]) MSS'
+  ].
+benchmark_aux _ _ _ _ _ _ :-
+  coq.error "benchmark_aux: the head symbol of Size is not a constructor".
 
 pred get-reduction-machine i:string, o:(term -> term -> term -> prop).
 get-reduction-machine "lazy" Red :- !,
@@ -156,20 +159,18 @@ parse-config [str Name, trm Func | ConfList] [pr Name Func | Conf] :- !,
   parse-config ConfList Conf.
 parse-config _ _ :- coq.error "ill-formed arguments".
 
-main [str TimeFile, str MemFile, str RedStr, int Repeat, int Incr |
-      ConfList] :- std.do! [
-  0 < Repeat,
-  0 < Incr,
+main [str FileName, str RedStr, trm Size | ConfList] :- std.do! [
+  std.assert-ok! (coq.typecheck Size {{ seq N }}) "bad term",
   parse-config ConfList Config,
   % enlarge the minor heap to 4GB
   gc.get Minor _ _ _ _ _ _ _,
   gc.set {calc (512 * 1024 * 1024)} _ _ _ _ _ _ _,
   % benchmark
-  benchmark RedStr {get-reduction-machine RedStr} Config Repeat Incr 0 TSS MSS,
+  benchmark RedStr {get-reduction-machine RedStr} Config Size TSS MSS,
   % restore the initial size of the minor heap
   gc.set Minor _ _ _ _ _ _ _,
   % pgfplot
-  open_out TimeFile TStream,
+  open_out {calc (FileName ^ ".time.out")} TStream,
   output TStream "% time consumption\n",
   std.forall TSS (ts\ sigma Str\
     output TStream "\\addplot coordinates {",
@@ -181,7 +182,7 @@ main [str TimeFile, str MemFile, str RedStr, int Repeat, int Incr |
     {std.string.concat ", " {std.map Config (c\ n\ sigma T\ c = pr n T)} },
   output TStream "}\n",
   close_out TStream,
-  open_out MemFile MStream,
+  open_out {calc (FileName ^ ".mem.out")} MStream,
   output MStream "% memory consumption\n",
   std.forall MSS (ms\ sigma Str\
     output MStream "\\addplot coordinates {",
@@ -199,50 +200,13 @@ main _ :- !, coq.error "ill-formed arguments".
 }}.
 Elpi Typecheck.
 
-Definition CBN_sort_lazy_bench xs :=
-  sorted N.leb (take 10 (CBN.sort N.leb xs)).
-Definition CBNOpt_sort_lazy_bench xs :=
-  sorted N.leb (take 10 (CBNOpt.sort N.leb xs)).
-Definition CBV_sort_lazy_bench xs :=
-  sorted N.leb (take 10 (CBV.sort N.leb xs)).
-Definition CBVOpt_sort_lazy_bench xs :=
-  sorted N.leb (take 10 (CBVOpt.sort N.leb xs)).
-Definition CBN_sort_bench xs    := sorted N.leb (CBN.sort N.leb xs).
-Definition CBNOpt_sort_bench xs := sorted N.leb (CBNOpt.sort N.leb xs).
-Definition CBV_sort_bench xs    := sorted N.leb (CBV.sort N.leb xs).
-Definition CBVOpt_sort_bench xs := sorted N.leb (CBVOpt.sort N.leb xs).
+Definition N_iota (n m : N) : seq N :=
+  N.iter m (fun f n => n :: f (N.succ n)) (fun => [::]) n.
 
-Elpi sort_benchmark
-  "lazy1.time.out" "lazy1.mem.out" "lazy" 50 100
-  "CBN.sort"     (CBN_sort_lazy_bench)
-  "CBNOpt.sort"  (CBNOpt_sort_lazy_bench)
-  "CBV.sort"     (CBV_sort_lazy_bench)
-  "CBVOpt.sort"  (CBVOpt_sort_lazy_bench).
+Definition lazy_bench
+  (sort : forall T : Type, rel T -> seq T -> seq T) (xs : seq N) :=
+  sorted N.leb (take 10 (sort _ N.leb xs)).
 
-Elpi sort_benchmark
-  "lazy2.time.out" "lazy2.mem.out" "lazy" 50 100
-  "CBN.sort"     (CBN_sort_bench)
-  "CBNOpt.sort"  (CBNOpt_sort_bench)
-  "CBV.sort"     (CBV_sort_bench)
-  "CBVOpt.sort"  (CBVOpt_sort_bench).
-
-Elpi sort_benchmark
-  "compute.time.out" "compute.mem.out" "compute" 50 100
-  "CBN.sort"     (CBN_sort_bench)
-  "CBNOpt.sort"  (CBNOpt_sort_bench)
-  "CBV.sort"     (CBV_sort_bench)
-  "CBVOpt.sort"  (CBVOpt_sort_bench).
-
-Elpi sort_benchmark
-  "vm.time.out" "vm.mem.out" "vm_compute" 50 1000
-  "CBN.sort"     (CBN_sort_bench)
-  "CBNOpt.sort"  (CBNOpt_sort_bench)
-  "CBV.sort"     (CBV_sort_bench)
-  "CBVOpt.sort"  (CBVOpt_sort_bench).
-
-Elpi sort_benchmark
-  "native.time.out" "native.mem.out" "native_compute" 50 1000
-  "CBN.sort"     (CBN_sort_bench)
-  "CBNOpt.sort"  (CBNOpt_sort_bench)
-  "CBV.sort"     (CBV_sort_bench)
-  "CBVOpt.sort"  (CBVOpt_sort_bench).
+Definition eager_bench
+  (sort : forall T : Type, rel T -> seq T -> seq T) (xs : seq N) :=
+  sorted N.leb (sort _ N.leb xs).

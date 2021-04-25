@@ -7,9 +7,9 @@ import System.Random
 import qualified System.Mem
 import qualified GHC.Stats
 import qualified MergesortCoqCbn
-import qualified MergesortCoqCbnOpt
+import qualified MergesortCoqCbnAcc
 import qualified MergesortCoqCbv
-import qualified MergesortCoqCbvOpt
+import qualified MergesortCoqCbvAcc
 
 time :: IO a -> IO Double
 time act = do
@@ -65,16 +65,40 @@ main =do
   statsEnabled <- GHC.Stats.getRTSStatsEnabled
   unless statsEnabled (error "+RTS -T required.")
   benchmark
-    (map (10000 *) [1..50])
-    [("Data.List.sort", \xs -> sorted (take 1000 (Data.List.sort xs)) `seq` return ()),
-     ("CBN.sort", \xs -> sorted (take 1000 (MergesortCoqCbn.sort (<=) xs)) `seq` return ()),
-     ("CBNOpt.sort", \xs -> sorted (take 1000 (MergesortCoqCbnOpt.sort (<=) xs)) `seq` return ()),
-     ("CBV.sort", \xs -> sorted (take 1000 (MergesortCoqCbv.sort (<=) xs)) `seq` return ()),
-     ("CBVOpt.sort", \xs -> sorted (take 1000 (MergesortCoqCbvOpt.sort (<=) xs)) `seq` return ())]
+    (map (10000 *) [1..80])
+    [("Data.List.sort", \xs -> sorted (take 1000 (Data.List.sort xs))                `seq` return ()),
+     ("CBN.sort1",      \xs -> sorted (take 1000 (MergesortCoqCbn.sort1    (<=) xs)) `seq` return ()),
+     ("CBN.sort2",      \xs -> sorted (take 1000 (MergesortCoqCbn.sort2    (<=) xs)) `seq` return ()),
+     ("CBN.sort3",      \xs -> sorted (take 1000 (MergesortCoqCbn.sort3    (<=) xs)) `seq` return ()),
+     ("CBN.sortN",      \xs -> sorted (take 1000 (MergesortCoqCbn.sortN    (<=) xs)) `seq` return ()),
+     ("CBNAcc.sort1",   \xs -> sorted (take 1000 (MergesortCoqCbnAcc.sort1 (<=) xs)) `seq` return ()),
+     ("CBNAcc.sort2",   \xs -> sorted (take 1000 (MergesortCoqCbnAcc.sort2 (<=) xs)) `seq` return ()),
+     ("CBNAcc.sort3",   \xs -> sorted (take 1000 (MergesortCoqCbnAcc.sort3 (<=) xs)) `seq` return ()),
+     ("CBNAcc.sortN",   \xs -> sorted (take 1000 (MergesortCoqCbnAcc.sortN (<=) xs)) `seq` return ()),
+     ("CBV.sort1",      \xs -> sorted (take 1000 (MergesortCoqCbv.sort1    (<=) xs)) `seq` return ()),
+     ("CBV.sort2",      \xs -> sorted (take 1000 (MergesortCoqCbv.sort2    (<=) xs)) `seq` return ()),
+     ("CBV.sort3",      \xs -> sorted (take 1000 (MergesortCoqCbv.sort3    (<=) xs)) `seq` return ()),
+     ("CBV.sortN",      \xs -> sorted (take 1000 (MergesortCoqCbv.sortN    (<=) xs)) `seq` return ()),
+     ("CBVAcc.sort1",   \xs -> sorted (take 1000 (MergesortCoqCbvAcc.sort1 (<=) xs)) `seq` return ()),
+     ("CBVAcc.sort2",   \xs -> sorted (take 1000 (MergesortCoqCbvAcc.sort2 (<=) xs)) `seq` return ()),
+     ("CBVAcc.sort3",   \xs -> sorted (take 1000 (MergesortCoqCbvAcc.sort3 (<=) xs)) `seq` return ()),
+     ("CBVAcc.sortN",   \xs -> sorted (take 1000 (MergesortCoqCbvAcc.sortN (<=) xs)) `seq` return ())]
   benchmark
-    (map (10000 *) [1..50])
-    [("Data.List.sort", \xs -> sorted (Data.List.sort xs) `seq` return ()),
-     ("CBN.sort", \xs -> sorted (MergesortCoqCbn.sort (<=) xs) `seq` return ()),
-     ("CBNOpt.sort", \xs -> sorted (MergesortCoqCbnOpt.sort (<=) xs) `seq` return ()),
-     ("CBV.sort", \xs -> sorted (MergesortCoqCbv.sort (<=) xs) `seq` return ()),
-     ("CBVOpt.sort", \xs -> sorted (MergesortCoqCbvOpt.sort (<=) xs) `seq` return ())]
+    (map (10000 *) [1..80])
+    [("Data.List.sort", \xs -> sorted (Data.List.sort xs)                `seq` return ()),
+     ("CBN.sort1",      \xs -> sorted (MergesortCoqCbn.sort1    (<=) xs) `seq` return ()),
+     ("CBN.sort2",      \xs -> sorted (MergesortCoqCbn.sort2    (<=) xs) `seq` return ()),
+     ("CBN.sort3",      \xs -> sorted (MergesortCoqCbn.sort3    (<=) xs) `seq` return ()),
+     ("CBN.sortN",      \xs -> sorted (MergesortCoqCbn.sortN    (<=) xs) `seq` return ()),
+     ("CBNAcc.sort1",   \xs -> sorted (MergesortCoqCbnAcc.sort1 (<=) xs) `seq` return ()),
+     ("CBNAcc.sort2",   \xs -> sorted (MergesortCoqCbnAcc.sort2 (<=) xs) `seq` return ()),
+     ("CBNAcc.sort3",   \xs -> sorted (MergesortCoqCbnAcc.sort3 (<=) xs) `seq` return ()),
+     ("CBNAcc.sortN",   \xs -> sorted (MergesortCoqCbnAcc.sortN (<=) xs) `seq` return ()),
+     ("CBV.sort1",      \xs -> sorted (MergesortCoqCbv.sort1    (<=) xs) `seq` return ()),
+     ("CBV.sort2",      \xs -> sorted (MergesortCoqCbv.sort2    (<=) xs) `seq` return ()),
+     ("CBV.sort3",      \xs -> sorted (MergesortCoqCbv.sort3    (<=) xs) `seq` return ()),
+     ("CBV.sortN",      \xs -> sorted (MergesortCoqCbv.sortN    (<=) xs) `seq` return ()),
+     ("CBVAcc.sort1",   \xs -> sorted (MergesortCoqCbvAcc.sort1 (<=) xs) `seq` return ()),
+     ("CBVAcc.sort2",   \xs -> sorted (MergesortCoqCbvAcc.sort2 (<=) xs) `seq` return ()),
+     ("CBVAcc.sort3",   \xs -> sorted (MergesortCoqCbvAcc.sort3 (<=) xs) `seq` return ()),
+     ("CBVAcc.sortN",   \xs -> sorted (MergesortCoqCbvAcc.sortN (<=) xs) `seq` return ())]

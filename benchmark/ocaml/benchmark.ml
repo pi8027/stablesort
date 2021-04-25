@@ -1,5 +1,5 @@
 Random.self_init ();;
-Gc.set { (Gc.get()) with Gc.minor_heap_size = 128 * 1024 * 1024 };;
+Gc.set { (Gc.get()) with Gc.minor_heap_size = 512 * 1024 * 1024 };;
 
 let with_timer f =
   Gc.compact ();
@@ -75,10 +75,22 @@ let benchmark
     ) !mems
 ;;
 
-benchmark (List.init 50 (fun i -> 10000 * (i + 1)))
-  [("List.stable.sort", List.stable_sort (compare : int -> int -> int));
-   ("CBN.sort", Mergesort_coq.CBN.sort ((<=) : int -> int -> bool));
-   ("CBNOpt.sort", Mergesort_coq.CBNOpt.sort ((<=) : int -> int -> bool));
-   ("CBV.sort", Mergesort_coq.CBV.sort ((<=) : int -> int -> bool));
-   ("CBVOpt.sort", Mergesort_coq.CBVOpt.sort ((<=) : int -> int -> bool))]
+benchmark (List.init 80 (fun i -> 10000 * (i + 1)))
+  [("List.stable.sort", List.stable_sort           (compare : int -> int -> int));
+   ("CBN.sort1",        Mergesort_coq.CBN.sort1    ((<=) : int -> int -> bool));
+   ("CBN.sort2",        Mergesort_coq.CBN.sort2    ((<=) : int -> int -> bool));
+   ("CBN.sort3",        Mergesort_coq.CBN.sort3    ((<=) : int -> int -> bool));
+   ("CBN.sortN",        Mergesort_coq.CBN.sortN    ((<=) : int -> int -> bool));
+   ("CBNAcc.sort1",     Mergesort_coq.CBNAcc.sort1 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort2",     Mergesort_coq.CBNAcc.sort2 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort3",     Mergesort_coq.CBNAcc.sort3 ((<=) : int -> int -> bool));
+   ("CBNAcc.sortN",     Mergesort_coq.CBNAcc.sortN ((<=) : int -> int -> bool));
+   ("CBV.sort1",        Mergesort_coq.CBV.sort1    ((<=) : int -> int -> bool));
+   ("CBV.sort2",        Mergesort_coq.CBV.sort2    ((<=) : int -> int -> bool));
+   ("CBV.sort3",        Mergesort_coq.CBV.sort3    ((<=) : int -> int -> bool));
+   ("CBV.sortN",        Mergesort_coq.CBV.sortN    ((<=) : int -> int -> bool));
+   ("CBVAcc.sort1",     Mergesort_coq.CBVAcc.sort1 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort2",     Mergesort_coq.CBVAcc.sort2 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort3",     Mergesort_coq.CBVAcc.sort3 ((<=) : int -> int -> bool));
+   ("CBVAcc.sortN",     Mergesort_coq.CBVAcc.sortN ((<=) : int -> int -> bool))]
 ;;

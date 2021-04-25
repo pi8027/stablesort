@@ -12,7 +12,12 @@ Ltac destruct_reflexivity :=
  
 Global Parametricity Tactic := ((destruct_reflexivity; fail) || auto).
 
+Parametricity False.
+Parametricity eq.
+Parametricity or.
+Parametricity Acc.
 Parametricity bool.
+Parametricity prod.
 Parametricity list.
 Parametricity pred.
 Parametricity rel.
