@@ -19,9 +19,8 @@ characterized in this interface by the parametricity axiom and binary trees
 representing the divide-and-conquer structure of sort. One may prove the
 stability of a new sorting function by using the parametricity translation
 (Paramcoq) and providing a lemma corresponding to the binary tree
-construction. This library also provides optimized mergesort algorithms: one
-for the call-by-need evaluation (`CBNOpt.sort`) and another for the
-call-by-value evaluation (`CBVOpt.sort`).
+construction. This library also provides optimized mergesort algorithms: ones
+for the call-by-need evaluation and others for the call-by-value evaluation.
 
 The mergesort functions and the stability proofs provided in this library are
 mostly based on ones in the `path` library of Mathematical Components.
