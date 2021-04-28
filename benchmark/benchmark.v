@@ -1,7 +1,10 @@
 From Coq Require Import NArith.
 From elpi Require Import elpi.
 From mathcomp Require Import all_ssreflect.
-From stablesort Require Import stablesort.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 
 Elpi Command sort_benchmark.
 Elpi Accumulate lp:{{
@@ -84,10 +87,11 @@ time-median N P Time Words :- !, time-median-rec N P [] [] Time Words.
 
 pred benchmark-case
   i:string, i:(term -> term -> term -> prop),
-  i:list (pair string term), i:int, o:list string, o:list string.
-benchmark-case RedStr Red Config Size TS MS :- std.do! [
+  i:list (pair string term), i:term, i:int, o:list string, o:list string.
+benchmark-case RedStr Red Config Preproc Size TS MS :- std.do! [
   coq.env.begin-section "Sec",
-  random-N-list Size Size Input,
+  coq.reduction.vm.norm
+    (app [Preproc, {random-N-list Size Size}]) {{ list N }} Input,
   if (RedStr = "native_compute")
      (Cname is "input" ^ {std.any->string {new_int} },
       @global! => coq.env.add-const Cname Input {{ list N }} @transparent! C,
@@ -98,7 +102,7 @@ benchmark-case RedStr Red Config Size TS MS :- std.do! [
       c = pr Name Func,
       Comp = {{ lp:Func lp:{{ global (const C) }} }},
       std.assert-ok! (coq.typecheck Comp CompTy) "bad term",
-      time-median 3 (Red Comp CompTy _) Time Words,
+      time-median 5 (Red Comp CompTy _) Time Words,
       std.any->string Time TStr,
       Mem is Words / (128.0 * 1024.0), % memory consumption in MBs
       std.any->string Mem MStr,
@@ -123,25 +127,26 @@ benchmark-case RedStr Red Config Size TS MS :- std.do! [
 ].
 
 pred benchmark
-  i:string, i:(term -> term -> term -> prop), i:list (pair string term), i:term,
-  o:list (list string), o:list (list string).
-benchmark RedStr Red Config Size TSS MSS :-
-  benchmark_aux RedStr Red Config {coq.reduction.lazy.whd_all Size} TSS MSS.
+  i:string, i:(term -> term -> term -> prop), i:list (pair string term),
+  i:term, i:term, o:list (list string), o:list (list string).
+benchmark RedStr Red Config Preproc Size TSS MSS :- !,
+  benchmark_aux RedStr Red Config Preproc
+                {coq.reduction.lazy.whd_all Size} TSS MSS.
 
 pred benchmark_aux
-  i:string, i:(term -> term -> term -> prop), i:list (pair string term), i:term,
-  o:list (list string), o:list (list string).
-benchmark_aux _ _ Config {{ @nil _ }} SS SS :- !,
+  i:string, i:(term -> term -> term -> prop), i:list (pair string term),
+  i:term, i:term, o:list (list string), o:list (list string).
+benchmark_aux _ _ Config _ {{ @nil _ }} SS SS :- !,
   std.map Config (_\ r\ r = []) SS.
-benchmark_aux RedStr Red Config {{ @cons _ lp:SizeH lp:Size }} TSS' MSS' :-
-  std.do! [
-    n-constant SizeH' {coq.reduction.cbv.norm SizeH},
-    benchmark-case RedStr Red Config SizeH' TS MS,
-    benchmark RedStr Red Config Size TSS MSS,
-    std.map2 TS TSS (t\ ts\ ts'\ ts' = [t|ts]) TSS',
-    std.map2 MS MSS (m\ ms\ ms'\ ms' = [m|ms]) MSS'
-  ].
-benchmark_aux _ _ _ _ _ _ :-
+benchmark_aux RedStr Red Config Preproc
+              {{ @cons _ lp:SizeH lp:Size }} TSS' MSS' :- std.do! [
+  n-constant SizeH' {coq.reduction.cbv.norm SizeH},
+  benchmark-case RedStr Red Config Preproc SizeH' TS MS,
+  benchmark RedStr Red Config Preproc Size TSS MSS,
+  std.map2 TS TSS (t\ ts\ ts'\ ts' = [t|ts]) TSS',
+  std.map2 MS MSS (m\ ms\ ms'\ ms' = [m|ms]) MSS'
+].
+benchmark_aux _ _ _ _ _ _ _ :-
   coq.error "benchmark_aux: the head symbol of Size is not a constructor".
 
 pred get-reduction-machine i:string, o:(term -> term -> term -> prop).
@@ -159,14 +164,15 @@ parse-config [str Name, trm Func | ConfList] [pr Name Func | Conf] :- !,
   parse-config ConfList Conf.
 parse-config _ _ :- coq.error "ill-formed arguments".
 
-main [str FileName, str RedStr, trm Size | ConfList] :- std.do! [
+main [str FileName, str RedStr, trm Size, trm Preproc | ConfList] :- std.do! [
   std.assert-ok! (coq.typecheck Size {{ seq N }}) "bad term",
+  std.assert-ok! (coq.typecheck Preproc {{ seq N -> seq N }}) "bad term",
   parse-config ConfList Config,
   % enlarge the minor heap to 4GB
   gc.get Minor _ _ _ _ _ _ _,
   gc.set {calc (512 * 1024 * 1024)} _ _ _ _ _ _ _,
   % benchmark
-  benchmark RedStr {get-reduction-machine RedStr} Config Size TSS MSS,
+  benchmark RedStr {get-reduction-machine RedStr} Config Preproc Size TSS MSS,
   % restore the initial size of the minor heap
   gc.set Minor _ _ _ _ _ _ _,
   % pgfplot
@@ -210,3 +216,7 @@ Definition lazy_bench
 Definition eager_bench
   (sort : forall T : Type, rel T -> seq T -> seq T) (xs : seq N) :=
   sorted N.leb (sort _ N.leb xs).
+
+Fixpoint sort_blocks (T : Type) (leT : rel T) (n : nat) (xs : seq T) :=
+  if xs is x :: xs' then
+    sort leT (take n xs) ++ sort_blocks leT n (drop n.-1 xs') else [::].

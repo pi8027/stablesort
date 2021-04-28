@@ -41,11 +41,12 @@ let gen_list seed elems =
 ;;
 
 let benchmark
-    (size : int list) (config : (string * (int list -> int list)) list) =
+    (filename : string) (size : int list) (preproc : int list -> int list)
+    (config : (string * (int list -> int list)) list) =
   let times = ref (List.map (fun _ -> []) config) in
   let mems = ref (List.map (fun _ -> []) config) in
   List.iter (fun (seed, size) ->
-      let input = gen_list seed size in
+      let input = preproc (gen_list seed size) in
       let r =
         List.map (fun (name, sort) ->
             let (time, mem) = with_timer_median 5 (fun _ -> sort input) in
@@ -59,23 +60,62 @@ let benchmark
       times := List.map2 (fun (_, t, _) ts -> (size, t) :: ts) r !times;
       mems := List.map2 (fun (_, _, m) ms -> (size, m) :: ms) r !mems
     ) (List.map (fun s -> (Random.bits (), s)) size);
-  Printf.printf "%% time consumption\n";
+  let outc = open_out (filename ^ ".time.out") in
+  Printf.fprintf outc "%% time consumption\n";
   List.iter (fun res ->
-      Printf.printf "\\addplot coordinates {";
-      List.iter (fun (size, time) -> Printf.printf "(%d, %f) " size time)
+      Printf.fprintf outc "\\addplot coordinates {";
+      List.iter (fun (size, time) -> Printf.fprintf outc "(%d, %f) " size time)
         (List.rev res);
-      Printf.printf "};\n";
+      Printf.fprintf outc "};\n";
     ) !times;
-  Printf.printf "%% memory consumption\n";
+  close_out outc;
+  let outc = open_out (filename ^ ".mem.out") in
+  Printf.fprintf outc "%% memory consumption\n";
   List.iter (fun res ->
-      Printf.printf "\\addplot coordinates {";
-      List.iter (fun (size, time) -> Printf.printf "(%d, %f) " size time)
+      Printf.fprintf outc "\\addplot coordinates {";
+      List.iter (fun (size, time) -> Printf.fprintf outc "(%d, %f) " size time)
         (List.rev res);
-      Printf.printf "};\n";
-    ) !mems
+      Printf.fprintf outc "};\n";
+    ) !mems;
+  close_out outc
 ;;
 
-benchmark (List.init 80 (fun i -> 10000 * (i + 1)))
+let split_n n xs =
+  let rec aux i xs acc =
+    match i, xs with
+      | 0, _ | _, [] -> (List.rev acc, xs)
+      | i, x :: xs -> aux (i - 1) xs (x :: acc)
+  in aux n xs []
+;;
+
+let rec sort_blocks (n : int) = function
+  | [] -> []
+  | xs ->
+    let (xs1, xs2) = split_n n xs in
+    List.append (List.sort compare xs1) (sort_blocks n xs2)
+;;
+
+benchmark "ocaml1" (List.init 40 (fun i -> 25000 * (i + 1))) (fun xs -> xs)
+  [("List.stable.sort", List.stable_sort           (compare : int -> int -> int));
+   ("CBN.sort1",        Mergesort_coq.CBN.sort1    ((<=) : int -> int -> bool));
+   ("CBN.sort2",        Mergesort_coq.CBN.sort2    ((<=) : int -> int -> bool));
+   ("CBN.sort3",        Mergesort_coq.CBN.sort3    ((<=) : int -> int -> bool));
+   ("CBN.sortN",        Mergesort_coq.CBN.sortN    ((<=) : int -> int -> bool));
+   ("CBNAcc.sort1",     Mergesort_coq.CBNAcc.sort1 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort2",     Mergesort_coq.CBNAcc.sort2 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort3",     Mergesort_coq.CBNAcc.sort3 ((<=) : int -> int -> bool));
+   ("CBNAcc.sortN",     Mergesort_coq.CBNAcc.sortN ((<=) : int -> int -> bool));
+   ("CBV.sort1",        Mergesort_coq.CBV.sort1    ((<=) : int -> int -> bool));
+   ("CBV.sort2",        Mergesort_coq.CBV.sort2    ((<=) : int -> int -> bool));
+   ("CBV.sort3",        Mergesort_coq.CBV.sort3    ((<=) : int -> int -> bool));
+   ("CBV.sortN",        Mergesort_coq.CBV.sortN    ((<=) : int -> int -> bool));
+   ("CBVAcc.sort1",     Mergesort_coq.CBVAcc.sort1 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort2",     Mergesort_coq.CBVAcc.sort2 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort3",     Mergesort_coq.CBVAcc.sort3 ((<=) : int -> int -> bool));
+   ("CBVAcc.sortN",     Mergesort_coq.CBVAcc.sortN ((<=) : int -> int -> bool))]
+;;
+
+benchmark "ocaml2" (List.init 40 (fun i -> 25000 * (i + 1))) (sort_blocks 50)
   [("List.stable.sort", List.stable_sort           (compare : int -> int -> int));
    ("CBN.sort1",        Mergesort_coq.CBN.sort1    ((<=) : int -> int -> bool));
    ("CBN.sort2",        Mergesort_coq.CBN.sort2    ((<=) : int -> int -> bool));

@@ -403,18 +403,26 @@ Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) :=
 Definition sort3 : seq T -> seq T := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (seq T)) (x : T) (s : seq T) :=
-  let inner_rec := fix inner_rec mode acc x s :=
-    if s is y :: s then
-      if eqb (leT x y) mode then
-        inner_rec mode (x :: acc) y s
-      else
-        let stack := merge_sort_push (condrev mode (x :: acc)) stack in
-        sortNrec stack y s
-    else
-      merge_sort_pop (condrev mode (x :: acc)) stack
-  in
   if s is y :: s then
-    inner_rec (leT x y) [:: x] y s else merge_sort_pop [:: x] stack.
+    if leT x y then ascending stack [:: x] y s else descending stack [:: x] y s
+  else
+    merge_sort_pop [:: x] stack
+with ascending stack acc x s :=
+    if s is y :: s then
+      if leT x y then
+        ascending stack (x :: acc) y s
+      else
+        sortNrec (merge_sort_push (catrev acc [:: x]) stack) y s
+    else
+      merge_sort_pop (catrev acc [:: x]) stack
+with descending stack acc x s :=
+    if s is y :: s then
+      if leT x y then
+        sortNrec (merge_sort_push (x :: acc) stack) y s
+      else
+        descending stack (x :: acc) y s
+    else
+      merge_sort_pop (x :: acc) stack.
 
 Definition sortN (s : seq T) : seq T :=
   if s is x :: s then sortNrec [::] x s else [::].
@@ -505,17 +513,24 @@ move: [::] x s; fix IHs 3 => stack x [|y s] /=.
 set lexy := leT x y.
 have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
 have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
-elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
+elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs' /=] ord x acc.
   rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
   case: (merge_sort_popP (leaf_tree ord _ sorted_acc) stack) => /= t ->.
-  by rewrite /= revK => ->; exists t.
-rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
-  move=> path_acc.
-  have: path (fun y x => leT x y == ord) y (x :: acc)  by rewrite /= lexy eqxx.
+  by rewrite revK; case: ord {sorted_acc} => ->; exists t.
+case: ord (boolP (leT x y)) => [] [] lexy.
+- move=> path_acc.
+  have: path (fun y x => leT x y == true) y (x :: acc) by rewrite /= lexy eqxx.
   by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
-rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
-case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
-by rewrite /= catA revK => -> ->; apply: IHs.
+- rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
+  case: (merge_sort_pushP (leaf_tree true _ sorted_acc) stack) => stack'.
+  by rewrite /= catA => -> ->; apply: IHs.
+- rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
+  case: (merge_sort_pushP (leaf_tree false _ sorted_acc) stack) => stack'.
+  by rewrite /= catA revK => -> ->; apply: IHs.
+- move=> path_acc.
+  have: path (fun y x => leT x y == false) y (x :: acc).
+    by rewrite /= eqbF_neg lexy.
+  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 Qed.
 
 End CBN.
@@ -631,18 +646,26 @@ Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) :=
 Definition sort3 : seq T -> seq T := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
-  let inner_rec := fix inner_rec mode acc x s :=
-    if s is y :: s then
-      if eqb (leT x y) mode then
-        inner_rec mode (x :: acc) y s
-      else
-        let stack := merge_sort_push (condrev mode (x :: acc)) stack in
-        sortNrec stack y s
-    else
-      merge_sort_pop false (condrev mode (x :: acc)) stack
-  in
   if s is y :: s then
-    inner_rec (leT x y) [:: x] y s else merge_sort_pop false [:: x] stack.
+    if leT x y then ascending stack [:: x] y s else descending stack [:: x] y s
+  else
+    merge_sort_pop false [:: x] stack
+with ascending stack acc x s :=
+    if s is y :: s then
+      if leT x y then
+        ascending stack (x :: acc) y s
+      else
+        sortNrec (merge_sort_push (catrev acc [:: x]) stack) y s
+    else
+      merge_sort_pop false (catrev acc [:: x]) stack
+with descending stack acc x s :=
+    if s is y :: s then
+      if leT x y then
+        sortNrec (merge_sort_push (x :: acc) stack) y s
+      else
+        descending stack (x :: acc) y s
+    else
+      merge_sort_pop false (x :: acc) stack.
 
 Definition sortN (s : seq T) : seq T :=
   if s is x :: s then sortNrec [::] x s else [::].
@@ -757,17 +780,24 @@ move: [::] x s; fix IHs 3 => stack x [|y s] /=.
 set lexy := leT x y.
 have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
 have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
-elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs'] ord x acc.
+elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs' /=] ord x acc.
   rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
   case: (merge_sort_popP false (leaf_tree ord _ sorted_acc) stack) => /= t ->.
-  by rewrite /= revK => ->; exists t.
-rewrite -[eqb _ _]/(_ == _); case: eqVneq => lexy.
-  move=> path_acc.
-  have: path (fun y x => leT x y == ord) y (x :: acc) by rewrite /= lexy eqxx.
+  by rewrite revK; case: ord {sorted_acc} => ->; exists t.
+case: ord (boolP (leT x y)) => [] [] lexy.
+- move=> path_acc.
+  have: path (fun y x => leT x y == true) y (x :: acc) by rewrite /= lexy eqxx.
   by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
-rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
-case: (merge_sort_pushP (leaf_tree ord _ sorted_acc) stack) => stack'.
-by rewrite /= catA revK => -> ->; apply: IHs.
+- rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
+  case: (merge_sort_pushP (leaf_tree true _ sorted_acc) stack) => stack'.
+  by rewrite /= catA => -> ->; apply: IHs.
+- rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
+  case: (merge_sort_pushP (leaf_tree false _ sorted_acc) stack) => stack'.
+  by rewrite /= catA revK => -> ->; apply: IHs.
+- move=> path_acc.
+  have: path (fun y x => leT x y == false) y (x :: acc).
+    by rewrite /= eqbF_neg lexy.
+  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 Qed.
 
 End CBV.
