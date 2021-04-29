@@ -1,101 +1,52 @@
-\documentclass[a4paper,draft]{article}
+\documentclass[a4paper]{article}
 \usepackage[cm, empty]{fullpage}
 \usepackage{tikz, pgfplots}
-\usetikzlibrary{plotmarks}
+\usetikzlibrary{plotmarks,external}
 
 \pgfplotsset
 {enlargelimits=0.03, xlabel near ticks, ylabel near ticks,
  yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=5},
- minor tick num=9, scaled x ticks=base 10:-3, scaled y ticks=false,
+ minor tick num=9, scaled y ticks=false,
  legend pos=north west, legend cell align=left,
- legend style={font=\small\tt, row sep=-1pt}
+ legend style={font=\footnotesize\tt, row sep=-2pt}
 }
+
+\tikzexternalize
 
 \begin{document}
 
+\pgfplotsset
+{scaled x ticks=base 10:-6,
+ cycle list={{mark=x},
+             {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
+             {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
+             {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
+             {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
+             {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
+             {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
+             {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
+             {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}}
+}
+
 \begin{figure}[p]
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=x},
-                {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{ocaml.time.out}
+   \input{ocaml1.time.out}
   \end{axis}
- \end{tikzpicture}
+ \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=x},
-                {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{ocaml.mem.out}
+   \input{ocaml1.mem.out}
   \end{axis}
  \end{tikzpicture}
- \caption{Benchmark result of the sorting functions extracted to OCaml.}
-\end{figure}
-
-\begin{figure}[p]
- \centering
- \begin{tikzpicture}
-  \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
-    only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=x},
-                {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
-    xlabel=size of input, ylabel=time (sec.)]
-   \input{haskell1.time.out}
-  \end{axis}
- \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted (\textcolor{red}{take 1000} (\textit{sort} xs))} in Haskell,
-          where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function, and \texttt{xs} is a random input of type \texttt{[Int]}.}
-\end{figure}
-
-\begin{figure}[p]
- \centering
- \begin{tikzpicture}
-  \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
-    only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=x},
-                {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
-    xlabel=size of input, ylabel=time (sec.)]
-   \input{haskell2.time.out}
-  \end{axis}
- \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted (\textit{sort} xs)} in Haskell,
-          where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function, and \texttt{xs} is a random input of type \texttt{[Int]}.}
+ \caption{Benchmark result of \texttt{\textit{sort} xs} in OCaml, where \texttt{\textit{sort}} is \texttt{List.stable\_sort compare} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{int}.}
 \end{figure}
 
 \begin{figure}[p]
@@ -104,14 +55,104 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{ocaml2.time.out}
+  \end{axis}
+ \end{tikzpicture}%
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=heap consumption (MB)]
+   \input{ocaml2.mem.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{\textit{sort} xs} in OCaml, where \texttt{\textit{sort}} is \texttt{List.stable\_sort compare} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{int} but its every block of length 50 is sorted in ascending order.}
+\end{figure}
+
+\pgfplotsset
+{scaled x ticks=base 10:-6,
+ cycle list={{mark=x},
+             {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
+             {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
+             {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
+             {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
+             {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
+             {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
+             {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
+             {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
+}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{haskell1.time.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted (\textcolor{red}{take 1000} (\textit{sort} xs))} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int}.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{haskell2.time.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted (\textcolor{red}{take 1000} (\textit{sort} xs))} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int} but its every block of length 50 is sorted in ascending order.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{haskell3.time.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted (\textit{sort} xs)} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int}.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{haskell4.time.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted (\textit{sort} xs)} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int} but its every block of length 50 is sorted in ascending order.}
+\end{figure}
+
+\pgfplotsset
+{scaled x ticks=base 10:-3,
+ cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
+             {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
+             {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
+             {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
+             {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
+             {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
+             {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
+             {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
+}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{lazy1.time.out}
   \end{axis}
@@ -120,19 +161,11 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{lazy1.mem.out}
   \end{axis}
  \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted N.leb (\textcolor{red}{take 10} (\textit{sort} N.leb xs))} with \texttt{lazy}.}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textcolor{red}{take 10} (\textit{sort} N.leb xs))} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
 \end{figure}
 
 \begin{figure}[p]
@@ -141,14 +174,6 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=time (sec.)]
    \input{lazy2.time.out}
   \end{axis}
@@ -157,19 +182,11 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{lazy2.mem.out}
   \end{axis}
  \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{lazy}.}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textcolor{red}{take 10} (\textit{sort} N.leb xs))} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
 \end{figure}
 
 \begin{figure}[p]
@@ -178,35 +195,19 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{compute.time.out}
+   \input{lazy3.time.out}
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{compute.mem.out}
+   \input{lazy3.mem.out}
   \end{axis}
  \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{compute}.}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
 \end{figure}
 
 \begin{figure}[p]
@@ -215,35 +216,19 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{vm.time.out}
+   \input{lazy4.time.out}
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{vm.mem.out}
+   \input{lazy4.mem.out}
   \end{axis}
  \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{vm\_compute}.}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
 \end{figure}
 
 \begin{figure}[p]
@@ -252,35 +237,124 @@
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{native.time.out}
+   \input{compute1.time.out}
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
    [width=.5\textwidth, height=12cm, line width=0.1mm,
     only marks, mark options={black, mark size=1.5},
-    cycle list={{mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-                {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-                {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-                {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-                {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-                {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-                {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-                {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{native.mem.out}
+   \input{compute1.mem.out}
   \end{axis}
  \end{tikzpicture}
- \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{native\_compute}.}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{compute2.time.out}
+  \end{axis}
+ \end{tikzpicture}%
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=heap consumption (MB)]
+   \input{compute2.mem.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{vm1.time.out}
+  \end{axis}
+ \end{tikzpicture}%
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=heap consumption (MB)]
+   \input{vm1.mem.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{vm\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{vm2.time.out}
+  \end{axis}
+ \end{tikzpicture}%
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=heap consumption (MB)]
+   \input{vm2.mem.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{vm\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{native1.time.out}
+  \end{axis}
+ \end{tikzpicture}%
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=heap consumption (MB)]
+   \input{native1.mem.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{native\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=time (sec.)]
+   \input{native2.time.out}
+  \end{axis}
+ \end{tikzpicture}%
+ \begin{tikzpicture}
+  \begin{axis}
+   [width=.5\textwidth, height=12cm, line width=0.1mm,
+    only marks, mark options={black, mark size=1.5},
+    xlabel=size of input, ylabel=heap consumption (MB)]
+   \input{native2.mem.out}
+  \end{axis}
+ \end{tikzpicture}
+ \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{native\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
 \end{figure}
 
 \end{document}

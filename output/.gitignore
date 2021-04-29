@@ -2,3 +2,4 @@
 *.fdb_latexmk
 *.fls
 *.log
+main-figure*
