@@ -948,7 +948,7 @@ move=> leT_total s; case: {s}sortP; elim=> [b l IHl r IHr|b s] /=.
     do 2 rewrite /allrel ?all_rev StableSort.all_tree [all _ _]allrelC //.
   by rewrite allrelC.
 move=> sorted_s1 /pairwise_sorted /(conj sorted_s1) /andP.
-case: (b); rewrite sorted_relI ?rev_sorted;
+case: (b); rewrite -sorted_relI ?rev_sorted;
   apply: sub_sorted => x y /= /andP[/eqP xy xy']; rewrite ?xy ?xy' ?implybT //.
 by case: (leT _ _) xy (leT_total x y) => //= _ ->.
 Qed.

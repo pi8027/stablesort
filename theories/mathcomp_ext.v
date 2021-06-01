@@ -59,11 +59,11 @@ Lemma pairwise_sorted (T : Type) (leT : rel T) (s : seq T) :
 Proof. by elim: s => //= x s IHs /andP[/path_min_sorted -> /IHs]. Qed.
 
 Lemma path_relI (T : Type) (leT leT' : rel T) (x : T) (s : seq T) :
-  path leT x s && path leT' x s = path [rel x y | leT x y && leT' x y] x s.
+  path [rel x y | leT x y && leT' x y] x s = path leT x s && path leT' x s.
 Proof. by elim: s x => //= y s IHs x; rewrite andbACA IHs. Qed.
 
 Lemma sorted_relI (T : Type) (leT leT' : rel T) (s : seq T) :
-  sorted leT s && sorted leT' s = sorted [rel x y | leT x y && leT' x y] s.
+  sorted [rel x y | leT x y && leT' x y] s = sorted leT s && sorted leT' s.
 Proof. by case: s; last apply: path_relI. Qed.
 
 Lemma nilp_rev (T : Type) (s : seq T) : nilp (rev s) = nilp s.
