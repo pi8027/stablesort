@@ -12,18 +12,28 @@ Follow the instructions on https://github.com/coq-community/templates to regener
 
 
 
-This library provides a generic way to prove the stability of sorting
-algorithms. The stability lemmas provided in this library are overloaded using
-a canonical structure (`StableSort.interface`), and stable sort functions are
-characterized in this interface by the parametricity axiom and binary trees
-representing the divide-and-conquer structure of sort. One may prove the
+This library provides two kinds of optimized mergesort functions implemented
+in Coq.
+The first kind is non-tail-recursive mergesort functions, which allows us to
+compute the first k smallest elements of a list of length n in the optimal
+O(n + k log k) time complexity of the partial and incremental sorting
+problems, in the call-by-need evaluation. However, the non-tail-recursive
+merge function linearly consumes the call stack and triggers a stack overflow
+in the call-by-value evaluation.
+The second kind is tail-recursive mergesort functions and thus solves the
+above issue in the call-by-value evaluation. However, it does not allow us to
+compute the output incrementally in the optimal O(n + k log k) time regardless
+the evaluation strategy.
+
+To prove correctness (including stability) of these best mergesort functions
+depending on the situation, this library also provides a generic way to prove
+these properties. The stability lemmas provided in this library are overloaded
+using a canonical structure (`StableSort.function`), and stable sort functions
+are characterized in this interface by the parametricity axiom and binary
+trees representing the divide-and-conquer structure of sort. One may prove the
 stability of a new sorting function by using the parametricity translation
 (Paramcoq) and providing a lemma corresponding to the binary tree
-construction. This library also provides optimized mergesort algorithms: ones
-for the call-by-need evaluation and others for the call-by-value evaluation.
-
-The mergesort functions and the stability proofs provided in this library are
-mostly based on ones in the `path` library of Mathematical Components.
+construction.
 
 ## Meta
 
@@ -57,4 +67,6 @@ make install
 ```
 
 
-
+## Credits
+The mergesort functions and the stability proofs provided in this library are
+mostly based on ones in the `path` library of Mathematical Components.

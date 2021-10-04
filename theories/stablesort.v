@@ -139,6 +139,8 @@ Definition merge_ty := forall (T : Type) (leT : rel T), seq T -> seq T -> seq T.
 Parametricity merge_ty.
 End MergeR.
 
+(* The [MergeSig] and [RevmergeSig] module types are interfaces for           *)
+(* non-tail-recursive and tail-recursive merge functions, respectively.       *)
 Module Type MergeSig.
 Import MergeR.
 Parameter merge : forall (T : Type) (leT : rel T), seq T -> seq T -> seq T.
@@ -154,6 +156,8 @@ Parameter revmergeE : forall (T : Type) (leT : rel T) (xs ys : seq T),
 Parameter revmerge_R : merge_ty_R revmerge revmerge.
 End RevmergeSig.
 
+(* The [Merge] module implements a non-tail-recursive merge function using    *)
+(* nested recursion. This implementation is suited for computation inside Coq.*)
 Module Merge <: MergeSig.
 
 Fixpoint merge (T : Type) (leT : rel T) (xs ys : seq T) :=
@@ -171,6 +175,8 @@ Parametricity merge.
 
 End Merge.
 
+(* The [MergeAcc] module implements a non-tail-recursive merge function using *)
+(* well-founded recursion. This implementation is suited for code extraction. *)
 Module MergeAcc <: MergeSig.
 
 Definition mergeord {T : Type} (p1 p2 : seq T * seq T) : Prop :=
@@ -233,6 +239,8 @@ Parametricity merge.
 
 End MergeAcc.
 
+(* The [Revmerge] module implements a tail-recursive merge function using     *)
+(* nested recursion. This implementation is suited for computation inside Coq.*)
 Module Revmerge <: RevmergeSig.
 
 Fixpoint merge_rec (T : Type) (leT : rel T) (xs ys accu : seq T) : seq T :=
@@ -261,6 +269,8 @@ Parametricity revmerge.
 
 End Revmerge.
 
+(* The [RevmergeAcc] module implements a tail-recursive merge function using  *)
+(* well-founded recursion. This implementation is suited for code extraction. *)
 Module RevmergeAcc <: RevmergeSig.
 
 Import MergeAcc.
@@ -345,11 +355,13 @@ Canonical Insertion.sort_stable.
 (* takes the longest sorted prefix (in ascending or descending order) instead *)
 (* of a fixed-size prefix, as in GHC's [Data.List.sort].                      *)
 (* Since [M.merge] is expected to be a non-tail-recursive merge function,     *)
-(* these algorithms should allow us to take the first few elements of the     *)
-(* output without computing the rest of the output in the call-by-need        *)
-(* evaluation, so that it is O(n) time complexity. However, the               *)
-(* non-tail-recursive merge function linearly consumes the stack in the       *)
-(* call-by-value evaluation, which may trigger a stack overflow.              *)
+(* these sorting functions should allow us to compute the output              *)
+(* incrementally in the call-by-need evaluation. In fact, computing the first *)
+(* k smallest elements of a list of length n using one of these sort          *)
+(* functions has O(n + k log k) time complexity, which is the known optimal   *)
+(* time complexity of the partial and incremental sorting problems. However,  *)
+(* the non-tail-recursive merge function linearly consumes the call stack and *)
+(* triggers a stack overflow in the call-by-value evaluation.                 *)
 (******************************************************************************)
 
 Module CBN_ (M : MergeSig).
@@ -577,9 +589,10 @@ Canonical CBNAcc.sortN_stable.
 (* relation of the given order [leT] allows us to merge two lists sorted in   *)
 (* the reverse order without taking their reversals (see, e.g., the last case *)
 (* of [merge_sort_push]). Also, the push/pop trick of [path.sort] allows us   *)
-(* to implement a bottom-up mergesort algorithm with only O(log n) stack      *)
-(* consumption. However, this algorithm forces us to compute the output       *)
-(* almost entirely, which may be undesirable in the call-by-need evaluation.  *)
+(* to implement bottom-up mergesort functions with only O(log n) stack        *)
+(* consumption. However, this algorithm does not allow us to compute the      *)
+(* output incrementally in the optimal O(n + k log k) time regardless the     *)
+(* evaluation strategy.                                                       *)
 (******************************************************************************)
 
 Module CBV_ (M : RevmergeSig).
