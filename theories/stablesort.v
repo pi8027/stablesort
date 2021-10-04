@@ -591,7 +591,7 @@ Canonical CBNAcc.sortN_stable.
 (* of [merge_sort_push]). Also, the push/pop trick of [path.sort] allows us   *)
 (* to implement bottom-up mergesort functions with only O(log n) stack        *)
 (* consumption. However, this algorithm does not allow us to compute the      *)
-(* output incrementally in the optimal O(n + k log k) time regardless the     *)
+(* output incrementally in the optimal O(n + k log k) time regardless of the  *)
 (* evaluation strategy.                                                       *)
 (******************************************************************************)
 
