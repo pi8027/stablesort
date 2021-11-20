@@ -18,9 +18,12 @@ Parametricity or.
 Parametricity Acc.
 Parametricity bool.
 Parametricity prod.
+Parametricity nat.
 Parametricity list.
 Parametricity pred.
 Parametricity rel.
+Parametricity BinNums.positive.
+Parametricity BinNums.N.
 
 Lemma bool_R_refl b1 b2 : b1 = b2 -> bool_R b1 b2.
 Proof. by case: b1 => <-; constructor. Qed.
