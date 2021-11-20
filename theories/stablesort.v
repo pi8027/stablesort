@@ -160,9 +160,9 @@ End RevmergeSig.
 (* nested recursion. This implementation is suited for computation inside Coq.*)
 Module Merge <: MergeSig.
 
-Fixpoint merge (T : Type) (leT : rel T) (xs ys : seq T) :=
+Fixpoint merge (T : Type) (leT : rel T) (xs ys : seq T) : seq T :=
   if xs is x :: xs' then
-    (fix merge' ys :=
+    (fix merge' (ys : seq T) : seq T :=
        if ys is y :: ys' then
          if leT x y then x :: merge leT xs' ys else y :: merge' ys'
        else xs) ys
@@ -204,7 +204,7 @@ Fixpoint wf_mergeord (T : Type) (xs ys : seq T) : Acc mergeord (xs, ys) :=
     Acc_intro ([::], ys) (fun _ => False_ind _).
 
 Fixpoint merge_rec (T : Type) (leT : rel T)
-                    (xs ys : seq T) (fuel : Acc mergeord (xs, ys)) :=
+                   (xs ys : seq T) (fuel : Acc mergeord (xs, ys)) : seq T :=
   match fuel, xs, ys return xs = _ -> ys = _ -> _ with
     | _, [::], ys => fun _ _ => ys
     | _, xs, [::] => fun _ _ => xs
@@ -224,7 +224,7 @@ Fixpoint merge_rec (T : Type) (leT : rel T)
                   end)
   end erefl erefl.
 
-Definition merge (T : Type) (leT : rel T) (xs ys : seq T) :=
+Definition merge (T : Type) (leT : rel T) (xs ys : seq T) : seq T :=
   @merge_rec T leT xs ys (wf_mergeord xs ys).
 
 Lemma mergeE (T : Type) (leT : rel T) : merge leT =2 path.merge leT.
@@ -276,7 +276,7 @@ Module RevmergeAcc <: RevmergeSig.
 Import MergeAcc.
 
 Fixpoint merge_rec (T : Type) (leT : rel T) (xs ys accu : seq T)
-                   (fuel : Acc mergeord (xs, ys)) :=
+                   (fuel : Acc mergeord (xs, ys)) : seq T :=
   match fuel, xs, ys return xs = _ -> ys = _ -> _ with
     | _, [::], ys => fun _ _ => catrev ys accu
     | _, xs, [::] => fun _ _ => catrev xs accu
@@ -296,7 +296,7 @@ Fixpoint merge_rec (T : Type) (leT : rel T) (xs ys accu : seq T)
                   end)
   end erefl erefl.
 
-Definition revmerge (T : Type) (leT : rel T) (xs ys : seq T) :=
+Definition revmerge (T : Type) (leT : rel T) (xs ys : seq T) : seq T :=
   @merge_rec T leT xs ys [::] (wf_mergeord xs ys).
 
 Lemma revmergeE (T : Type) (leT : rel T) (xs ys : seq T) :
@@ -382,13 +382,13 @@ Fixpoint merge_sort_pop (s1 : seq T) (stack : seq (seq T)) : seq T :=
   if stack is s2 :: stack' then
     merge_sort_pop (M.merge leT s2 s1) stack' else s1.
 
-Fixpoint sort1rec (stack : seq (seq T)) (s : seq T) :=
+Fixpoint sort1rec (stack : seq (seq T)) (s : seq T) : seq T :=
   if s is x :: s then sort1rec (merge_sort_push [:: x] stack) s else
   merge_sort_pop [::] stack.
 
 Definition sort1 : seq T -> seq T := sort1rec [::].
 
-Fixpoint sort2rec (stack : seq (seq T)) (s : seq T) :=
+Fixpoint sort2rec (stack : seq (seq T)) (s : seq T) : seq T :=
   if s is [:: x1, x2 & s'] then
     let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
     sort2rec (merge_sort_push s1 stack) s'
@@ -396,7 +396,7 @@ Fixpoint sort2rec (stack : seq (seq T)) (s : seq T) :=
 
 Definition sort2 : seq T -> seq T := sort2rec [::].
 
-Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) :=
+Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) : seq T :=
   match s with
     | [:: x1, x2, x3 & s'] =>
       let s1 :=
@@ -415,27 +415,27 @@ Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) :=
 
 Definition sort3 : seq T -> seq T := sort3rec [::].
 
-Fixpoint sortNrec (stack : seq (seq T)) (x : T) (s : seq T) :=
+Fixpoint sortNrec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
   if s is y :: s then
-    if leT x y then ascending stack [:: x] y s else descending stack [:: x] y s
+    if leT x y then incr stack y s [:: x] else decr stack y s [:: x]
   else
     merge_sort_pop [:: x] stack
-with ascending stack acc x s :=
-    if s is y :: s then
-      if leT x y then
-        ascending stack (x :: acc) y s
-      else
-        sortNrec (merge_sort_push (catrev acc [:: x]) stack) y s
+with incr (stack : seq (seq T)) (x : T) (s accu : seq T) : seq T :=
+  if s is y :: s then
+    if leT x y then
+      incr stack y s (x :: accu)
     else
-      merge_sort_pop (catrev acc [:: x]) stack
-with descending stack acc x s :=
-    if s is y :: s then
-      if leT x y then
-        sortNrec (merge_sort_push (x :: acc) stack) y s
-      else
-        descending stack (x :: acc) y s
+      sortNrec (merge_sort_push (catrev accu [:: x]) stack) y s
+  else
+    merge_sort_pop (catrev accu [:: x]) stack
+with decr (stack : seq (seq T)) (x : T) (s accu : seq T) : seq T :=
+  if s is y :: s then
+    if leT x y then
+      sortNrec (merge_sort_push (x :: accu) stack) y s
     else
-      merge_sort_pop (x :: acc) stack.
+      decr stack y s (x :: accu)
+  else
+    merge_sort_pop (x :: accu) stack.
 
 Definition sortN (s : seq T) : seq T :=
   if s is x :: s then sortNrec [::] x s else [::].
@@ -599,6 +599,7 @@ Module CBV_ (M : RevmergeSig).
 Section CBV.
 
 Variables (T : Type) (leT : rel T).
+Let geT x y := leT y x.
 
 Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
 
@@ -609,8 +610,7 @@ Fixpoint merge_sort_push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
       [::] :: M.revmerge leT ys xs :: stack
     | ys :: zs :: stack =>
       [::] :: [::] ::
-           merge_sort_push
-           (M.revmerge (fun x y => leT y x) (M.revmerge leT ys xs) zs) stack
+           merge_sort_push (M.revmerge geT (M.revmerge leT ys xs) zs) stack
   end.
 
 Fixpoint merge_sort_pop
@@ -620,27 +620,25 @@ Fixpoint merge_sort_pop
     | [::], false => xs
     | [::] :: [::] :: stack, _ => merge_sort_pop mode xs stack
     | [::] :: stack, _ => merge_sort_pop (~~ mode) (rev xs) stack
-    | ys :: stack, true =>
-      merge_sort_pop false (M.revmerge (fun x y => leT y x) xs ys) stack
-    | ys :: stack, false =>
-      merge_sort_pop true (M.revmerge leT ys xs) stack
+    | ys :: stack, true => merge_sort_pop false (M.revmerge geT xs ys) stack
+    | ys :: stack, false => merge_sort_pop true (M.revmerge leT ys xs) stack
   end.
 
-Fixpoint sort1rec (stack : seq (seq T)) (s : seq T) :=
+Fixpoint sort1rec (stack : seq (seq T)) (s : seq T) : seq T :=
   if s is x :: s then sort1rec (merge_sort_push [:: x] stack) s else
   merge_sort_pop false [::] stack.
 
 Definition sort1 : seq T -> seq T := sort1rec [::].
 
-Fixpoint sort2rec ss s :=
+Fixpoint sort2rec (stack : seq (seq T)) (s : seq T) : seq T :=
   if s is [:: x1, x2 & s'] then
     let s1 := if leT x1 x2 then [:: x1; x2] else [:: x2; x1] in
-    sort2rec (merge_sort_push s1 ss) s'
-  else merge_sort_pop false s ss.
+    sort2rec (merge_sort_push s1 stack) s'
+  else merge_sort_pop false s stack.
 
 Definition sort2 : seq T -> seq T := sort2rec [::].
 
-Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) :=
+Fixpoint sort3rec (stack : seq (seq T)) (s : seq T) : seq T :=
   match s with
     | [:: x1, x2, x3 & s'] =>
       let s1 :=
@@ -661,25 +659,25 @@ Definition sort3 : seq T -> seq T := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (seq T)) (x : T) (s : seq T) : seq T :=
   if s is y :: s then
-    if leT x y then ascending stack [:: x] y s else descending stack [:: x] y s
+    if leT x y then incr stack y s [:: x] else decr stack y s [:: x]
   else
     merge_sort_pop false [:: x] stack
-with ascending stack acc x s :=
-    if s is y :: s then
-      if leT x y then
-        ascending stack (x :: acc) y s
-      else
-        sortNrec (merge_sort_push (catrev acc [:: x]) stack) y s
+with incr (stack : seq (seq T)) (x : T) (s accu : seq T) : seq T :=
+  if s is y :: s then
+    if leT x y then
+      incr stack y s (x :: accu)
     else
-      merge_sort_pop false (catrev acc [:: x]) stack
-with descending stack acc x s :=
-    if s is y :: s then
-      if leT x y then
-        sortNrec (merge_sort_push (x :: acc) stack) y s
-      else
-        descending stack (x :: acc) y s
+      sortNrec (merge_sort_push (catrev accu [:: x]) stack) y s
+  else
+    merge_sort_pop false (catrev accu [:: x]) stack
+with decr (stack : seq (seq T)) (x : T) (s accu : seq T) : seq T :=
+  if s is y :: s then
+    if leT x y then
+      sortNrec (merge_sort_push (x :: accu) stack) y s
     else
-      merge_sort_pop false (x :: acc) stack.
+      decr stack y s (x :: accu)
+  else
+    merge_sort_pop false (x :: accu) stack.
 
 Definition sortN (s : seq T) : seq T :=
   if s is x :: s then sortNrec [::] x s else [::].
