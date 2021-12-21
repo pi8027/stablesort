@@ -76,13 +76,13 @@ Qed.
 
 Variant trace_nil_spec (t : trace) : seq T -> seq T -> bool -> bool -> Type :=
   | TraceNil    : flatten_trace t = [::] -> sort_trace t = [::] ->
-                 trace_nil_spec t [::] [::] true true
+                  trace_nil_spec t [::] [::] true true
   | TraceNotNil : flatten_trace t <> [::] -> sort_trace t <> [::] ->
-                 trace_nil_spec t (flatten_trace t) (sort_trace t) false false.
+                  trace_nil_spec t (flatten_trace t) (sort_trace t) false false.
 
 Lemma trace_nilP (t : trace) :
   trace_nil_spec t (flatten_trace t) (sort_trace t)
-                (nilp (flatten_trace t)) (nilp (sort_trace t)).
+                 (nilp (flatten_trace t)) (nilp (sort_trace t)).
 Proof.
 case: nilP (trace_nilp t); case: nilP => //; last by constructor.
 by move=> /[dup] ? -> /[dup] ? ->; constructor.
@@ -956,7 +956,7 @@ Lemma sort_pairwise_stable (T : Type) (leT leT' : rel T) :
   sorted (lexord leT leT') (sort _ leT s).
 Proof.
 move=> leT_total s; case: {s}sortP; elim=> [b l IHl r IHr|b s] /=.
-  rewrite ?pairwise_cat => /and3P[hlr /IHl ? /IHr ?].
+  rewrite pairwise_cat => /and3P[hlr /IHl ? /IHr ?].
   case: b; rewrite ?(rev_sorted, merge_stable_sorted) //=;
     do 2 rewrite /allrel ?all_rev StableSort.all_trace [all _ _]allrelC //.
   by rewrite allrelC.
