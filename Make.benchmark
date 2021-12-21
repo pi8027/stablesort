@@ -2,5 +2,5 @@ benchmark/benchmark.v
 benchmark/extraction.v
 
 -R theories stablesort
-
+-R benchmark stablesort.benchmark
 -arg -w -arg -notation-overridden
