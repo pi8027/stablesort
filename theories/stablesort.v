@@ -88,6 +88,9 @@ case: nilP (trace_nilp t); case: nilP => //; last by constructor.
 by move=> /[dup] ? -> /[dup] ? ->; constructor.
 Qed.
 
+Definition trace_sort sort := forall s,
+   {t : trace | s = flatten_trace t & sort s = sort_trace t}.
+
 End Traces.
 
 Lemma perm_trace (T : eqType) (leT : rel T) (t : trace leT) :
@@ -97,9 +100,8 @@ apply/permPl; elim: t => [b l IHl r IHr|[] s _] //=; rewrite ?perm_rev //.
 by case: b; rewrite /= ?perm_rev perm_merge -?rev_cat ?perm_rev perm_cat.
 Qed.
 
-Definition sort_ty := forall T : Type, rel T -> seq T -> seq T.
-
-Parametricity sort_ty.
+Parametricity Translation
+  (forall T : Type, rel T -> seq T -> seq T) as sort_ty_R.
 
 Structure function := Pack {
   apply : forall T : Type, rel T -> seq T -> seq T;
@@ -113,8 +115,8 @@ Structure function := Pack {
   (*       list_R T_R xs ys -> list_R T_R (apply leT1 xs) (apply leT2 ys);    *)
   _ : sort_ty_R apply apply;
   (* Characterization by traces *)
-  _ : forall (T : Type) (leT : rel T) (s : seq T),
-      {t : trace leT | s = flatten_trace t & apply leT s = sort_trace t } }.
+  _ : forall (T : Type) (leT : rel T), trace_sort leT (apply leT);
+}.
 
 Module Exports.
 Arguments leaf_trace {T leT} b s _.
@@ -129,6 +131,20 @@ End Exports.
 
 End StableSort.
 Export StableSort.Exports.
+
+Notation "[ tr]" := StableSort.empty_trace.
+Notation "[ 'tr<=' ]" := (StableSort.leaf_trace true [::] erefl)
+  (format "[ 'tr<=' ]").
+Notation "[ 'tr<=' x ]" := (StableSort.leaf_trace true [:: x] erefl)
+  (format "[ 'tr<='  x ]").
+
+Lemma trace2_subproof T (leT : rel T) (x y : T) :
+   sorted (fun x' y' => leT x' y' == leT x y) [:: x; y].
+Proof. by rewrite /= eqxx. Qed.
+
+Notation "[ 'tr' x1 ; x2 ]" :=
+  (StableSort.leaf_trace _ [:: x1; x2] (trace2_subproof _ x1 x2))
+  (format "[ 'tr'  x1 ;  x2 ]").
 
 (******************************************************************************)
 (* Merge functions                                                            *)
@@ -325,10 +341,9 @@ Definition sort := foldr (fun x => merge leT [:: x]) [::].
 
 Import StableSort.
 
-Lemma sortP (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort s = sort_trace t}.
+Lemma sortP : trace_sort leT sort.
 Proof.
-elim: s => [|x _ [t -> /= ->]]; first by exists empty_trace.
+elim=> [|x _ [t -> /= ->]]; first by exists empty_trace.
 by exists (branch_trace true (leaf_trace true [:: x] erefl) t).
 Qed.
 
@@ -444,7 +459,15 @@ Definition sortN (s : seq T) : seq T :=
 
 Import StableSort.
 
+Local Notation trace_sort := (trace_sort leT).
 Let flatten_stack := foldr (fun x => cat^~ (@flatten_trace _ leT x)) nil.
+
+Definition trace_sort_rec sort_rec := forall s stack, {t : trace leT |
+   flatten_stack stack ++ s = flatten_trace t &
+   sort_rec [seq sort_trace i | i <- stack] s = sort_trace t}.
+
+Lemma trace_sortP sort : trace_sort_rec sort -> trace_sort (sort [::]).
+Proof. by move/(_ _ [::]). Qed.
 
 Lemma merge_sort_pushP (t : trace leT) (stack : seq (trace leT)) :
   {stack' : seq (trace leT) |
@@ -469,81 +492,67 @@ rewrite /= M.mergeE -catA.
 by have [/= t'' -> ->] := IHstack (branch_trace true t' t); exists t''.
 Qed.
 
-Lemma sort1P (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort1 s = sort_trace t}.
+Lemma sort1P : trace_sort sort1.
 Proof.
-rewrite /sort1.
-have {1}->: s = flatten_stack [::] ++ s by [].
-have ->: [::] = map (@sort_trace _ leT) [::] by [].
-elim: s [::] => [|x s IHs] stack /=; first exact: merge_sort_popP empty_trace _.
-case: (merge_sort_pushP (leaf_trace true [:: x] erefl) stack).
+apply/trace_sortP; elim=> [|x s IHs] stack; first exact: merge_sort_popP [tr] _.
+case: (merge_sort_pushP [tr<= x] stack).
 by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
 Qed.
 
-Lemma sort2P (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort2 s = sort_trace t}.
+Lemma sort2P : trace_sort sort2.
 Proof.
-rewrite /sort2.
-have {1}->: s = flatten_stack [::] ++ s by [].
-have ->: [::] = map (@sort_trace _ leT) [::] by [].
-move: [::] s; fix IHs 2 => stack [|x [|y s]].
-- exact: merge_sort_popP (leaf_trace true [::] erefl) _.
-- exact: merge_sort_popP (leaf_trace true [:: x] erefl) _.
-case: (merge_sort_pushP (leaf_trace (leT x y) [:: x; y] _) stack).
-  by rewrite /= eqxx.
-by rewrite (catA _ [:: _; _]) => /= _ {}stack -> ->; apply: IHs.
+apply/trace_sortP => s; have [n] := ubnP (size s); elim: n s => // n IHn.
+move=> [|x [|y s]]/=; rewrite ?ltnS => size_s stack.
+- exact: merge_sort_popP [tr<=] _.
+- exact: merge_sort_popP [tr<= x] _.
+case: (merge_sort_pushP [tr x; y] stack).
+by rewrite (catA _ [:: _; _]) => /= {}stack -> ->; apply/IHn/ltnW.
 Qed.
 
-Lemma sort3P (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort3 s = sort_trace t}.
+Lemma sort3P : trace_sort sort3.
 Proof.
-rewrite /sort3.
-have sorted2 x y : sorted (fun x' y' => leT x' y' == leT x y) [:: x; y].
-  by rewrite /= eqxx.
-have {1}->: s = flatten_stack [::] ++ s by [].
-have ->: [::] = map (@sort_trace _ leT) [::] by [].
-move: [::] s; fix IHs 2 => stack [|x [|y [|z s]]].
-- exact: merge_sort_popP (leaf_trace true [::] erefl) _.
-- exact: merge_sort_popP (leaf_trace true [:: x] erefl) _.
-- exact: merge_sort_popP (leaf_trace (leT x y) [:: x; y] (sorted2 _ _)) _.
+apply/trace_sortP => s; have [n] := ubnP (size s); elim: n s => // n IHn.
+move=> [|x [|y [|z s]]]/=; rewrite ?ltnS => size_s stack.
+- exact: merge_sort_popP [tr<=] _.
+- exact: merge_sort_popP [tr<= x] _.
+- exact: merge_sort_popP [tr x; y] _.
 rewrite (catA _ [:: _; _; _]).
-pose xyz : trace leT := branch_trace false
-  (leaf_trace (leT x y) [:: x; y] (sorted2 _ _)) (leaf_trace true [:: z] erefl).
+pose xyz : trace leT := branch_trace false [tr x; y] [tr<= z].
 case: (merge_sort_pushP xyz stack) => /= stack' ->.
 set push1 := merge_sort_push _ _; set push2 := merge_sort_push _ _.
 have ->: push1 = push2 by congr merge_sort_push; do 3 case: ifP => //=.
-by move=> ->; apply: IHs.
+by move=> ->; apply/IHn/ltnW/ltnW.
 Qed.
 
-Lemma sortNP (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sortN s = sort_trace t}.
+Lemma sortNP : trace_sort sortN.
 Proof.
-case: s => /= [|x s]; first by exists empty_trace.
-have {1}->: x :: s = flatten_stack [::] ++ x :: s by [].
-have ->: [::] = map (@sort_trace _ leT) [::] by [].
-move: [::] x s; fix IHs 3 => stack x [|y s] /=.
-  exact: merge_sort_popP (leaf_trace true [:: x] erefl) _.
+case=> /= [|x s]; first by exists empty_trace.
+suff /(_ [::]) : forall stack, {t : trace leT |
+   flatten_stack stack ++ x :: s = flatten_trace t &
+   sortNrec [seq sort_trace i | i <- stack] x s = sort_trace t} by [].
+have [n] := ubnP (size s); elim: n x s => // n IHn x [|y s]/= sn stack.
+  exact: merge_sort_popP [tr<= x] _.
 set lexy := leT x y.
 have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
 have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
-elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs' /=] ord x acc.
+elim: s sn (lexy) (y) [:: x] => {lexy x y} => [|y s IHs' /=] /ltnW sn ord x acc.
   rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
   case: (merge_sort_popP (leaf_trace ord _ sorted_acc) stack) => /= t ->.
   by rewrite revK; case: ord {sorted_acc} => ->; exists t.
 case: ord (boolP (leT x y)) => [] [] lexy.
 - move=> path_acc.
   have: path (fun y x => leT x y == true) y (x :: acc) by rewrite /= lexy eqxx.
-  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
+  by move=> /(IHs' sn)[t]; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 - rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
   case: (merge_sort_pushP (leaf_trace true _ sorted_acc) stack) => stack'.
-  by rewrite /= catA => -> ->; apply: IHs.
+  by rewrite /= catA => -> ->; apply/IHn.
 - rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
   case: (merge_sort_pushP (leaf_trace false _ sorted_acc) stack) => stack'.
-  by rewrite /= catA revK => -> ->; apply: IHs.
+  by rewrite /= catA revK => -> ->; apply/IHn.
 - move=> path_acc.
   have: path (fun y x => leT x y == false) y (x :: acc).
     by rewrite /= eqbF_neg lexy.
-  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
+  by move=> /(IHs' sn)[t]; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 Qed.
 
 End CBN.
@@ -686,11 +695,19 @@ Definition sortN (s : seq T) : seq T :=
 
 Import StableSort.
 
+Local Notation trace_sort := (trace_sort leT).
 Let flatten_stack := foldr (fun x => cat^~ (@flatten_trace _ leT x)) nil.
 
 Let Fixpoint sort_stack (mode : bool) (stack : seq (trace leT)) : seq (seq T) :=
   if stack isn't t :: stack then [::] else
     condrev mode (sort_trace t) :: sort_stack (~~ mode) stack.
+
+Definition trace_sort_rec sort_rec := forall s stack, {t : trace leT |
+   flatten_stack stack ++ s = flatten_trace t &
+   sort_rec (sort_stack false stack) s = sort_trace t}.
+
+Lemma trace_sortP sort : trace_sort_rec sort -> trace_sort (sort [::]).
+Proof. by move/(_ _ [::]). Qed.
 
 Lemma merge_sort_pushP (t : trace leT) (stack : seq (trace leT)) :
   {stack' : seq (trace leT) |
@@ -735,82 +752,67 @@ rewrite -catA.
 by case: mode (IHstack mode (branch_trace mode t'' t) stack); rewrite //= revK.
 Qed.
 
-Lemma sort1P (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort1 s = sort_trace t}.
+Lemma sort1P : trace_sort sort1.
 Proof.
-rewrite /sort1.
-have {1}->: s = flatten_stack [::] ++ s by [].
-have ->: [::] = sort_stack false [::] by [].
-elim: s [::] => [|x s IHs] stack /=.
-  exact: merge_sort_popP empty_trace stack.
-case: (merge_sort_pushP (leaf_trace true [:: x] erefl) stack).
+apply/trace_sortP; elim=> [|x s IHs] stack; first exact: merge_sort_popP [tr] _.
+case: (merge_sort_pushP [tr<= x] stack).
 by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
 Qed.
 
-Lemma sort2P (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort2 s = sort_trace t}.
+Lemma sort2P : trace_sort sort2.
 Proof.
-rewrite /sort2.
-have {1}->: s = flatten_stack [::] ++ s by [].
-have ->: [::] = sort_stack false [::] by [].
-move: [::] s; fix IHs 2 => stack [|x [|y s]] /=.
-- exact: merge_sort_popP (leaf_trace true [::] erefl) _.
-- exact: merge_sort_popP (leaf_trace true [:: x] erefl) _.
-case: (merge_sort_pushP (leaf_trace (leT x y) [:: x; y] _) stack).
-  by rewrite /= eqxx.
-by rewrite (catA _ [:: _; _]) => /= _ {}stack -> ->; apply: IHs.
+apply/trace_sortP => s; have [n] := ubnP (size s); elim: n s => // n IHn.
+move=> [|x [|y s]]/=; rewrite ?ltnS => size_s stack.
+- exact: merge_sort_popP [tr<=] _.
+- exact: merge_sort_popP [tr<= x] _.
+case: (merge_sort_pushP [tr x; y] stack).
+by rewrite (catA _ [:: _; _]) => /= {}stack -> ->; apply/IHn/ltnW.
 Qed.
 
-Lemma sort3P (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sort3 s = sort_trace t}.
+Lemma sort3P : trace_sort sort3.
 Proof.
-rewrite /sort3.
-have sorted2 x y : sorted (fun x' y' => leT x' y' == leT x y) [:: x; y].
-  by rewrite /= eqxx.
-have {1}->: s = flatten_stack [::] ++ s by [].
-have ->: [::] = sort_stack false [::] by [].
-move: [::] s; fix IHs 2 => stack [|x [|y [|z s]]] /=.
-- exact: merge_sort_popP (leaf_trace true [::] erefl) _.
-- exact: merge_sort_popP (leaf_trace true [:: x] erefl) _.
-- exact: merge_sort_popP (leaf_trace (leT x y) [:: x; y] (sorted2 _ _)) _.
+apply/trace_sortP => s; have [n] := ubnP (size s); elim: n s => // n IHn.
+move=> [|x [|y [|z s]]]/=; rewrite ?ltnS => size_s stack.
+- exact: merge_sort_popP [tr<=] _.
+- exact: merge_sort_popP [tr<= x] _.
+- exact: merge_sort_popP [tr x; y] _.
 rewrite (catA _ [:: _; _; _]).
-pose xyz : trace leT := branch_trace false
-  (leaf_trace (leT x y) [:: x; y] (sorted2 _ _)) (leaf_trace true [:: z] erefl).
+pose xyz : trace leT := branch_trace false [tr x; y] [tr<= z].
 case: (merge_sort_pushP xyz stack) => /= stack' ->.
 set push1 := merge_sort_push _ _; set push2 := merge_sort_push _ _.
 have ->: push1 = push2 by congr merge_sort_push; do 3 case: ifP => //=.
-by move=> ->; apply: IHs.
+by move=> ->; apply/IHn/ltnW/ltnW.
 Qed.
 
-Lemma sortNP (s : seq T) :
-  {t : trace leT | s = flatten_trace t & sortN s = sort_trace t}.
+Lemma sortNP : trace_sort sortN.
 Proof.
-case: s => /= [|x s]; first by exists empty_trace.
-have {1}->: x :: s = flatten_stack [::] ++ x :: s by [].
-have ->: [::] = sort_stack false [::] by [].
-move: [::] x s; fix IHs 3 => stack x [|y s] /=.
-  exact: merge_sort_popP (leaf_trace true [:: x] erefl) _.
+case=> /= [|x s]; first by exists empty_trace.
+suff /(_ [::]) : forall stack, {t : trace leT |
+   flatten_stack stack ++ x :: s = flatten_trace t &
+   sortNrec (sort_stack false stack) x s = sort_trace t} by [].
+have [n] := ubnP (size s); elim: n x s => // n IHn x [|y s]/= sn stack.
+  exact: merge_sort_popP [tr<= x] _.
 set lexy := leT x y.
 have: path (fun y x => leT x y == lexy) y [:: x] by rewrite /= eqxx.
 have ->: [:: x, y & s] = rev [:: y; x] ++ s by [].
-elim: s (lexy) (y) [:: x] => {lexy x y} => [|y s IHs' /=] ord x acc.
+elim: s sn (lexy) (y) [:: x] => {lexy x y} => [|y s IHs' /=] /ltnW sn ord x acc.
   rewrite -/(sorted _ (_ :: _)) -rev_sorted cats0 => sorted_acc.
   case: (merge_sort_popP false (leaf_trace ord _ sorted_acc) stack) => /= t ->.
   by rewrite revK; case: ord {sorted_acc} => ->; exists t.
 case: ord (boolP (leT x y)) => [] [] lexy.
 - move=> path_acc.
   have: path (fun y x => leT x y == true) y (x :: acc) by rewrite /= lexy eqxx.
-  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
+  by move=> /(IHs' sn)[t]; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 - rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
   case: (merge_sort_pushP (leaf_trace true _ sorted_acc) stack) => stack'.
-  by rewrite /= catA => -> ->; apply: IHs.
+  by rewrite /= catA => -> ->; apply/IHn.
 - rewrite -/(sorted _ (_ :: _)) -rev_sorted => sorted_acc.
   case: (merge_sort_pushP (leaf_trace false _ sorted_acc) stack) => stack'.
-  by rewrite /= catA revK => -> ->; apply: IHs.
+  by rewrite /= catA revK => -> ->; apply/IHn.
 - move=> path_acc.
   have: path (fun y x => leT x y == false) y (x :: acc).
     by rewrite /= eqbF_neg lexy.
-  by case/IHs' => {path_acc} t; rewrite -cat_rcons -rev_cons => -> ->; exists t.
+  by move=> /(IHs' sn)[t]; rewrite -cat_rcons -rev_cons => -> ->; exists t.
 Qed.
 
 End CBV.
@@ -915,15 +917,14 @@ Proof. by case: (sort _) (size_sort [::]). Qed.
 
 Lemma pairwise_sort (s : seq T) : pairwise leT s -> sort _ leT s = s.
 Proof.
-case: {s}sortP; elim=> [b l IHl r IHr|[] s] //=; last first.
-  by case: s => [|x[|y s]] //=; case: leT.
+case: {s}sortP; elim=> [b l IHl r IHr|[] [|x [|y s]]] //=; last by case: leT.
 rewrite pairwise_cat => /and3P[hlr /IHl -> /IHr ->].
 rewrite !allrel_merge ?rev_cat ?revK //; first by case: b.
 by rewrite /allrel all_rev [all _ _]allrelC /allrel all_rev.
 Qed.
 
-Lemma sorted_sort :
-  transitive leT -> forall s : seq T, sorted leT s -> sort _ leT s = s.
+Lemma sorted_sort : transitive leT ->
+  forall s : seq T, sorted leT s -> sort _ leT s = s.
 Proof. by move=> leT_tr s; rewrite sorted_pairwise //; apply/pairwise_sort. Qed.
 
 End SortSeq.
@@ -957,7 +958,7 @@ Lemma sort_pairwise_stable (T : Type) (leT leT' : rel T) :
 Proof.
 move=> leT_total s; case: {s}sortP; elim=> [b l IHl r IHr|b s] /=.
   rewrite pairwise_cat => /and3P[hlr /IHl ? /IHr ?].
-  case: b; rewrite ?(rev_sorted, merge_stable_sorted) //=;
+  rewrite fun_if ?(rev_sorted, merge_stable_sorted) ?if_same ?allrel_rev2//;
     do 2 rewrite /allrel ?all_rev StableSort.all_trace [all _ _]allrelC //.
   by rewrite allrelC.
 move=> sorted_s1 /pairwise_sorted /(conj sorted_s1) /andP.
@@ -978,8 +979,7 @@ Lemma sort_stable (T : Type) (leT leT' : rel T) :
   total leT -> transitive leT' -> forall s : seq T, sorted leT' s ->
   sorted (lexord leT leT') (sort _ leT s).
 Proof.
-move=> leT_total leT'_tr s; rewrite sorted_pairwise //.
-exact: sort_pairwise_stable.
+by move=> ? ? s; rewrite sorted_pairwise//; apply: sort_pairwise_stable.
 Qed.
 
 Lemma sort_stable_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
@@ -997,11 +997,10 @@ Lemma filter_sort (T : Type) (leT : rel T) :
     filter p (sort _ leT s) = sort _ leT (filter p s).
 Proof.
 move=> leT_total leT_tr p s; case Ds: s => [|x s1]; first by rewrite sort_nil.
-pose lt_lex := lexord (relpre (nth x s) leT) ltn.
-have lt_lex_tr: transitive lt_lex.
-  by apply/lexord_trans/ltn_trans => ? ? ?; apply/leT_tr.
+pose lt := lexord (relpre (nth x s) leT) ltn.
+have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
 rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /lexord //=.
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
 - by move=> ?; rewrite /= ltnn implybF andbN.
 - exact/sorted_filter/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/sorted_filter/iota_ltn_sorted/ltn_trans/ltn_trans.
@@ -1022,18 +1021,16 @@ Lemma sort_sort (T : Type) (leT leT' : rel T) :
   forall s : seq T, sort _ leT (sort _ leT' s) = sort _ (lexord leT leT') s.
 Proof.
 move=> leT_total leT_tr leT'_total leT'_tr s.
-case Ds: s => [|x s1]; first by rewrite !sort_nil.
-pose lt_lex' := lexord (relpre (nth x s) leT') ltn.
-pose lt_lex := lexord (relpre (nth x s) leT) lt_lex'.
-have lt_lex'_tr: transitive lt_lex'.
-  by apply/lexord_trans/ltn_trans => ? ? ?; apply: leT'_tr.
-have lt_lex_tr : transitive lt_lex.
-  by apply/lexord_trans/lt_lex'_tr => ? ? ?; apply: leT_tr.
-rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /lexord //=.
+case s_eq : {-}s => [|x s1]; first by rewrite s_eq !sort_nil.
+pose lt' := lexord (relpre (nth x s) leT') ltn.
+pose lt := lexord (relpre (nth x s) leT) lt'.
+have lt'_tr: transitive lt' by apply/lexord_trans/ltn_trans/relpre_trans.
+have lt_tr : transitive lt by apply/lexord_trans/lt'_tr/relpre_trans.
+rewrite -(mkseq_nth x s) !(filter_map, sort_map); congr map.
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
 - by move=> ?; rewrite /= ltnn !(implybF, andbN).
 - exact/sort_stable/sort_stable/iota_ltn_sorted/ltn_trans.
-- under eq_sorted => ? ? do rewrite lexordA.
+- under eq_sorted do rewrite lexordA.
   exact/sort_stable/iota_ltn_sorted/ltn_trans/lexord_total.
 - by move=> ?; rewrite !mem_sort.
 Qed.
@@ -1089,11 +1086,10 @@ Lemma eq_sort (sort1 sort2 : stableSort) (T : Type) (leT : rel T) :
   total leT -> transitive leT -> sort1 _ leT =1 sort2 _ leT.
 Proof.
 move=> leT_total leT_tr s; case Ds: s => [|x s1]; first by rewrite !sort_nil.
-pose lt_lex := lexord (relpre (nth x s) leT) ltn.
-have lt_lex_tr: transitive lt_lex.
-  by apply/lexord_trans/ltn_trans => ? ? ?; apply/leT_tr.
+pose lt := lexord (relpre (nth x s) leT) ltn.
+have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
 rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt_lex); rewrite /lt_lex /lexord //=.
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
 - by move=> ?; rewrite /= ltnn implybF andbN.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
