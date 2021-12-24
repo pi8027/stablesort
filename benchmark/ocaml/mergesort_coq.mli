@@ -64,29 +64,30 @@ type ('x0, 'x, 't_R) rel_R = 'x0 -> 'x -> 't_R -> ('x0, 'x, 't_R) pred_R
 
 module StableSort :
  sig
-  type 't tree =
-  | Coq_branch_tree of bool * 't tree * 't tree
-  | Coq_leaf_tree of Equality.sort * 't list
+  type 't trace =
+  | Coq_branch_trace of bool * 't trace * 't trace
+  | Coq_leaf_trace of Equality.sort * 't list
 
-  val empty_tree : 'a1 rel -> 'a1 tree
+  val empty_trace : 'a1 rel -> 'a1 trace
 
-  val flatten_tree : 'a1 rel -> 'a1 tree -> 'a1 list
+  val flatten_trace : 'a1 rel -> 'a1 trace -> 'a1 list
 
-  val sort_tree : 'a1 rel -> 'a1 tree -> 'a1 list
+  val sort_trace : 'a1 rel -> 'a1 trace -> 'a1 list
 
-  type 't tree_nil_spec =
-  | TreeNil
-  | TreeNotNil
+  type 't trace_nil_spec =
+  | TraceNil
+  | TraceNotNil
 
-  val tree_nilP : 'a1 rel -> 'a1 tree -> 'a1 tree_nil_spec
+  val trace_nilP : 'a1 rel -> 'a1 trace -> 'a1 trace_nil_spec
 
   type sort_ty_R =
     __ -> __ -> __ -> __ rel -> __ rel -> (__, __, __) rel_R -> __ list -> __
     list -> (__, __, __) list_R -> (__, __, __) list_R
 
-  type interface = { sort_fun : (__ -> __ rel -> __ list -> __ list);
-                     interface__1 : sort_ty_R;
-                     interface__2 : (__ -> __ rel -> __ list -> __ tree sig2) }
+  type coq_function = { apply : (__ -> __ rel -> __ list -> __ list);
+                        coq_function__1 : sort_ty_R;
+                        coq_function__2 : (__ -> __ rel -> __ list -> __
+                                          trace sig2) }
  end
 
 module type MergeSig =
@@ -176,29 +177,29 @@ module CBN_ :
 
   val sortNrec : 'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list
 
-  val ascending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val incr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
-  val descending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val decr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
   val sortN : 'a1 rel -> 'a1 list -> 'a1 list
 
   val merge_sort_pushP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree list sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace list sig2
 
   val merge_sort_popP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace sig2
 
-  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
   val merge_R :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -232,13 +233,13 @@ module CBN_ :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
     ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R
 
-  val sort1_stable : StableSort.interface
+  val sort1_stable : StableSort.coq_function
 
-  val sort2_stable : StableSort.interface
+  val sort2_stable : StableSort.coq_function
 
-  val sort3_stable : StableSort.interface
+  val sort3_stable : StableSort.coq_function
 
-  val sortN_stable : StableSort.interface
+  val sortN_stable : StableSort.coq_function
  end
 
 module CBN :
@@ -261,29 +262,29 @@ module CBN :
 
   val sortNrec : 'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list
 
-  val ascending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val incr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
-  val descending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val decr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
   val sortN : 'a1 rel -> 'a1 list -> 'a1 list
 
   val merge_sort_pushP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree list sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace list sig2
 
   val merge_sort_popP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace sig2
 
-  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
   val merge_R :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -317,13 +318,13 @@ module CBN :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
     ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R
 
-  val sort1_stable : StableSort.interface
+  val sort1_stable : StableSort.coq_function
 
-  val sort2_stable : StableSort.interface
+  val sort2_stable : StableSort.coq_function
 
-  val sort3_stable : StableSort.interface
+  val sort3_stable : StableSort.coq_function
 
-  val sortN_stable : StableSort.interface
+  val sortN_stable : StableSort.coq_function
  end
 
 module CBNAcc :
@@ -346,29 +347,29 @@ module CBNAcc :
 
   val sortNrec : 'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list
 
-  val ascending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val incr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
-  val descending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val decr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
   val sortN : 'a1 rel -> 'a1 list -> 'a1 list
 
   val merge_sort_pushP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree list sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace list sig2
 
   val merge_sort_popP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace sig2
 
-  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
   val merge_R :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -402,13 +403,13 @@ module CBNAcc :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
     ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R
 
-  val sort1_stable : StableSort.interface
+  val sort1_stable : StableSort.coq_function
 
-  val sort2_stable : StableSort.interface
+  val sort2_stable : StableSort.coq_function
 
-  val sort3_stable : StableSort.interface
+  val sort3_stable : StableSort.coq_function
 
-  val sortN_stable : StableSort.interface
+  val sortN_stable : StableSort.coq_function
  end
 
 module CBV_ :
@@ -433,29 +434,29 @@ module CBV_ :
 
   val sortNrec : 'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list
 
-  val ascending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val incr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
-  val descending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val decr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
   val sortN : 'a1 rel -> 'a1 list -> 'a1 list
 
   val merge_sort_pushP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree list sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace list sig2
 
   val merge_sort_popP :
-    'a1 rel -> bool -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree sig2
+    'a1 rel -> bool -> 'a1 StableSort.trace -> 'a1 StableSort.trace list ->
+    'a1 StableSort.trace sig2
 
-  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
   val revmerge_R :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -490,13 +491,13 @@ module CBV_ :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
     ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R
 
-  val sort1_stable : StableSort.interface
+  val sort1_stable : StableSort.coq_function
 
-  val sort2_stable : StableSort.interface
+  val sort2_stable : StableSort.coq_function
 
-  val sort3_stable : StableSort.interface
+  val sort3_stable : StableSort.coq_function
 
-  val sortN_stable : StableSort.interface
+  val sortN_stable : StableSort.coq_function
  end
 
 module CBV :
@@ -520,29 +521,29 @@ module CBV :
 
   val sortNrec : 'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list
 
-  val ascending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val incr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
-  val descending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val decr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
   val sortN : 'a1 rel -> 'a1 list -> 'a1 list
 
   val merge_sort_pushP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree list sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace list sig2
 
   val merge_sort_popP :
-    'a1 rel -> bool -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree sig2
+    'a1 rel -> bool -> 'a1 StableSort.trace -> 'a1 StableSort.trace list ->
+    'a1 StableSort.trace sig2
 
-  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
   val revmerge_R :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -577,13 +578,13 @@ module CBV :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
     ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R
 
-  val sort1_stable : StableSort.interface
+  val sort1_stable : StableSort.coq_function
 
-  val sort2_stable : StableSort.interface
+  val sort2_stable : StableSort.coq_function
 
-  val sort3_stable : StableSort.interface
+  val sort3_stable : StableSort.coq_function
 
-  val sortN_stable : StableSort.interface
+  val sortN_stable : StableSort.coq_function
  end
 
 module CBVAcc :
@@ -607,29 +608,29 @@ module CBVAcc :
 
   val sortNrec : 'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list
 
-  val ascending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val incr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
-  val descending :
-    'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list
+  val decr :
+    'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list
 
   val sortN : 'a1 rel -> 'a1 list -> 'a1 list
 
   val merge_sort_pushP :
-    'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree list sig2
+    'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+    StableSort.trace list sig2
 
   val merge_sort_popP :
-    'a1 rel -> bool -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-    StableSort.tree sig2
+    'a1 rel -> bool -> 'a1 StableSort.trace -> 'a1 StableSort.trace list ->
+    'a1 StableSort.trace sig2
 
-  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
-  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2
+  val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2
 
   val revmerge_R :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -664,11 +665,11 @@ module CBVAcc :
     'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
     ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R
 
-  val sort1_stable : StableSort.interface
+  val sort1_stable : StableSort.coq_function
 
-  val sort2_stable : StableSort.interface
+  val sort2_stable : StableSort.coq_function
 
-  val sort3_stable : StableSort.interface
+  val sort3_stable : StableSort.coq_function
 
-  val sortN_stable : StableSort.interface
+  val sortN_stable : StableSort.coq_function
  end

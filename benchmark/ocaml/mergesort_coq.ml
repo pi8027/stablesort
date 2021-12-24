@@ -103,57 +103,59 @@ type ('x0, 'x, 't_R) rel_R = 'x0 -> 'x -> 't_R -> ('x0, 'x, 't_R) pred_R
 
 module StableSort =
  struct
-  type 't tree =
-  | Coq_branch_tree of bool * 't tree * 't tree
-  | Coq_leaf_tree of Equality.sort * 't list
+  type 't trace =
+  | Coq_branch_trace of bool * 't trace * 't trace
+  | Coq_leaf_trace of Equality.sort * 't list
 
-  (** val empty_tree : 'a1 rel -> 'a1 tree **)
+  (** val empty_trace : 'a1 rel -> 'a1 trace **)
 
-  let empty_tree _ =
-    Coq_leaf_tree ((Obj.magic false), [])
+  let empty_trace _ =
+    Coq_leaf_trace ((Obj.magic false), [])
 
-  (** val flatten_tree : 'a1 rel -> 'a1 tree -> 'a1 list **)
+  (** val flatten_trace : 'a1 rel -> 'a1 trace -> 'a1 list **)
 
-  let rec flatten_tree leT = function
-  | Coq_branch_tree (_, l, r) -> cat (flatten_tree leT l) (flatten_tree leT r)
-  | Coq_leaf_tree (_, s) -> s
+  let rec flatten_trace leT = function
+  | Coq_branch_trace (_, l, r) ->
+    cat (flatten_trace leT l) (flatten_trace leT r)
+  | Coq_leaf_trace (_, s) -> s
 
-  (** val sort_tree : 'a1 rel -> 'a1 tree -> 'a1 list **)
+  (** val sort_trace : 'a1 rel -> 'a1 trace -> 'a1 list **)
 
-  let rec sort_tree leT = function
-  | Coq_branch_tree (b, l, r) ->
+  let rec sort_trace leT = function
+  | Coq_branch_trace (b, l, r) ->
     if b
-    then merge leT (sort_tree leT l) (sort_tree leT r)
+    then merge leT (sort_trace leT l) (sort_trace leT r)
     else List.rev
-           (merge (fun x y -> leT y x) (List.rev (sort_tree leT r))
-             (List.rev (sort_tree leT l)))
-  | Coq_leaf_tree (b, s) -> if Obj.magic b then s else List.rev s
+           (merge (fun x y -> leT y x) (List.rev (sort_trace leT r))
+             (List.rev (sort_trace leT l)))
+  | Coq_leaf_trace (b, s) -> if Obj.magic b then s else List.rev s
 
-  type 't tree_nil_spec =
-  | TreeNil
-  | TreeNotNil
+  type 't trace_nil_spec =
+  | TraceNil
+  | TraceNotNil
 
-  (** val tree_nilP : 'a1 rel -> 'a1 tree -> 'a1 tree_nil_spec **)
+  (** val trace_nilP : 'a1 rel -> 'a1 trace -> 'a1 trace_nil_spec **)
 
-  let tree_nilP leT t =
-    match nilP (sort_tree leT t) with
+  let trace_nilP leT t =
+    match nilP (sort_trace leT t) with
     | ReflectT ->
-      (match nilP (flatten_tree leT t) with
+      (match nilP (flatten_trace leT t) with
        | ReflectT ->
-         ssr_have __ (fun _ _ -> ssr_have __ (fun _ _ -> TreeNil)) __ __
+         ssr_have __ (fun _ _ -> ssr_have __ (fun _ _ -> TraceNil)) __ __
        | ReflectF -> assert false (* absurd case *))
     | ReflectF ->
-      (match nilP (flatten_tree leT t) with
+      (match nilP (flatten_trace leT t) with
        | ReflectT -> assert false (* absurd case *)
-       | ReflectF -> TreeNotNil)
+       | ReflectF -> TraceNotNil)
 
   type sort_ty_R =
     __ -> __ -> __ -> __ rel -> __ rel -> (__, __, __) rel_R -> __ list -> __
     list -> (__, __, __) list_R -> (__, __, __) list_R
 
-  type interface = { sort_fun : (__ -> __ rel -> __ list -> __ list);
-                     interface__1 : sort_ty_R;
-                     interface__2 : (__ -> __ rel -> __ list -> __ tree sig2) }
+  type coq_function = { apply : (__ -> __ rel -> __ list -> __ list);
+                        coq_function__1 : sort_ty_R;
+                        coq_function__2 : (__ -> __ rel -> __ list -> __
+                                          trace sig2) }
  end
 
 module type MergeSig =
@@ -601,73 +603,73 @@ module CBN_ =
     let rec sortNrec0 stack x = function
     | [] -> merge_sort_pop leT (x::[]) stack
     | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::[]) y s0
-      else descending0 stack (x::[]) y s0
-    and ascending0 stack acc x = function
-    | [] -> merge_sort_pop leT (List.rev_append acc (x::[])) stack
-    | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::acc) y s0
-      else sortNrec0
-             (merge_sort_push leT (List.rev_append acc (x::[])) stack) y s0
-    and descending0 stack acc x = function
-    | [] -> merge_sort_pop leT (x::acc) stack
-    | y::s0 ->
-      if leT x y
-      then sortNrec0 (merge_sort_push leT (x::acc) stack) y s0
-      else descending0 stack (x::acc) y s0
+      if leT x y then incr0 stack y s0 (x::[]) else decr0 stack y s0 (x::[])
+    and incr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT (List.rev_append accu (x::[])) stack
+      | y::s0 ->
+        if leT x y
+        then incr0 stack y s0 (x::accu)
+        else sortNrec0
+               (merge_sort_push leT (List.rev_append accu (x::[])) stack) y s0
+    and decr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT (x::accu) stack
+      | y::s0 ->
+        if leT x y
+        then sortNrec0 (merge_sort_push leT (x::accu) stack) y s0
+        else decr0 stack y s0 (x::accu)
     in sortNrec0
 
-  (** val ascending :
-      'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list **)
+  (** val incr :
+      'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list **)
 
-  let ascending leT =
+  let incr leT =
     let rec sortNrec0 stack x = function
     | [] -> merge_sort_pop leT (x::[]) stack
     | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::[]) y s0
-      else descending0 stack (x::[]) y s0
-    and ascending0 stack acc x = function
-    | [] -> merge_sort_pop leT (List.rev_append acc (x::[])) stack
-    | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::acc) y s0
-      else sortNrec0
-             (merge_sort_push leT (List.rev_append acc (x::[])) stack) y s0
-    and descending0 stack acc x = function
-    | [] -> merge_sort_pop leT (x::acc) stack
-    | y::s0 ->
-      if leT x y
-      then sortNrec0 (merge_sort_push leT (x::acc) stack) y s0
-      else descending0 stack (x::acc) y s0
-    in ascending0
+      if leT x y then incr0 stack y s0 (x::[]) else decr0 stack y s0 (x::[])
+    and incr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT (List.rev_append accu (x::[])) stack
+      | y::s0 ->
+        if leT x y
+        then incr0 stack y s0 (x::accu)
+        else sortNrec0
+               (merge_sort_push leT (List.rev_append accu (x::[])) stack) y s0
+    and decr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT (x::accu) stack
+      | y::s0 ->
+        if leT x y
+        then sortNrec0 (merge_sort_push leT (x::accu) stack) y s0
+        else decr0 stack y s0 (x::accu)
+    in incr0
 
-  (** val descending :
-      'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list **)
+  (** val decr :
+      'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list **)
 
-  let descending leT =
+  let decr leT =
     let rec sortNrec0 stack x = function
     | [] -> merge_sort_pop leT (x::[]) stack
     | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::[]) y s0
-      else descending0 stack (x::[]) y s0
-    and ascending0 stack acc x = function
-    | [] -> merge_sort_pop leT (List.rev_append acc (x::[])) stack
-    | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::acc) y s0
-      else sortNrec0
-             (merge_sort_push leT (List.rev_append acc (x::[])) stack) y s0
-    and descending0 stack acc x = function
-    | [] -> merge_sort_pop leT (x::acc) stack
-    | y::s0 ->
-      if leT x y
-      then sortNrec0 (merge_sort_push leT (x::acc) stack) y s0
-      else descending0 stack (x::acc) y s0
-    in descending0
+      if leT x y then incr0 stack y s0 (x::[]) else decr0 stack y s0 (x::[])
+    and incr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT (List.rev_append accu (x::[])) stack
+      | y::s0 ->
+        if leT x y
+        then incr0 stack y s0 (x::accu)
+        else sortNrec0
+               (merge_sort_push leT (List.rev_append accu (x::[])) stack) y s0
+    and decr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT (x::accu) stack
+      | y::s0 ->
+        if leT x y
+        then sortNrec0 (merge_sort_push leT (x::accu) stack) y s0
+        else decr0 stack y s0 (x::accu)
+    in decr0
 
   (** val sortN : 'a1 rel -> 'a1 list -> 'a1 list **)
 
@@ -676,66 +678,66 @@ module CBN_ =
   | x::s0 -> sortNrec leT [] x s0
 
   (** val merge_sort_pushP :
-      'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-      StableSort.tree list sig2 **)
+      'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+      StableSort.trace list sig2 **)
 
   let rec merge_sort_pushP leT t = function
   | [] -> t::[]
   | y::l ->
-    (match StableSort.tree_nilP leT y with
-     | StableSort.TreeNil -> t::l
-     | StableSort.TreeNotNil ->
+    (match StableSort.trace_nilP leT y with
+     | StableSort.TraceNil -> t::l
+     | StableSort.TraceNotNil ->
        ssr_have
-         (merge_sort_pushP leT (StableSort.Coq_branch_tree (true, y, t)) l)
+         (merge_sort_pushP leT (StableSort.Coq_branch_trace (true, y, t)) l)
          (fun __top_assumption_ ->
-         (StableSort.empty_tree leT)::__top_assumption_))
+         (StableSort.empty_trace leT)::__top_assumption_))
 
   (** val merge_sort_popP :
-      'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-      StableSort.tree sig2 **)
+      'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+      StableSort.trace sig2 **)
 
   let rec merge_sort_popP leT t = function
   | [] -> t
   | y::l ->
     ssr_have
-      (merge_sort_popP leT (StableSort.Coq_branch_tree (true, y, t)) l)
+      (merge_sort_popP leT (StableSort.Coq_branch_trace (true, y, t)) l)
       (fun __top_assumption_ -> __top_assumption_)
 
-  (** val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sort1P leT s =
     ssr_have __ (fun _ ->
       ssr_have __ (fun _ ->
         let rec f l stack =
           match l with
-          | [] -> merge_sort_popP leT (StableSort.empty_tree leT) stack
+          | [] -> merge_sort_popP leT (StableSort.empty_trace leT) stack
           | y::l0 ->
             f l0
-              (merge_sort_pushP leT (StableSort.Coq_leaf_tree
+              (merge_sort_pushP leT (StableSort.Coq_leaf_trace
                 ((Obj.magic true), (y::[]))) stack)
         in f s []))
 
-  (** val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sort2P leT s =
     ssr_have __ (fun _ ->
       ssr_have __ (fun _ ->
         let rec iHs stack = function
         | [] ->
-          merge_sort_popP leT (StableSort.Coq_leaf_tree ((Obj.magic true),
+          merge_sort_popP leT (StableSort.Coq_leaf_trace ((Obj.magic true),
             [])) stack
-        | x::x0 ->
-          (match x0 with
+        | a::l ->
+          (match l with
            | [] ->
-             merge_sort_popP leT (StableSort.Coq_leaf_tree ((Obj.magic true),
-               (x::[]))) stack
-           | x1::x2 ->
+             merge_sort_popP leT (StableSort.Coq_leaf_trace
+               ((Obj.magic true), (a::[]))) stack
+           | a0::l0 ->
              iHs
-               (merge_sort_pushP leT (StableSort.Coq_leaf_tree
-                 ((Obj.magic leT x x1), (x::(x1::[])))) stack) x2)
+               (merge_sort_pushP leT (StableSort.Coq_leaf_trace
+                 ((Obj.magic leT a a0), (a::(a0::[])))) stack) l0)
         in iHs [] s))
 
-  (** val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sort3P leT s =
     ssr_have __ (fun _ ->
@@ -743,67 +745,67 @@ module CBN_ =
         ssr_have __ (fun _ ->
           let rec iHs stack = function
           | [] ->
-            merge_sort_popP leT (StableSort.Coq_leaf_tree ((Obj.magic true),
+            merge_sort_popP leT (StableSort.Coq_leaf_trace ((Obj.magic true),
               [])) stack
-          | x::x0 ->
-            (match x0 with
+          | a::l ->
+            (match l with
              | [] ->
-               merge_sort_popP leT (StableSort.Coq_leaf_tree
-                 ((Obj.magic true), (x::[]))) stack
-             | x1::x2 ->
-               (match x2 with
+               merge_sort_popP leT (StableSort.Coq_leaf_trace
+                 ((Obj.magic true), (a::[]))) stack
+             | a0::l0 ->
+               (match l0 with
                 | [] ->
-                  merge_sort_popP leT (StableSort.Coq_leaf_tree
-                    ((Obj.magic leT x x1), (x::(x1::[])))) stack
-                | x3::x4 ->
+                  merge_sort_popP leT (StableSort.Coq_leaf_trace
+                    ((Obj.magic leT a a0), (a::(a0::[])))) stack
+                | a1::l1 ->
                   ssr_have __ (fun _ _ ->
                     iHs
-                      (merge_sort_pushP leT (StableSort.Coq_branch_tree
-                        (false, (StableSort.Coq_leaf_tree
-                        ((Obj.magic leT x x1), (x::(x1::[])))),
-                        (StableSort.Coq_leaf_tree ((Obj.magic true),
-                        (x3::[]))))) stack) x4) __))
+                      (merge_sort_pushP leT (StableSort.Coq_branch_trace
+                        (false, (StableSort.Coq_leaf_trace
+                        ((Obj.magic leT a a0), (a::(a0::[])))),
+                        (StableSort.Coq_leaf_trace ((Obj.magic true),
+                        (a1::[]))))) stack) l1) __))
           in iHs [] s)))
 
-  (** val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sortNP leT = function
-  | [] -> StableSort.empty_tree leT
-  | x::x0 ->
+  | [] -> StableSort.empty_trace leT
+  | a::l ->
     ssr_have __ (fun _ ->
       ssr_have __ (fun _ ->
-        let rec iHs stack x1 = function
+        let rec iHs stack x = function
         | [] ->
-          merge_sort_popP leT (StableSort.Coq_leaf_tree ((Obj.magic true),
-            (x1::[]))) stack
-        | x2::x3 ->
+          merge_sort_popP leT (StableSort.Coq_leaf_trace ((Obj.magic true),
+            (x::[]))) stack
+        | a0::l0 ->
           ssr_have __
             (ssr_have __ (fun _ _ ->
-              let rec f l ord x4 acc =
-                match l with
+              let rec f l1 ord x0 acc =
+                match l1 with
                 | [] ->
-                  merge_sort_popP leT (StableSort.Coq_leaf_tree
-                    ((Obj.magic ord), (List.rev (x4::acc)))) stack
-                | y::l0 ->
+                  merge_sort_popP leT (StableSort.Coq_leaf_trace
+                    ((Obj.magic ord), (List.rev (x0::acc)))) stack
+                | y::l2 ->
                   if ord
-                  then (match boolP (leT x4 y) with
+                  then (match boolP (leT x0 y) with
                         | AltTrue ->
-                          ssr_have __ (fun _ -> f l0 true y (x4::acc))
+                          ssr_have __ (fun _ -> f l2 true y (x0::acc))
                         | AltFalse ->
                           iHs
-                            (merge_sort_pushP leT (StableSort.Coq_leaf_tree
-                              ((Obj.magic true), (List.rev (x4::acc)))) stack)
-                            y l0)
-                  else (match boolP (leT x4 y) with
+                            (merge_sort_pushP leT (StableSort.Coq_leaf_trace
+                              ((Obj.magic true), (List.rev (x0::acc)))) stack)
+                            y l2)
+                  else (match boolP (leT x0 y) with
                         | AltTrue ->
                           iHs
-                            (merge_sort_pushP leT (StableSort.Coq_leaf_tree
-                              ((Obj.magic false), (List.rev (x4::acc))))
-                              stack) y l0
+                            (merge_sort_pushP leT (StableSort.Coq_leaf_trace
+                              ((Obj.magic false), (List.rev (x0::acc))))
+                              stack) y l2
                         | AltFalse ->
-                          ssr_have __ (fun _ -> f l0 false y (x4::acc)))
-              in f x3 (leT x1 x2) x2 (x1::[])))
-        in iHs [] x x0))
+                          ssr_have __ (fun _ -> f l2 false y (x0::acc)))
+              in f l0 (leT x a0) a0 (x::[])))
+        in iHs [] a l))
 
   (** val merge_R :
       'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -1070,110 +1072,115 @@ module CBN_ =
     | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
       (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
        | Bool_R_true_R ->
-         ascending_R stack_UU2081_ stack_UU2082_ stack_R (x_UU2081_0::[])
-           (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [],
-           [], List_R_nil_R)) y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0
-           s_R2
+         incr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+           s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::[]) (x_UU2082_0::[])
+           (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [], [],
+           List_R_nil_R))
        | Bool_R_false_R ->
-         descending_R stack_UU2081_ stack_UU2082_ stack_R (x_UU2081_0::[])
-           (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [],
-           [], List_R_nil_R)) y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0
-           s_R2)
-    and ascending_R stack_UU2081_ stack_UU2082_ stack_R acc_UU2081_ acc_UU2082_ acc_R x_UU2081_0 x_UU2082_0 x_R0 _ _ = function
-    | List_R_nil_R ->
-      merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
-        (List.rev_append acc_UU2081_ (x_UU2081_0::[]))
-        (List.rev_append acc_UU2082_ (x_UU2082_0::[]))
-        (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-           match s1_R with
-           | List_R_nil_R -> s2_R
-           | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
-                            s1'_UU2082_, s1'_R) ->
-             catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R (x_UU2081_1::s2_UU2081_)
-               (x_UU2082_1::s2_UU2082_) (List_R_cons_R (x_UU2081_1,
-               x_UU2082_1, x_R1, s2_UU2081_, s2_UU2082_, s2_R))
-         in catrev_R acc_UU2081_ acc_UU2082_ acc_R (x_UU2081_0::[])
-              (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0,
-              [], [], List_R_nil_R))) stack_UU2081_ stack_UU2082_ stack_R
-    | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
-      (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
-       | Bool_R_true_R ->
-         ascending_R stack_UU2081_ stack_UU2082_ stack_R
-           (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_) (List_R_cons_R
-           (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_, acc_UU2082_, acc_R))
-           y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2
-       | Bool_R_false_R ->
-         sortNrec_R
-           (merge_sort_push leT_UU2081_
-             (List.rev_append acc_UU2081_ (x_UU2081_0::[])) stack_UU2081_)
-           (merge_sort_push leT_UU2082_
-             (List.rev_append acc_UU2082_ (x_UU2082_0::[])) stack_UU2082_)
-           (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
-             (List.rev_append acc_UU2081_ (x_UU2081_0::[]))
-             (List.rev_append acc_UU2082_ (x_UU2082_0::[]))
-             (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-                match s1_R with
-                | List_R_nil_R -> s2_R
-                | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
-                                 s1'_UU2082_, s1'_R) ->
-                  catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
-                    (x_UU2081_1::s2_UU2081_) (x_UU2082_1::s2_UU2082_)
-                    (List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s2_UU2081_,
-                    s2_UU2082_, s2_R))
-              in catrev_R acc_UU2081_ acc_UU2082_ acc_R (x_UU2081_0::[])
-                   (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
-                   x_R0, [], [], List_R_nil_R))) stack_UU2081_ stack_UU2082_
-             stack_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2)
-    and descending_R stack_UU2081_ stack_UU2082_ stack_R acc_UU2081_ acc_UU2082_ acc_R x_UU2081_0 x_UU2082_0 x_R0 _ _ = function
-    | List_R_nil_R ->
-      merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
-        (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_) (List_R_cons_R
-        (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_, acc_UU2082_, acc_R))
-        stack_UU2081_ stack_UU2082_ stack_R
-    | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
-      (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
-       | Bool_R_true_R ->
-         sortNrec_R
-           (merge_sort_push leT_UU2081_ (x_UU2081_0::acc_UU2081_)
-             stack_UU2081_)
-           (merge_sort_push leT_UU2082_ (x_UU2082_0::acc_UU2082_)
-             stack_UU2082_)
-           (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
-             (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_)
-             (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_,
-             acc_UU2082_, acc_R)) stack_UU2081_ stack_UU2082_ stack_R)
-           y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2
-       | Bool_R_false_R ->
-         descending_R stack_UU2081_ stack_UU2082_ stack_R
-           (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_) (List_R_cons_R
-           (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_, acc_UU2082_, acc_R))
-           y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2)
+         decr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+           s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::[]) (x_UU2082_0::[])
+           (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [], [],
+           List_R_nil_R)))
+    and incr_R stack_UU2081_ stack_UU2082_ stack_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 accu_UU2081_ accu_UU2082_ accu_R =
+      match s_R1 with
+      | List_R_nil_R ->
+        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
+          (List.rev_append accu_UU2081_ (x_UU2081_0::[]))
+          (List.rev_append accu_UU2082_ (x_UU2082_0::[]))
+          (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+             match s1_R with
+             | List_R_nil_R -> s2_R
+             | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
+                              s1'_UU2082_, s1'_R) ->
+               catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
+                 (x_UU2081_1::s2_UU2081_) (x_UU2082_1::s2_UU2082_)
+                 (List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s2_UU2081_,
+                 s2_UU2082_, s2_R))
+           in catrev_R accu_UU2081_ accu_UU2082_ accu_R (x_UU2081_0::[])
+                (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
+                x_R0, [], [], List_R_nil_R))) stack_UU2081_ stack_UU2082_
+          stack_R
+      | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
+        (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
+         | Bool_R_true_R ->
+           incr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::accu_UU2081_)
+             (x_UU2082_0::accu_UU2082_) (List_R_cons_R (x_UU2081_0,
+             x_UU2082_0, x_R0, accu_UU2081_, accu_UU2082_, accu_R))
+         | Bool_R_false_R ->
+           sortNrec_R
+             (merge_sort_push leT_UU2081_
+               (List.rev_append accu_UU2081_ (x_UU2081_0::[])) stack_UU2081_)
+             (merge_sort_push leT_UU2082_
+               (List.rev_append accu_UU2082_ (x_UU2082_0::[])) stack_UU2082_)
+             (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
+               (List.rev_append accu_UU2081_ (x_UU2081_0::[]))
+               (List.rev_append accu_UU2082_ (x_UU2082_0::[]))
+               (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+                  match s1_R with
+                  | List_R_nil_R -> s2_R
+                  | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
+                                   s1'_UU2082_, s1'_R) ->
+                    catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
+                      (x_UU2081_1::s2_UU2081_) (x_UU2082_1::s2_UU2082_)
+                      (List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1,
+                      s2_UU2081_, s2_UU2082_, s2_R))
+                in catrev_R accu_UU2081_ accu_UU2082_ accu_R (x_UU2081_0::[])
+                     (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
+                     x_R0, [], [], List_R_nil_R))) stack_UU2081_
+               stack_UU2082_ stack_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0
+             s_UU2082_0 s_R2)
+    and decr_R stack_UU2081_ stack_UU2082_ stack_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 accu_UU2081_ accu_UU2082_ accu_R =
+      match s_R1 with
+      | List_R_nil_R ->
+        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
+          (x_UU2081_0::accu_UU2081_) (x_UU2082_0::accu_UU2082_)
+          (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, accu_UU2081_,
+          accu_UU2082_, accu_R)) stack_UU2081_ stack_UU2082_ stack_R
+      | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
+        (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
+         | Bool_R_true_R ->
+           sortNrec_R
+             (merge_sort_push leT_UU2081_ (x_UU2081_0::accu_UU2081_)
+               stack_UU2081_)
+             (merge_sort_push leT_UU2082_ (x_UU2082_0::accu_UU2082_)
+               stack_UU2082_)
+             (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
+               (x_UU2081_0::accu_UU2081_) (x_UU2082_0::accu_UU2082_)
+               (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, accu_UU2081_,
+               accu_UU2082_, accu_R)) stack_UU2081_ stack_UU2082_ stack_R)
+             y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2
+         | Bool_R_false_R ->
+           decr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::accu_UU2081_)
+             (x_UU2082_0::accu_UU2082_) (List_R_cons_R (x_UU2081_0,
+             x_UU2082_0, x_R0, accu_UU2081_, accu_UU2082_, accu_R)))
     in sortNrec_R [] [] List_R_nil_R x_UU2081_ x_UU2082_ x_R s_UU2081_
          s_UU2082_ s_R0
 
-  (** val sort1_stable : StableSort.interface **)
+  (** val sort1_stable : StableSort.coq_function **)
 
   let sort1_stable =
-    { StableSort.sort_fun = (fun _ -> sort1); StableSort.interface__1 =
-      (fun _ _ _ -> sort1_R); StableSort.interface__2 = (fun _ -> sort1P) }
+    { StableSort.apply = (fun _ -> sort1); StableSort.coq_function__1 =
+      (fun _ _ _ -> sort1_R); StableSort.coq_function__2 = (fun _ -> sort1P) }
 
-  (** val sort2_stable : StableSort.interface **)
+  (** val sort2_stable : StableSort.coq_function **)
 
   let sort2_stable =
-    { StableSort.sort_fun = (fun _ -> sort2); StableSort.interface__1 =
-      (fun _ _ _ -> sort2_R); StableSort.interface__2 = (fun _ -> sort2P) }
+    { StableSort.apply = (fun _ -> sort2); StableSort.coq_function__1 =
+      (fun _ _ _ -> sort2_R); StableSort.coq_function__2 = (fun _ -> sort2P) }
 
-  (** val sort3_stable : StableSort.interface **)
+  (** val sort3_stable : StableSort.coq_function **)
 
   let sort3_stable =
-    { StableSort.sort_fun = (fun _ -> sort3); StableSort.interface__1 =
-      (fun _ _ _ -> sort3_R); StableSort.interface__2 = (fun _ -> sort3P) }
+    { StableSort.apply = (fun _ -> sort3); StableSort.coq_function__1 =
+      (fun _ _ _ -> sort3_R); StableSort.coq_function__2 = (fun _ -> sort3P) }
 
-  (** val sortN_stable : StableSort.interface **)
+  (** val sortN_stable : StableSort.coq_function **)
 
   let sortN_stable =
-    { StableSort.sort_fun = (fun _ -> sortN); StableSort.interface__1 =
-      (fun _ _ _ -> sortN_R); StableSort.interface__2 = (fun _ -> sortNP) }
+    { StableSort.apply = (fun _ -> sortN); StableSort.coq_function__1 =
+      (fun _ _ _ -> sortN_R); StableSort.coq_function__2 = (fun _ -> sortNP) }
  end
 
 module CBN = CBN_(Merge)
@@ -1235,15 +1242,15 @@ module CBV_ =
 
   (** val sort2rec : 'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 list **)
 
-  let rec sort2rec leT ss s = match s with
-  | [] -> merge_sort_pop leT false s ss
+  let rec sort2rec leT stack s = match s with
+  | [] -> merge_sort_pop leT false s stack
   | x1::l ->
     (match l with
-     | [] -> merge_sort_pop leT false s ss
+     | [] -> merge_sort_pop leT false s stack
      | x2::s' ->
        sort2rec leT
          (merge_sort_push leT
-           (if leT x1 x2 then x1::(x2::[]) else x2::(x1::[])) ss) s')
+           (if leT x1 x2 then x1::(x2::[]) else x2::(x1::[])) stack) s')
 
   (** val sort2 : 'a1 rel -> 'a1 list -> 'a1 list **)
 
@@ -1289,73 +1296,73 @@ module CBV_ =
     let rec sortNrec0 stack x = function
     | [] -> merge_sort_pop leT false (x::[]) stack
     | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::[]) y s0
-      else descending0 stack (x::[]) y s0
-    and ascending0 stack acc x = function
-    | [] -> merge_sort_pop leT false (List.rev_append acc (x::[])) stack
-    | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::acc) y s0
-      else sortNrec0
-             (merge_sort_push leT (List.rev_append acc (x::[])) stack) y s0
-    and descending0 stack acc x = function
-    | [] -> merge_sort_pop leT false (x::acc) stack
-    | y::s0 ->
-      if leT x y
-      then sortNrec0 (merge_sort_push leT (x::acc) stack) y s0
-      else descending0 stack (x::acc) y s0
+      if leT x y then incr0 stack y s0 (x::[]) else decr0 stack y s0 (x::[])
+    and incr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT false (List.rev_append accu (x::[])) stack
+      | y::s0 ->
+        if leT x y
+        then incr0 stack y s0 (x::accu)
+        else sortNrec0
+               (merge_sort_push leT (List.rev_append accu (x::[])) stack) y s0
+    and decr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT false (x::accu) stack
+      | y::s0 ->
+        if leT x y
+        then sortNrec0 (merge_sort_push leT (x::accu) stack) y s0
+        else decr0 stack y s0 (x::accu)
     in sortNrec0
 
-  (** val ascending :
-      'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list **)
+  (** val incr :
+      'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list **)
 
-  let ascending leT =
+  let incr leT =
     let rec sortNrec0 stack x = function
     | [] -> merge_sort_pop leT false (x::[]) stack
     | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::[]) y s0
-      else descending0 stack (x::[]) y s0
-    and ascending0 stack acc x = function
-    | [] -> merge_sort_pop leT false (List.rev_append acc (x::[])) stack
-    | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::acc) y s0
-      else sortNrec0
-             (merge_sort_push leT (List.rev_append acc (x::[])) stack) y s0
-    and descending0 stack acc x = function
-    | [] -> merge_sort_pop leT false (x::acc) stack
-    | y::s0 ->
-      if leT x y
-      then sortNrec0 (merge_sort_push leT (x::acc) stack) y s0
-      else descending0 stack (x::acc) y s0
-    in ascending0
+      if leT x y then incr0 stack y s0 (x::[]) else decr0 stack y s0 (x::[])
+    and incr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT false (List.rev_append accu (x::[])) stack
+      | y::s0 ->
+        if leT x y
+        then incr0 stack y s0 (x::accu)
+        else sortNrec0
+               (merge_sort_push leT (List.rev_append accu (x::[])) stack) y s0
+    and decr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT false (x::accu) stack
+      | y::s0 ->
+        if leT x y
+        then sortNrec0 (merge_sort_push leT (x::accu) stack) y s0
+        else decr0 stack y s0 (x::accu)
+    in incr0
 
-  (** val descending :
-      'a1 rel -> 'a1 list list -> 'a1 list -> 'a1 -> 'a1 list -> 'a1 list **)
+  (** val decr :
+      'a1 rel -> 'a1 list list -> 'a1 -> 'a1 list -> 'a1 list -> 'a1 list **)
 
-  let descending leT =
+  let decr leT =
     let rec sortNrec0 stack x = function
     | [] -> merge_sort_pop leT false (x::[]) stack
     | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::[]) y s0
-      else descending0 stack (x::[]) y s0
-    and ascending0 stack acc x = function
-    | [] -> merge_sort_pop leT false (List.rev_append acc (x::[])) stack
-    | y::s0 ->
-      if leT x y
-      then ascending0 stack (x::acc) y s0
-      else sortNrec0
-             (merge_sort_push leT (List.rev_append acc (x::[])) stack) y s0
-    and descending0 stack acc x = function
-    | [] -> merge_sort_pop leT false (x::acc) stack
-    | y::s0 ->
-      if leT x y
-      then sortNrec0 (merge_sort_push leT (x::acc) stack) y s0
-      else descending0 stack (x::acc) y s0
-    in descending0
+      if leT x y then incr0 stack y s0 (x::[]) else decr0 stack y s0 (x::[])
+    and incr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT false (List.rev_append accu (x::[])) stack
+      | y::s0 ->
+        if leT x y
+        then incr0 stack y s0 (x::accu)
+        else sortNrec0
+               (merge_sort_push leT (List.rev_append accu (x::[])) stack) y s0
+    and decr0 stack x s accu =
+      match s with
+      | [] -> merge_sort_pop leT false (x::accu) stack
+      | y::s0 ->
+        if leT x y
+        then sortNrec0 (merge_sort_push leT (x::accu) stack) y s0
+        else decr0 stack y s0 (x::accu)
+    in decr0
 
   (** val sortN : 'a1 rel -> 'a1 list -> 'a1 list **)
 
@@ -1364,93 +1371,93 @@ module CBV_ =
   | x::s0 -> sortNrec leT [] x s0
 
   (** val merge_sort_pushP :
-      'a1 rel -> 'a1 StableSort.tree -> 'a1 StableSort.tree list -> 'a1
-      StableSort.tree list sig2 **)
+      'a1 rel -> 'a1 StableSort.trace -> 'a1 StableSort.trace list -> 'a1
+      StableSort.trace list sig2 **)
 
   let rec merge_sort_pushP leT t = function
   | [] -> t::[]
-  | x::x0 ->
-    (match x0 with
+  | a::l ->
+    (match l with
      | [] ->
        ssr_have (fun _ -> nilP) (fun __top_assumption_ ->
-         match __top_assumption_ __ (StableSort.flatten_tree leT x) with
+         match __top_assumption_ __ (StableSort.flatten_trace leT a) with
          | ReflectT -> t::[]
          | ReflectF ->
-           (StableSort.empty_tree leT)::((StableSort.Coq_branch_tree (true,
-             x, t))::[]))
-     | x1::x2 ->
+           (StableSort.empty_trace leT)::((StableSort.Coq_branch_trace (true,
+             a, t))::[]))
+     | a0::l0 ->
        ssr_have (fun _ -> nilP) (fun __top_assumption_ ->
-         match __top_assumption_ __ (StableSort.flatten_tree leT x) with
-         | ReflectT -> t::(x1::x2)
+         match __top_assumption_ __ (StableSort.flatten_trace leT a) with
+         | ReflectT -> t::(a0::l0)
          | ReflectF ->
            ssr_have (fun _ -> nilP) (fun __top_assumption_0 ->
-             match __top_assumption_0 __ (StableSort.flatten_tree leT x1) with
+             match __top_assumption_0 __ (StableSort.flatten_trace leT a0) with
              | ReflectT ->
-               (StableSort.empty_tree leT)::((StableSort.Coq_branch_tree
-                 (true, x, t))::x2)
+               (StableSort.empty_trace leT)::((StableSort.Coq_branch_trace
+                 (true, a, t))::l0)
              | ReflectF ->
                ssr_have
-                 (merge_sort_pushP leT (StableSort.Coq_branch_tree (false,
-                   x1, (StableSort.Coq_branch_tree (true, x, t)))) x2)
+                 (merge_sort_pushP leT (StableSort.Coq_branch_trace (false,
+                   a0, (StableSort.Coq_branch_trace (true, a, t)))) l0)
                  (fun __top_assumption_1 ->
-                 (StableSort.empty_tree leT)::((StableSort.empty_tree leT)::__top_assumption_1)))))
+                 (StableSort.empty_trace leT)::((StableSort.empty_trace leT)::__top_assumption_1)))))
 
   (** val merge_sort_popP :
-      'a1 rel -> bool -> 'a1 StableSort.tree -> 'a1 StableSort.tree list ->
-      'a1 StableSort.tree sig2 **)
+      'a1 rel -> bool -> 'a1 StableSort.trace -> 'a1 StableSort.trace list ->
+      'a1 StableSort.trace sig2 **)
 
   let rec merge_sort_popP leT mode t = function
   | [] -> t
-  | x::x0 ->
-    (match StableSort.tree_nilP leT x with
-     | StableSort.TreeNil ->
-       (match x0 with
+  | a::l ->
+    (match StableSort.trace_nilP leT a with
+     | StableSort.TraceNil ->
+       (match l with
         | [] -> t
-        | x1::x2 ->
-          (match StableSort.tree_nilP leT x1 with
-           | StableSort.TreeNil -> merge_sort_popP leT mode t x2
-           | StableSort.TreeNotNil ->
-             merge_sort_popP leT mode (StableSort.Coq_branch_tree (mode, x1,
-               t)) x2))
-     | StableSort.TreeNotNil ->
-       merge_sort_popP leT (not mode) (StableSort.Coq_branch_tree
-         ((not mode), x, t)) x0)
+        | a0::l0 ->
+          (match StableSort.trace_nilP leT a0 with
+           | StableSort.TraceNil -> merge_sort_popP leT mode t l0
+           | StableSort.TraceNotNil ->
+             merge_sort_popP leT mode (StableSort.Coq_branch_trace (mode, a0,
+               t)) l0))
+     | StableSort.TraceNotNil ->
+       merge_sort_popP leT (not mode) (StableSort.Coq_branch_trace
+         ((not mode), a, t)) l)
 
-  (** val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sort1P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sort1P leT s =
     ssr_have __ (fun _ ->
       ssr_have __ (fun _ ->
         let rec f l stack =
           match l with
-          | [] -> merge_sort_popP leT false (StableSort.empty_tree leT) stack
+          | [] -> merge_sort_popP leT false (StableSort.empty_trace leT) stack
           | y::l0 ->
             f l0
-              (merge_sort_pushP leT (StableSort.Coq_leaf_tree
+              (merge_sort_pushP leT (StableSort.Coq_leaf_trace
                 ((Obj.magic true), (y::[]))) stack)
         in f s []))
 
-  (** val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sort2P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sort2P leT s =
     ssr_have __ (fun _ ->
       ssr_have __ (fun _ ->
         let rec iHs stack = function
         | [] ->
-          merge_sort_popP leT false (StableSort.Coq_leaf_tree
+          merge_sort_popP leT false (StableSort.Coq_leaf_trace
             ((Obj.magic true), [])) stack
-        | x::x0 ->
-          (match x0 with
+        | a::l ->
+          (match l with
            | [] ->
-             merge_sort_popP leT false (StableSort.Coq_leaf_tree
-               ((Obj.magic true), (x::[]))) stack
-           | x1::x2 ->
+             merge_sort_popP leT false (StableSort.Coq_leaf_trace
+               ((Obj.magic true), (a::[]))) stack
+           | a0::l0 ->
              iHs
-               (merge_sort_pushP leT (StableSort.Coq_leaf_tree
-                 ((Obj.magic leT x x1), (x::(x1::[])))) stack) x2)
+               (merge_sort_pushP leT (StableSort.Coq_leaf_trace
+                 ((Obj.magic leT a a0), (a::(a0::[])))) stack) l0)
         in iHs [] s))
 
-  (** val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sort3P : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sort3P leT s =
     ssr_have __ (fun _ ->
@@ -1458,67 +1465,67 @@ module CBV_ =
         ssr_have __ (fun _ ->
           let rec iHs stack = function
           | [] ->
-            merge_sort_popP leT false (StableSort.Coq_leaf_tree
+            merge_sort_popP leT false (StableSort.Coq_leaf_trace
               ((Obj.magic true), [])) stack
-          | x::x0 ->
-            (match x0 with
+          | a::l ->
+            (match l with
              | [] ->
-               merge_sort_popP leT false (StableSort.Coq_leaf_tree
-                 ((Obj.magic true), (x::[]))) stack
-             | x1::x2 ->
-               (match x2 with
+               merge_sort_popP leT false (StableSort.Coq_leaf_trace
+                 ((Obj.magic true), (a::[]))) stack
+             | a0::l0 ->
+               (match l0 with
                 | [] ->
-                  merge_sort_popP leT false (StableSort.Coq_leaf_tree
-                    ((Obj.magic leT x x1), (x::(x1::[])))) stack
-                | x3::x4 ->
+                  merge_sort_popP leT false (StableSort.Coq_leaf_trace
+                    ((Obj.magic leT a a0), (a::(a0::[])))) stack
+                | a1::l1 ->
                   ssr_have __ (fun _ _ ->
                     iHs
-                      (merge_sort_pushP leT (StableSort.Coq_branch_tree
-                        (false, (StableSort.Coq_leaf_tree
-                        ((Obj.magic leT x x1), (x::(x1::[])))),
-                        (StableSort.Coq_leaf_tree ((Obj.magic true),
-                        (x3::[]))))) stack) x4) __))
+                      (merge_sort_pushP leT (StableSort.Coq_branch_trace
+                        (false, (StableSort.Coq_leaf_trace
+                        ((Obj.magic leT a a0), (a::(a0::[])))),
+                        (StableSort.Coq_leaf_trace ((Obj.magic true),
+                        (a1::[]))))) stack) l1) __))
           in iHs [] s)))
 
-  (** val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.tree sig2 **)
+  (** val sortNP : 'a1 rel -> 'a1 list -> 'a1 StableSort.trace sig2 **)
 
   let sortNP leT = function
-  | [] -> StableSort.empty_tree leT
-  | x::x0 ->
+  | [] -> StableSort.empty_trace leT
+  | a::l ->
     ssr_have __ (fun _ ->
       ssr_have __ (fun _ ->
-        let rec iHs stack x1 = function
+        let rec iHs stack x = function
         | [] ->
-          merge_sort_popP leT false (StableSort.Coq_leaf_tree
-            ((Obj.magic true), (x1::[]))) stack
-        | x2::x3 ->
+          merge_sort_popP leT false (StableSort.Coq_leaf_trace
+            ((Obj.magic true), (x::[]))) stack
+        | a0::l0 ->
           ssr_have __
             (ssr_have __ (fun _ _ ->
-              let rec f l ord x4 acc =
-                match l with
+              let rec f l1 ord x0 acc =
+                match l1 with
                 | [] ->
-                  merge_sort_popP leT false (StableSort.Coq_leaf_tree
-                    ((Obj.magic ord), (List.rev (x4::acc)))) stack
-                | y::l0 ->
+                  merge_sort_popP leT false (StableSort.Coq_leaf_trace
+                    ((Obj.magic ord), (List.rev (x0::acc)))) stack
+                | y::l2 ->
                   if ord
-                  then (match boolP (leT x4 y) with
+                  then (match boolP (leT x0 y) with
                         | AltTrue ->
-                          ssr_have __ (fun _ -> f l0 true y (x4::acc))
+                          ssr_have __ (fun _ -> f l2 true y (x0::acc))
                         | AltFalse ->
                           iHs
-                            (merge_sort_pushP leT (StableSort.Coq_leaf_tree
-                              ((Obj.magic true), (List.rev (x4::acc)))) stack)
-                            y l0)
-                  else (match boolP (leT x4 y) with
+                            (merge_sort_pushP leT (StableSort.Coq_leaf_trace
+                              ((Obj.magic true), (List.rev (x0::acc)))) stack)
+                            y l2)
+                  else (match boolP (leT x0 y) with
                         | AltTrue ->
                           iHs
-                            (merge_sort_pushP leT (StableSort.Coq_leaf_tree
-                              ((Obj.magic false), (List.rev (x4::acc))))
-                              stack) y l0
+                            (merge_sort_pushP leT (StableSort.Coq_leaf_trace
+                              ((Obj.magic false), (List.rev (x0::acc))))
+                              stack) y l2
                         | AltFalse ->
-                          ssr_have __ (fun _ -> f l0 false y (x4::acc)))
-              in f x3 (leT x1 x2) x2 (x1::[])))
-        in iHs [] x x0))
+                          ssr_have __ (fun _ -> f l2 false y (x0::acc)))
+              in f l0 (leT x a0) a0 (x::[])))
+        in iHs [] a l))
 
   (** val revmerge_R :
       'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -1535,6 +1542,8 @@ module CBV_ =
       'a2, 'a3) list_R) list_R **)
 
   let merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
+    let geT_UU2081_ = fun x y -> leT_UU2081_ y x in
+    let geT_UU2082_ = fun x y -> leT_UU2082_ y x in
     let fix_merge_sort_push_1 =
       let rec merge_sort_push0 xs stack = match stack with
       | [] -> xs::stack
@@ -1549,7 +1558,7 @@ module CBV_ =
                | [] -> []::((M.revmerge leT_UU2081_ ys xs)::stack1)
                | _::_ ->
                  []::([]::(merge_sort_push0
-                            (M.revmerge (fun x y -> leT_UU2081_ y x)
+                            (M.revmerge geT_UU2081_
                               (M.revmerge leT_UU2081_ ys xs) zs) stack1)))))
       in merge_sort_push0
     in
@@ -1567,7 +1576,7 @@ module CBV_ =
                | [] -> []::((M.revmerge leT_UU2082_ ys xs)::stack1)
                | _::_ ->
                  []::([]::(merge_sort_push0
-                            (M.revmerge (fun x y -> leT_UU2082_ y x)
+                            (M.revmerge geT_UU2082_
                               (M.revmerge leT_UU2082_ ys xs) zs) stack1)))))
       in merge_sort_push0
     in
@@ -1608,31 +1617,30 @@ module CBV_ =
              | List_R_cons_R (_, _, _, _, _, _) ->
                List_R_cons_R ([], [], List_R_nil_R,
                  ([]::(fix_merge_sort_push_1
-                        (M.revmerge (fun x y -> leT_UU2081_ y x)
+                        (M.revmerge geT_UU2081_
                           (M.revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
                           zs_UU2081_) stack_UU2081_1)),
                  ([]::(fix_merge_sort_push_2
-                        (M.revmerge (fun x y -> leT_UU2082_ y x)
+                        (M.revmerge geT_UU2082_
                           (M.revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
                           zs_UU2082_) stack_UU2082_1)), (List_R_cons_R ([],
                  [], List_R_nil_R,
                  (fix_merge_sort_push_1
-                   (M.revmerge (fun x y -> leT_UU2081_ y x)
+                   (M.revmerge geT_UU2081_
                      (M.revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
                      zs_UU2081_) stack_UU2081_1),
                  (fix_merge_sort_push_2
-                   (M.revmerge (fun x y -> leT_UU2082_ y x)
+                   (M.revmerge geT_UU2082_
                      (M.revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
                      zs_UU2082_) stack_UU2082_1),
                  (merge_sort_push_R0
-                   (M.revmerge (fun x y -> leT_UU2081_ y x)
+                   (M.revmerge geT_UU2081_
                      (M.revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
                      zs_UU2081_)
-                   (M.revmerge (fun x y -> leT_UU2082_ y x)
+                   (M.revmerge geT_UU2082_
                      (M.revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
                      zs_UU2082_)
-                   (revmerge_R (fun x y -> leT_UU2081_ y x) (fun x y ->
-                     leT_UU2082_ y x)
+                   (revmerge_R geT_UU2081_ geT_UU2082_
                      (fun x_UU2081_ x_UU2082_ x_R y_UU2081_ y_UU2082_ y_R ->
                      leT_R y_UU2081_ y_UU2082_ y_R x_UU2081_ x_UU2082_ x_R)
                      (M.revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
@@ -1648,87 +1656,86 @@ module CBV_ =
       'a2 list list -> ('a1 list, 'a2 list, ('a1, 'a2, 'a3) list_R) list_R ->
       ('a1, 'a2, 'a3) list_R **)
 
-  let rec merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R mode_UU2081_ mode_UU2082_ mode_R xs_UU2081_ xs_UU2082_ xs_R _ _ = function
-  | List_R_nil_R ->
-    (match mode_R with
-     | Bool_R_true_R ->
-       let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-         match s1_R with
-         | List_R_nil_R -> s2_R
-         | List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s1'_UU2081_,
-                          s1'_UU2082_, s1'_R) ->
-           catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R (x_UU2081_::s2_UU2081_)
-             (x_UU2082_::s2_UU2082_) (List_R_cons_R (x_UU2081_, x_UU2082_,
-             x_R, s2_UU2081_, s2_UU2082_, s2_R))
-       in catrev_R xs_UU2081_ xs_UU2082_ xs_R [] [] List_R_nil_R
-     | Bool_R_false_R -> xs_R)
-  | List_R_cons_R (ys_UU2081_, ys_UU2082_, ys_R, stack_UU2081_,
-                   stack_UU2082_, stack_R0) ->
-    (match ys_R with
-     | List_R_nil_R ->
-       (match stack_R0 with
-        | List_R_nil_R ->
-          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R (not mode_UU2081_)
-            (not mode_UU2082_)
-            (match mode_R with
-             | Bool_R_true_R -> Bool_R_false_R
-             | Bool_R_false_R -> Bool_R_true_R) (List.rev xs_UU2081_)
-            (List.rev xs_UU2082_)
-            (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-               match s1_R with
-               | List_R_nil_R -> s2_R
-               | List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s1'_UU2081_,
-                                s1'_UU2082_, s1'_R) ->
-                 catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
-                   (x_UU2081_::s2_UU2081_) (x_UU2082_::s2_UU2082_)
-                   (List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s2_UU2081_,
-                   s2_UU2082_, s2_R))
-             in catrev_R xs_UU2081_ xs_UU2082_ xs_R [] [] List_R_nil_R)
-            stack_UU2081_ stack_UU2082_ stack_R0
-        | List_R_cons_R (_, _, l_R, stack_UU2081_0, stack_UU2082_0, stack_R1) ->
-          (match l_R with
-           | List_R_nil_R ->
-             merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R mode_UU2081_
-               mode_UU2082_ mode_R xs_UU2081_ xs_UU2082_ xs_R stack_UU2081_0
-               stack_UU2082_0 stack_R1
-           | List_R_cons_R (_, _, _, _, _, _) ->
-             merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
-               (not mode_UU2081_) (not mode_UU2082_)
-               (match mode_R with
-                | Bool_R_true_R -> Bool_R_false_R
-                | Bool_R_false_R -> Bool_R_true_R) (List.rev xs_UU2081_)
-               (List.rev xs_UU2082_)
-               (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-                  match s1_R with
-                  | List_R_nil_R -> s2_R
-                  | List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s1'_UU2081_,
-                                   s1'_UU2082_, s1'_R) ->
-                    catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
-                      (x_UU2081_::s2_UU2081_) (x_UU2082_::s2_UU2082_)
-                      (List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s2_UU2081_,
-                      s2_UU2082_, s2_R))
-                in catrev_R xs_UU2081_ xs_UU2082_ xs_R [] [] List_R_nil_R)
-               stack_UU2081_ stack_UU2082_ stack_R0))
-     | List_R_cons_R (_, _, _, _, _, _) ->
-       (match mode_R with
-        | Bool_R_true_R ->
-          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
-            Bool_R_false_R
-            (M.revmerge (fun x y -> leT_UU2081_ y x) xs_UU2081_ ys_UU2081_)
-            (M.revmerge (fun x y -> leT_UU2082_ y x) xs_UU2082_ ys_UU2082_)
-            (revmerge_R (fun x y -> leT_UU2081_ y x) (fun x y ->
-              leT_UU2082_ y x)
-              (fun x_UU2081_ x_UU2082_ x_R y_UU2081_ y_UU2082_ y_R ->
-              leT_R y_UU2081_ y_UU2082_ y_R x_UU2081_ x_UU2082_ x_R)
-              xs_UU2081_ xs_UU2082_ xs_R ys_UU2081_ ys_UU2082_ ys_R)
-            stack_UU2081_ stack_UU2082_ stack_R0
-        | Bool_R_false_R ->
-          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R true true
-            Bool_R_true_R (M.revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
-            (M.revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
-            (revmerge_R leT_UU2081_ leT_UU2082_ leT_R ys_UU2081_ ys_UU2082_
-              ys_R xs_UU2081_ xs_UU2082_ xs_R) stack_UU2081_ stack_UU2082_
-            stack_R0))
+  let merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R =
+    let geT_UU2081_ = fun x y -> leT_UU2081_ y x in
+    let geT_UU2082_ = fun x y -> leT_UU2082_ y x in
+    let rec merge_sort_pop_R0 mode_UU2081_ mode_UU2082_ mode_R xs_UU2081_ xs_UU2082_ xs_R _ _ = function
+    | List_R_nil_R ->
+      (match mode_R with
+       | Bool_R_true_R ->
+         let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+           match s1_R with
+           | List_R_nil_R -> s2_R
+           | List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s1'_UU2081_,
+                            s1'_UU2082_, s1'_R) ->
+             catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R (x_UU2081_::s2_UU2081_)
+               (x_UU2082_::s2_UU2082_) (List_R_cons_R (x_UU2081_, x_UU2082_,
+               x_R, s2_UU2081_, s2_UU2082_, s2_R))
+         in catrev_R xs_UU2081_ xs_UU2082_ xs_R [] [] List_R_nil_R
+       | Bool_R_false_R -> xs_R)
+    | List_R_cons_R (ys_UU2081_, ys_UU2082_, ys_R, stack_UU2081_,
+                     stack_UU2082_, stack_R0) ->
+      (match ys_R with
+       | List_R_nil_R ->
+         (match stack_R0 with
+          | List_R_nil_R ->
+            merge_sort_pop_R0 (not mode_UU2081_) (not mode_UU2082_)
+              (match mode_R with
+               | Bool_R_true_R -> Bool_R_false_R
+               | Bool_R_false_R -> Bool_R_true_R) (List.rev xs_UU2081_)
+              (List.rev xs_UU2082_)
+              (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+                 match s1_R with
+                 | List_R_nil_R -> s2_R
+                 | List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s1'_UU2081_,
+                                  s1'_UU2082_, s1'_R) ->
+                   catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
+                     (x_UU2081_::s2_UU2081_) (x_UU2082_::s2_UU2082_)
+                     (List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s2_UU2081_,
+                     s2_UU2082_, s2_R))
+               in catrev_R xs_UU2081_ xs_UU2082_ xs_R [] [] List_R_nil_R)
+              stack_UU2081_ stack_UU2082_ stack_R0
+          | List_R_cons_R (_, _, l_R, stack_UU2081_0, stack_UU2082_0, stack_R1) ->
+            (match l_R with
+             | List_R_nil_R ->
+               merge_sort_pop_R0 mode_UU2081_ mode_UU2082_ mode_R xs_UU2081_
+                 xs_UU2082_ xs_R stack_UU2081_0 stack_UU2082_0 stack_R1
+             | List_R_cons_R (_, _, _, _, _, _) ->
+               merge_sort_pop_R0 (not mode_UU2081_) (not mode_UU2082_)
+                 (match mode_R with
+                  | Bool_R_true_R -> Bool_R_false_R
+                  | Bool_R_false_R -> Bool_R_true_R) (List.rev xs_UU2081_)
+                 (List.rev xs_UU2082_)
+                 (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+                    match s1_R with
+                    | List_R_nil_R -> s2_R
+                    | List_R_cons_R (x_UU2081_, x_UU2082_, x_R, s1'_UU2081_,
+                                     s1'_UU2082_, s1'_R) ->
+                      catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
+                        (x_UU2081_::s2_UU2081_) (x_UU2082_::s2_UU2082_)
+                        (List_R_cons_R (x_UU2081_, x_UU2082_, x_R,
+                        s2_UU2081_, s2_UU2082_, s2_R))
+                  in catrev_R xs_UU2081_ xs_UU2082_ xs_R [] [] List_R_nil_R)
+                 stack_UU2081_ stack_UU2082_ stack_R0))
+       | List_R_cons_R (_, _, _, _, _, _) ->
+         (match mode_R with
+          | Bool_R_true_R ->
+            merge_sort_pop_R0 false false Bool_R_false_R
+              (M.revmerge geT_UU2081_ xs_UU2081_ ys_UU2081_)
+              (M.revmerge geT_UU2082_ xs_UU2082_ ys_UU2082_)
+              (revmerge_R geT_UU2081_ geT_UU2082_
+                (fun x_UU2081_ x_UU2082_ x_R y_UU2081_ y_UU2082_ y_R ->
+                leT_R y_UU2081_ y_UU2082_ y_R x_UU2081_ x_UU2082_ x_R)
+                xs_UU2081_ xs_UU2082_ xs_R ys_UU2081_ ys_UU2082_ ys_R)
+              stack_UU2081_ stack_UU2082_ stack_R0
+          | Bool_R_false_R ->
+            merge_sort_pop_R0 true true Bool_R_true_R
+              (M.revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
+              (M.revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
+              (revmerge_R leT_UU2081_ leT_UU2082_ leT_R ys_UU2081_ ys_UU2082_
+                ys_R xs_UU2081_ xs_UU2082_ xs_R) stack_UU2081_ stack_UU2082_
+              stack_R0))
+    in merge_sort_pop_R0
 
   (** val sort1_R :
       'a1 rel -> 'a2 rel -> ('a1, 'a2, 'a3) rel_R -> 'a1 list -> 'a2 list ->
@@ -1753,15 +1760,17 @@ module CBV_ =
       ('a1, 'a2, 'a3) list_R -> ('a1, 'a2, 'a3) list_R **)
 
   let sort2_R leT_UU2081_ leT_UU2082_ leT_R =
-    let rec sort2rec_R ss_UU2081_ ss_UU2082_ ss_R s_UU2081_ s_UU2082_ s_R = match s_R with
+    let rec sort2rec_R stack_UU2081_ stack_UU2082_ stack_R s_UU2081_ s_UU2082_ s_R = match s_R with
     | List_R_nil_R ->
       merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
-        Bool_R_false_R s_UU2081_ s_UU2082_ s_R ss_UU2081_ ss_UU2082_ ss_R
+        Bool_R_false_R s_UU2081_ s_UU2082_ s_R stack_UU2081_ stack_UU2082_
+        stack_R
     | List_R_cons_R (x1_UU2081_, x1_UU2082_, x1_R, _, _, l_R) ->
       (match l_R with
        | List_R_nil_R ->
          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
-           Bool_R_false_R s_UU2081_ s_UU2082_ s_R ss_UU2081_ ss_UU2082_ ss_R
+           Bool_R_false_R s_UU2081_ s_UU2082_ s_R stack_UU2081_ stack_UU2082_
+           stack_R
        | List_R_cons_R (x2_UU2081_, x2_UU2082_, x2_R, s'_UU2081_, s'_UU2082_,
                         s'_R) ->
          let s1_UU2081_ =
@@ -1774,8 +1783,8 @@ module CBV_ =
            then x1_UU2082_::(x2_UU2082_::[])
            else x2_UU2082_::(x1_UU2082_::[])
          in
-         sort2rec_R (merge_sort_push leT_UU2081_ s1_UU2081_ ss_UU2081_)
-           (merge_sort_push leT_UU2082_ s1_UU2082_ ss_UU2082_)
+         sort2rec_R (merge_sort_push leT_UU2081_ s1_UU2081_ stack_UU2081_)
+           (merge_sort_push leT_UU2082_ s1_UU2082_ stack_UU2082_)
            (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R s1_UU2081_
              s1_UU2082_
              (match leT_R x1_UU2081_ x1_UU2082_ x1_R x2_UU2081_ x2_UU2082_
@@ -1788,7 +1797,7 @@ module CBV_ =
                 List_R_cons_R (x2_UU2081_, x2_UU2082_, x2_R,
                   (x1_UU2081_::[]), (x1_UU2082_::[]), (List_R_cons_R
                   (x1_UU2081_, x1_UU2082_, x1_R, [], [], List_R_nil_R))))
-             ss_UU2081_ ss_UU2082_ ss_R) s'_UU2081_ s'_UU2082_ s'_R)
+             stack_UU2081_ stack_UU2082_ stack_R) s'_UU2081_ s'_UU2082_ s'_R)
     in sort2rec_R [] [] List_R_nil_R
 
   (** val sort3_R :
@@ -1934,110 +1943,116 @@ module CBV_ =
     | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
       (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
        | Bool_R_true_R ->
-         ascending_R stack_UU2081_ stack_UU2082_ stack_R (x_UU2081_0::[])
-           (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [],
-           [], List_R_nil_R)) y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0
-           s_R2
+         incr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+           s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::[]) (x_UU2082_0::[])
+           (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [], [],
+           List_R_nil_R))
        | Bool_R_false_R ->
-         descending_R stack_UU2081_ stack_UU2082_ stack_R (x_UU2081_0::[])
-           (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [],
-           [], List_R_nil_R)) y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0
-           s_R2)
-    and ascending_R stack_UU2081_ stack_UU2082_ stack_R acc_UU2081_ acc_UU2082_ acc_R x_UU2081_0 x_UU2082_0 x_R0 _ _ = function
-    | List_R_nil_R ->
-      merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
-        Bool_R_false_R (List.rev_append acc_UU2081_ (x_UU2081_0::[]))
-        (List.rev_append acc_UU2082_ (x_UU2082_0::[]))
-        (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-           match s1_R with
-           | List_R_nil_R -> s2_R
-           | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
-                            s1'_UU2082_, s1'_R) ->
-             catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R (x_UU2081_1::s2_UU2081_)
-               (x_UU2082_1::s2_UU2082_) (List_R_cons_R (x_UU2081_1,
-               x_UU2082_1, x_R1, s2_UU2081_, s2_UU2082_, s2_R))
-         in catrev_R acc_UU2081_ acc_UU2082_ acc_R (x_UU2081_0::[])
-              (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0,
-              [], [], List_R_nil_R))) stack_UU2081_ stack_UU2082_ stack_R
-    | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
-      (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
-       | Bool_R_true_R ->
-         ascending_R stack_UU2081_ stack_UU2082_ stack_R
-           (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_) (List_R_cons_R
-           (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_, acc_UU2082_, acc_R))
-           y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2
-       | Bool_R_false_R ->
-         sortNrec_R
-           (merge_sort_push leT_UU2081_
-             (List.rev_append acc_UU2081_ (x_UU2081_0::[])) stack_UU2081_)
-           (merge_sort_push leT_UU2082_
-             (List.rev_append acc_UU2082_ (x_UU2082_0::[])) stack_UU2082_)
-           (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
-             (List.rev_append acc_UU2081_ (x_UU2081_0::[]))
-             (List.rev_append acc_UU2082_ (x_UU2082_0::[]))
-             (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-                match s1_R with
-                | List_R_nil_R -> s2_R
-                | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
-                                 s1'_UU2082_, s1'_R) ->
-                  catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
-                    (x_UU2081_1::s2_UU2081_) (x_UU2082_1::s2_UU2082_)
-                    (List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s2_UU2081_,
-                    s2_UU2082_, s2_R))
-              in catrev_R acc_UU2081_ acc_UU2082_ acc_R (x_UU2081_0::[])
-                   (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
-                   x_R0, [], [], List_R_nil_R))) stack_UU2081_ stack_UU2082_
-             stack_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2)
-    and descending_R stack_UU2081_ stack_UU2082_ stack_R acc_UU2081_ acc_UU2082_ acc_R x_UU2081_0 x_UU2082_0 x_R0 _ _ = function
-    | List_R_nil_R ->
-      merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
-        Bool_R_false_R (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_)
-        (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_,
-        acc_UU2082_, acc_R)) stack_UU2081_ stack_UU2082_ stack_R
-    | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
-      (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
-       | Bool_R_true_R ->
-         sortNrec_R
-           (merge_sort_push leT_UU2081_ (x_UU2081_0::acc_UU2081_)
-             stack_UU2081_)
-           (merge_sort_push leT_UU2082_ (x_UU2082_0::acc_UU2082_)
-             stack_UU2082_)
-           (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
-             (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_)
-             (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_,
-             acc_UU2082_, acc_R)) stack_UU2081_ stack_UU2082_ stack_R)
-           y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2
-       | Bool_R_false_R ->
-         descending_R stack_UU2081_ stack_UU2082_ stack_R
-           (x_UU2081_0::acc_UU2081_) (x_UU2082_0::acc_UU2082_) (List_R_cons_R
-           (x_UU2081_0, x_UU2082_0, x_R0, acc_UU2081_, acc_UU2082_, acc_R))
-           y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2)
+         decr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+           s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::[]) (x_UU2082_0::[])
+           (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, [], [],
+           List_R_nil_R)))
+    and incr_R stack_UU2081_ stack_UU2082_ stack_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 accu_UU2081_ accu_UU2082_ accu_R =
+      match s_R1 with
+      | List_R_nil_R ->
+        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
+          Bool_R_false_R (List.rev_append accu_UU2081_ (x_UU2081_0::[]))
+          (List.rev_append accu_UU2082_ (x_UU2082_0::[]))
+          (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+             match s1_R with
+             | List_R_nil_R -> s2_R
+             | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
+                              s1'_UU2082_, s1'_R) ->
+               catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
+                 (x_UU2081_1::s2_UU2081_) (x_UU2082_1::s2_UU2082_)
+                 (List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s2_UU2081_,
+                 s2_UU2082_, s2_R))
+           in catrev_R accu_UU2081_ accu_UU2082_ accu_R (x_UU2081_0::[])
+                (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
+                x_R0, [], [], List_R_nil_R))) stack_UU2081_ stack_UU2082_
+          stack_R
+      | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
+        (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
+         | Bool_R_true_R ->
+           incr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::accu_UU2081_)
+             (x_UU2082_0::accu_UU2082_) (List_R_cons_R (x_UU2081_0,
+             x_UU2082_0, x_R0, accu_UU2081_, accu_UU2082_, accu_R))
+         | Bool_R_false_R ->
+           sortNrec_R
+             (merge_sort_push leT_UU2081_
+               (List.rev_append accu_UU2081_ (x_UU2081_0::[])) stack_UU2081_)
+             (merge_sort_push leT_UU2082_
+               (List.rev_append accu_UU2082_ (x_UU2082_0::[])) stack_UU2082_)
+             (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
+               (List.rev_append accu_UU2081_ (x_UU2081_0::[]))
+               (List.rev_append accu_UU2082_ (x_UU2082_0::[]))
+               (let rec catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+                  match s1_R with
+                  | List_R_nil_R -> s2_R
+                  | List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1, s1'_UU2081_,
+                                   s1'_UU2082_, s1'_R) ->
+                    catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R
+                      (x_UU2081_1::s2_UU2081_) (x_UU2082_1::s2_UU2082_)
+                      (List_R_cons_R (x_UU2081_1, x_UU2082_1, x_R1,
+                      s2_UU2081_, s2_UU2082_, s2_R))
+                in catrev_R accu_UU2081_ accu_UU2082_ accu_R (x_UU2081_0::[])
+                     (x_UU2082_0::[]) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
+                     x_R0, [], [], List_R_nil_R))) stack_UU2081_
+               stack_UU2082_ stack_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0
+             s_UU2082_0 s_R2)
+    and decr_R stack_UU2081_ stack_UU2082_ stack_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 accu_UU2081_ accu_UU2082_ accu_R =
+      match s_R1 with
+      | List_R_nil_R ->
+        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R false false
+          Bool_R_false_R (x_UU2081_0::accu_UU2081_)
+          (x_UU2082_0::accu_UU2082_) (List_R_cons_R (x_UU2081_0, x_UU2082_0,
+          x_R0, accu_UU2081_, accu_UU2082_, accu_R)) stack_UU2081_
+          stack_UU2082_ stack_R
+      | List_R_cons_R (y_UU2081_, y_UU2082_, y_R, s_UU2081_0, s_UU2082_0, s_R2) ->
+        (match leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R with
+         | Bool_R_true_R ->
+           sortNrec_R
+             (merge_sort_push leT_UU2081_ (x_UU2081_0::accu_UU2081_)
+               stack_UU2081_)
+             (merge_sort_push leT_UU2082_ (x_UU2082_0::accu_UU2082_)
+               stack_UU2082_)
+             (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
+               (x_UU2081_0::accu_UU2081_) (x_UU2082_0::accu_UU2082_)
+               (List_R_cons_R (x_UU2081_0, x_UU2082_0, x_R0, accu_UU2081_,
+               accu_UU2082_, accu_R)) stack_UU2081_ stack_UU2082_ stack_R)
+             y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2
+         | Bool_R_false_R ->
+           decr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 (x_UU2081_0::accu_UU2081_)
+             (x_UU2082_0::accu_UU2082_) (List_R_cons_R (x_UU2081_0,
+             x_UU2082_0, x_R0, accu_UU2081_, accu_UU2082_, accu_R)))
     in sortNrec_R [] [] List_R_nil_R x_UU2081_ x_UU2082_ x_R s_UU2081_
          s_UU2082_ s_R0
 
-  (** val sort1_stable : StableSort.interface **)
+  (** val sort1_stable : StableSort.coq_function **)
 
   let sort1_stable =
-    { StableSort.sort_fun = (fun _ -> sort1); StableSort.interface__1 =
-      (fun _ _ _ -> sort1_R); StableSort.interface__2 = (fun _ -> sort1P) }
+    { StableSort.apply = (fun _ -> sort1); StableSort.coq_function__1 =
+      (fun _ _ _ -> sort1_R); StableSort.coq_function__2 = (fun _ -> sort1P) }
 
-  (** val sort2_stable : StableSort.interface **)
+  (** val sort2_stable : StableSort.coq_function **)
 
   let sort2_stable =
-    { StableSort.sort_fun = (fun _ -> sort2); StableSort.interface__1 =
-      (fun _ _ _ -> sort2_R); StableSort.interface__2 = (fun _ -> sort2P) }
+    { StableSort.apply = (fun _ -> sort2); StableSort.coq_function__1 =
+      (fun _ _ _ -> sort2_R); StableSort.coq_function__2 = (fun _ -> sort2P) }
 
-  (** val sort3_stable : StableSort.interface **)
+  (** val sort3_stable : StableSort.coq_function **)
 
   let sort3_stable =
-    { StableSort.sort_fun = (fun _ -> sort3); StableSort.interface__1 =
-      (fun _ _ _ -> sort3_R); StableSort.interface__2 = (fun _ -> sort3P) }
+    { StableSort.apply = (fun _ -> sort3); StableSort.coq_function__1 =
+      (fun _ _ _ -> sort3_R); StableSort.coq_function__2 = (fun _ -> sort3P) }
 
-  (** val sortN_stable : StableSort.interface **)
+  (** val sortN_stable : StableSort.coq_function **)
 
   let sortN_stable =
-    { StableSort.sort_fun = (fun _ -> sortN); StableSort.interface__1 =
-      (fun _ _ _ -> sortN_R); StableSort.interface__2 = (fun _ -> sortNP) }
+    { StableSort.apply = (fun _ -> sortN); StableSort.coq_function__1 =
+      (fun _ _ _ -> sortN_R); StableSort.coq_function__2 = (fun _ -> sortNP) }
  end
 
 module CBV = CBV_(Revmerge)

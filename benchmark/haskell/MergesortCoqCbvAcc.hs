@@ -7,6 +7,9 @@ import qualified Prelude
 
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.Base
+#if __GLASGOW_HASKELL__ >= 900
+import qualified GHC.Exts
+#endif
 #else
 -- HUGS
 import qualified IOExts
@@ -14,7 +17,11 @@ import qualified IOExts
 
 #ifdef __GLASGOW_HASKELL__
 unsafeCoerce :: a -> b
+#if __GLASGOW_HASKELL__ >= 900
+unsafeCoerce = GHC.Exts.unsafeCoerce#
+#else
 unsafeCoerce = GHC.Base.unsafeCoerce#
+#endif
 #else
 -- HUGS
 unsafeCoerce :: a -> b
@@ -258,67 +265,65 @@ type Pred_R x0 x t_R = x0 -> x -> t_R -> Bool_R
 
 type Rel_R x0 x t_R = x0 -> x -> t_R -> Pred_R x0 x t_R
 
-data Tree t =
-   Branch_tree Prelude.Bool (Tree t) (Tree t)
- | Leaf_tree Sort (([]) t)
+data Trace t =
+   Branch_trace Prelude.Bool (Trace t) (Trace t)
+ | Leaf_trace Sort (([]) t)
 
-empty_tree :: (Rel a1) -> Tree a1
-empty_tree _ =
-  Leaf_tree (unsafeCoerce Prelude.False) ([])
+empty_trace :: (Rel a1) -> Trace a1
+empty_trace _ =
+  Leaf_trace (unsafeCoerce Prelude.False) ([])
 
-flatten_tree :: (Rel a1) -> (Tree a1) -> ([]) a1
-flatten_tree leT t =
+flatten_trace :: (Rel a1) -> (Trace a1) -> ([]) a1
+flatten_trace leT t =
   case t of {
-   Branch_tree _ l r -> cat (flatten_tree leT l) (flatten_tree leT r);
-   Leaf_tree _ s -> s}
+   Branch_trace _ l r -> cat (flatten_trace leT l) (flatten_trace leT r);
+   Leaf_trace _ s -> s}
 
-sort_tree :: (Rel a1) -> (Tree a1) -> ([]) a1
-sort_tree leT t =
+sort_trace :: (Rel a1) -> (Trace a1) -> ([]) a1
+sort_trace leT t =
   case t of {
-   Branch_tree b l r ->
+   Branch_trace b l r ->
     case b of {
-     Prelude.True -> merge leT (sort_tree leT l) (sort_tree leT r);
+     Prelude.True -> merge leT (sort_trace leT l) (sort_trace leT r);
      Prelude.False ->
       rev
-        (merge (\x y -> leT y x) (rev (sort_tree leT r))
-          (rev (sort_tree leT l)))};
-   Leaf_tree b s ->
+        (merge (\x y -> leT y x) (rev (sort_trace leT r))
+          (rev (sort_trace leT l)))};
+   Leaf_trace b s ->
     case unsafeCoerce b of {
      Prelude.True -> s;
      Prelude.False -> rev s}}
 
-data Tree_nil_spec t =
-   TreeNil
- | TreeNotNil
+data Trace_nil_spec t =
+   TraceNil
+ | TraceNotNil
 
-tree_nilP :: (Rel a1) -> (Tree a1) -> Tree_nil_spec a1
-tree_nilP leT t =
-  case nilP (sort_tree leT t) of {
+trace_nilP :: (Rel a1) -> (Trace a1) -> Trace_nil_spec a1
+trace_nilP leT t =
+  case nilP (sort_trace leT t) of {
    ReflectT ->
-    case nilP (flatten_tree leT t) of {
+    case nilP (flatten_trace leT t) of {
      ReflectT ->
       ssr_have __ (\_ ->
         eq_rec_r ([]) (\_ ->
-          ssr_have __ (\_ -> eq_rec_r ([]) (\_ -> TreeNil) (sort_tree leT t)))
-          (flatten_tree leT t)) __ __;
+          ssr_have __ (\_ ->
+            eq_rec_r ([]) (\_ -> TraceNil) (sort_trace leT t)))
+          (flatten_trace leT t)) __ __;
      ReflectF -> false_rec};
    ReflectF ->
-    case nilP (flatten_tree leT t) of {
+    case nilP (flatten_trace leT t) of {
      ReflectT -> false_rec;
-     ReflectF -> TreeNotNil}}
+     ReflectF -> TraceNotNil}}
 
 type Sort_ty_R =
   () -> () -> () -> (Rel Any) -> (Rel Any) -> (Rel_R Any Any Any) -> (([])
   Any) -> (([]) Any) -> (List_R Any Any Any) -> List_R Any Any Any
 
-data Interface0 =
-   Interface (() -> (Rel Any) -> (([]) Any) -> ([]) Any) Sort_ty_R (() ->
-                                                                   (Rel 
-                                                                   Any) ->
-                                                                   (([]) 
-                                                                   Any) ->
-                                                                   Sig2
-                                                                   (Tree Any))
+data Function =
+   Pack (() -> (Rel Any) -> (([]) Any) -> ([]) Any) Sort_ty_R (() -> (Rel
+                                                              Any) -> (([])
+                                                              Any) -> Sig2
+                                                              (Trace Any))
 
 merge_rec :: (Rel a1) -> (([]) a1) -> (([]) a1) -> (([]) a1) -> ([]) a1
 merge_rec leT xs ys accu =
@@ -503,18 +508,18 @@ sort1 leT =
   sort1rec leT ([])
 
 sort2rec :: (Rel a1) -> (([]) (([]) a1)) -> (([]) a1) -> ([]) a1
-sort2rec leT ss s =
+sort2rec leT stack s =
   case s of {
-   ([]) -> merge_sort_pop leT Prelude.False s ss;
+   ([]) -> merge_sort_pop leT Prelude.False s stack;
    (:) x1 l ->
     case l of {
-     ([]) -> merge_sort_pop leT Prelude.False s ss;
+     ([]) -> merge_sort_pop leT Prelude.False s stack;
      (:) x2 s' ->
       sort2rec leT
         (merge_sort_push leT
           (case leT x1 x2 of {
             Prelude.True -> (:) x1 ((:) x2 ([]));
-            Prelude.False -> (:) x2 ((:) x1 ([]))}) ss) s'}}
+            Prelude.False -> (:) x2 ((:) x1 ([]))}) stack) s'}}
 
 sort2 :: (Rel a1) -> (([]) a1) -> ([]) a1
 sort2 leT =
@@ -566,86 +571,89 @@ sortNrec leT =
       ([]) -> merge_sort_pop leT Prelude.False ((:) x ([])) stack;
       (:) y s0 ->
        case leT x y of {
-        Prelude.True -> ascending0 stack ((:) x ([])) y s0;
-        Prelude.False -> descending0 stack ((:) x ([])) y s0}};
-   ascending0 stack acc x s =
+        Prelude.True -> incr0 stack y s0 ((:) x ([]));
+        Prelude.False -> decr0 stack y s0 ((:) x ([]))}};
+   incr0 stack x s accu =
      case s of {
       ([]) ->
-       merge_sort_pop leT Prelude.False (catrev acc ((:) x ([]))) stack;
+       merge_sort_pop leT Prelude.False (catrev accu ((:) x ([]))) stack;
       (:) y s0 ->
        case leT x y of {
-        Prelude.True -> ascending0 stack ((:) x acc) y s0;
+        Prelude.True -> incr0 stack y s0 ((:) x accu);
         Prelude.False ->
-         sortNrec0 (merge_sort_push leT (catrev acc ((:) x ([]))) stack) y s0}};
-   descending0 stack acc x s =
+         sortNrec0 (merge_sort_push leT (catrev accu ((:) x ([]))) stack) y
+           s0}};
+   decr0 stack x s accu =
      case s of {
-      ([]) -> merge_sort_pop leT Prelude.False ((:) x acc) stack;
+      ([]) -> merge_sort_pop leT Prelude.False ((:) x accu) stack;
       (:) y s0 ->
        case leT x y of {
         Prelude.True ->
-         sortNrec0 (merge_sort_push leT ((:) x acc) stack) y s0;
-        Prelude.False -> descending0 stack ((:) x acc) y s0}}}
+         sortNrec0 (merge_sort_push leT ((:) x accu) stack) y s0;
+        Prelude.False -> decr0 stack y s0 ((:) x accu)}}}
   in sortNrec0
 
-ascending :: (Rel a1) -> (([]) (([]) a1)) -> (([]) a1) -> a1 -> (([]) 
-             a1) -> ([]) a1
-ascending leT =
+incr :: (Rel a1) -> (([]) (([]) a1)) -> a1 -> (([]) a1) -> (([]) a1) -> ([])
+        a1
+incr leT =
   let {
    sortNrec0 stack x s =
      case s of {
       ([]) -> merge_sort_pop leT Prelude.False ((:) x ([])) stack;
       (:) y s0 ->
        case leT x y of {
-        Prelude.True -> ascending0 stack ((:) x ([])) y s0;
-        Prelude.False -> descending0 stack ((:) x ([])) y s0}};
-   ascending0 stack acc x s =
+        Prelude.True -> incr0 stack y s0 ((:) x ([]));
+        Prelude.False -> decr0 stack y s0 ((:) x ([]))}};
+   incr0 stack x s accu =
      case s of {
       ([]) ->
-       merge_sort_pop leT Prelude.False (catrev acc ((:) x ([]))) stack;
+       merge_sort_pop leT Prelude.False (catrev accu ((:) x ([]))) stack;
       (:) y s0 ->
        case leT x y of {
-        Prelude.True -> ascending0 stack ((:) x acc) y s0;
+        Prelude.True -> incr0 stack y s0 ((:) x accu);
         Prelude.False ->
-         sortNrec0 (merge_sort_push leT (catrev acc ((:) x ([]))) stack) y s0}};
-   descending0 stack acc x s =
+         sortNrec0 (merge_sort_push leT (catrev accu ((:) x ([]))) stack) y
+           s0}};
+   decr0 stack x s accu =
      case s of {
-      ([]) -> merge_sort_pop leT Prelude.False ((:) x acc) stack;
+      ([]) -> merge_sort_pop leT Prelude.False ((:) x accu) stack;
       (:) y s0 ->
        case leT x y of {
         Prelude.True ->
-         sortNrec0 (merge_sort_push leT ((:) x acc) stack) y s0;
-        Prelude.False -> descending0 stack ((:) x acc) y s0}}}
-  in ascending0
+         sortNrec0 (merge_sort_push leT ((:) x accu) stack) y s0;
+        Prelude.False -> decr0 stack y s0 ((:) x accu)}}}
+  in incr0
 
-descending :: (Rel a1) -> (([]) (([]) a1)) -> (([]) a1) -> a1 -> (([]) 
-              a1) -> ([]) a1
-descending leT =
+decr :: (Rel a1) -> (([]) (([]) a1)) -> a1 -> (([]) a1) -> (([]) a1) -> ([])
+        a1
+decr leT =
   let {
    sortNrec0 stack x s =
      case s of {
       ([]) -> merge_sort_pop leT Prelude.False ((:) x ([])) stack;
       (:) y s0 ->
        case leT x y of {
-        Prelude.True -> ascending0 stack ((:) x ([])) y s0;
-        Prelude.False -> descending0 stack ((:) x ([])) y s0}};
-   ascending0 stack acc x s =
+        Prelude.True -> incr0 stack y s0 ((:) x ([]));
+        Prelude.False -> decr0 stack y s0 ((:) x ([]))}};
+   incr0 stack x s accu =
      case s of {
       ([]) ->
-       merge_sort_pop leT Prelude.False (catrev acc ((:) x ([]))) stack;
+       merge_sort_pop leT Prelude.False (catrev accu ((:) x ([]))) stack;
       (:) y s0 ->
        case leT x y of {
-        Prelude.True -> ascending0 stack ((:) x acc) y s0;
+        Prelude.True -> incr0 stack y s0 ((:) x accu);
         Prelude.False ->
-         sortNrec0 (merge_sort_push leT (catrev acc ((:) x ([]))) stack) y s0}};
-   descending0 stack acc x s =
+         sortNrec0 (merge_sort_push leT (catrev accu ((:) x ([]))) stack) y
+           s0}};
+   decr0 stack x s accu =
      case s of {
-      ([]) -> merge_sort_pop leT Prelude.False ((:) x acc) stack;
+      ([]) -> merge_sort_pop leT Prelude.False ((:) x accu) stack;
       (:) y s0 ->
        case leT x y of {
         Prelude.True ->
-         sortNrec0 (merge_sort_push leT ((:) x acc) stack) y s0;
-        Prelude.False -> descending0 stack ((:) x acc) y s0}}}
-  in descending0
+         sortNrec0 (merge_sort_push leT ((:) x accu) stack) y s0;
+        Prelude.False -> decr0 stack y s0 ((:) x accu)}}}
+  in decr0
 
 sortN :: (Rel a1) -> (([]) a1) -> ([]) a1
 sortN leT s =
@@ -653,10 +661,11 @@ sortN leT s =
    ([]) -> ([]);
    (:) x s0 -> sortNrec leT ([]) x s0}
 
-merge_sort_pushP :: (Rel a1) -> (Tree a1) -> (([]) (Tree a1)) -> Sig2
-                    (([]) (Tree a1))
+merge_sort_pushP :: (Rel a1) -> (Trace a1) -> (([]) (Trace a1)) -> Sig2
+                    (([]) (Trace a1))
 merge_sort_pushP leT =
-  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_tree leT x)) ([])} in
+  let {geT = \x y -> leT y x} in
+  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_trace leT x)) ([])} in
   let {
    sort_stack = let {
                  sort_stack mode stack =
@@ -664,8 +673,8 @@ merge_sort_pushP leT =
                     ([]) -> ([]);
                     (:) t stack0 -> (:)
                      (case mode of {
-                       Prelude.True -> rev (sort_tree leT t);
-                       Prelude.False -> sort_tree leT t})
+                       Prelude.True -> rev (sort_trace leT t);
+                       Prelude.False -> sort_trace leT t})
                      (sort_stack (Prelude.not mode) stack0)}}
                 in sort_stack}
   in
@@ -674,94 +683,99 @@ merge_sort_pushP leT =
    iHstack t0 __top_assumption_ =
      case __top_assumption_ of {
       ([]) -> (:) t0 ([]);
-      (:) x x0 ->
-       case x0 of {
+      (:) a l ->
+       case l of {
         ([]) ->
-         eq_rect_r (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
+         eq_rect_r (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
            (eq_rect_r
-             (case nilp (sort_tree leT x) of {
-               Prelude.True -> (:) (sort_tree leT t0) ([]);
+             (case nilp (sort_trace leT a) of {
+               Prelude.True -> (:) (sort_trace leT t0) ([]);
                Prelude.False -> (:) ([]) ((:)
-                (rev (merge leT (sort_tree leT x) (sort_tree leT t0))) ([]))})
-             (eq_rect_r (nilp (flatten_tree leT x))
+                (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                ([]))})
+             (eq_rect_r (nilp (flatten_trace leT a))
                (ssr_have (\_ -> nilP) (\__top_assumption_0 ->
-                 case __top_assumption_0 __ (flatten_tree leT x) of {
+                 case __top_assumption_0 __ (flatten_trace leT a) of {
                   ReflectT ->
-                   eq_rect_r ([]) ((:) t0 ([])) (flatten_tree leT x);
-                  ReflectF -> (:) (empty_tree leT) ((:) (Branch_tree
-                   Prelude.True x t0) ([]))})) (nilp (sort_tree leT x)))
-             (case sort_tree leT x of {
-               ([]) -> (:) (sort_tree leT t0) ([]);
+                   eq_rect_r ([]) ((:) t0 ([])) (flatten_trace leT a);
+                  ReflectF -> (:) (empty_trace leT) ((:) (Branch_trace
+                   Prelude.True a t0) ([]))})) (nilp (sort_trace leT a)))
+             (case sort_trace leT a of {
+               ([]) -> (:) (sort_trace leT t0) ([]);
                (:) _ _ -> (:) ([]) ((:)
-                (rev (merge leT (sort_tree leT x) (sort_tree leT t0))) ([]))}))
-           (revmerge leT (sort_tree leT x) (sort_tree leT t0));
-        (:) x1 x2 ->
-         eq_rect_r (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
+                (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                ([]))}))
+           (revmerge leT (sort_trace leT a) (sort_trace leT t0));
+        (:) a0 l0 ->
+         eq_rect_r (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
            (eq_rect_r
              (rev
-               (merge (\x3 y -> leT y x3)
-                 (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                 (rev (sort_tree leT x1))))
+               (merge geT
+                 (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                 (rev (sort_trace leT a0))))
              (eq_rect_r
-               (case nilp (sort_tree leT x) of {
-                 Prelude.True -> (:) (sort_tree leT t0) ((:)
-                  (rev (sort_tree leT x1)) (sort_stack Prelude.False x2));
+               (case nilp (sort_trace leT a) of {
+                 Prelude.True -> (:) (sort_trace leT t0) ((:)
+                  (rev (sort_trace leT a0)) (sort_stack Prelude.False l0));
                  Prelude.False ->
-                  case rev (sort_tree leT x1) of {
+                  case rev (sort_trace leT a0) of {
                    ([]) -> (:) ([]) ((:)
-                    (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                    (sort_stack Prelude.False x2));
+                    (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                    (sort_stack Prelude.False l0));
                    (:) _ _ -> (:) ([]) ((:) ([])
                     (merge_sort_push leT
                       (rev
-                        (merge (\x3 y -> leT y x3)
+                        (merge geT
                           (rev
-                            (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                          (rev (sort_tree leT x1))))
-                      (sort_stack Prelude.False x2)))}})
+                            (merge leT (sort_trace leT a)
+                              (sort_trace leT t0)))
+                          (rev (sort_trace leT a0))))
+                      (sort_stack Prelude.False l0)))}})
                (eq_rect_r
-                 (case nilp (rev (sort_tree leT x1)) of {
+                 (case nilp (rev (sort_trace leT a0)) of {
                    Prelude.True -> (:) ([]) ((:)
-                    (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                    (sort_stack Prelude.False x2));
+                    (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                    (sort_stack Prelude.False l0));
                    Prelude.False -> (:) ([]) ((:) ([])
                     (merge_sort_push leT
                       (rev
-                        (merge (\x3 y -> leT y x3)
+                        (merge geT
                           (rev
-                            (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                          (rev (sort_tree leT x1))))
-                      (sort_stack Prelude.False x2)))})
-                 (eq_rect_r (nilp (sort_tree leT x1))
-                   (eq_rect_r (nilp (flatten_tree leT x))
-                     (eq_rect_r (nilp (flatten_tree leT x1))
+                            (merge leT (sort_trace leT a)
+                              (sort_trace leT t0)))
+                          (rev (sort_trace leT a0))))
+                      (sort_stack Prelude.False l0)))})
+                 (eq_rect_r (nilp (sort_trace leT a0))
+                   (eq_rect_r (nilp (flatten_trace leT a))
+                     (eq_rect_r (nilp (flatten_trace leT a0))
                        (ssr_have (\_ -> nilP) (\__top_assumption_0 ->
-                         case __top_assumption_0 __ (flatten_tree leT x) of {
+                         case __top_assumption_0 __ (flatten_trace leT a) of {
                           ReflectT ->
-                           eq_rect_r ([]) ((:) t0 ((:) x1 x2))
-                             (flatten_tree leT x);
+                           eq_rect_r ([]) ((:) t0 ((:) a0 l0))
+                             (flatten_trace leT a);
                           ReflectF ->
                            eq_rect
                              (cat
-                               (cat (flatten_stack x2) (flatten_tree leT x1))
-                               (cat (flatten_tree leT x)
-                                 (flatten_tree leT t0)))
+                               (cat (flatten_stack l0)
+                                 (flatten_trace leT a0))
+                               (cat (flatten_trace leT a)
+                                 (flatten_trace leT t0)))
                              (eq_rect
-                               (cat (flatten_stack x2)
-                                 (cat (flatten_tree leT x1)
-                                   (cat (flatten_tree leT x)
-                                     (flatten_tree leT t0))))
+                               (cat (flatten_stack l0)
+                                 (cat (flatten_trace leT a0)
+                                   (cat (flatten_trace leT a)
+                                     (flatten_trace leT t0))))
                                (ssr_have (\_ -> nilP) (\__top_assumption_1 ->
                                  case __top_assumption_1 __
-                                        (flatten_tree leT x1) of {
+                                        (flatten_trace leT a0) of {
                                   ReflectT ->
-                                   eq_rect_r ([]) ((:) (empty_tree leT) ((:)
-                                     (Branch_tree Prelude.True x t0) x2))
-                                     (flatten_tree leT x1);
+                                   eq_rect_r ([]) ((:) (empty_trace leT) ((:)
+                                     (Branch_trace Prelude.True a t0) l0))
+                                     (flatten_trace leT a0);
                                   ReflectF ->
                                    ssr_have
-                                     (iHstack (Branch_tree Prelude.False x1
-                                       (Branch_tree Prelude.True x t0)) x2)
+                                     (iHstack (Branch_trace Prelude.False a0
+                                       (Branch_trace Prelude.True a t0)) l0)
                                      (\__top_assumption_2 ->
                                      eq_rect_r
                                        (flatten_stack __top_assumption_2)
@@ -769,82 +783,87 @@ merge_sort_pushP leT =
                                        eq_rect_r
                                          (sort_stack Prelude.False
                                            __top_assumption_2) ((:)
-                                         (empty_tree leT) ((:)
-                                         (empty_tree leT)
+                                         (empty_trace leT) ((:)
+                                         (empty_trace leT)
                                          __top_assumption_2))
                                          (merge_sort_push leT
                                            (rev
-                                             (merge (\x3 y -> leT y x3)
+                                             (merge geT
                                                (rev
-                                                 (merge leT (sort_tree leT x)
-                                                   (sort_tree leT t0)))
-                                               (rev (sort_tree leT x1))))
-                                           (sort_stack Prelude.False x2)))
-                                       (cat (flatten_stack x2)
-                                         (cat (flatten_tree leT x1)
-                                           (cat (flatten_tree leT x)
-                                             (flatten_tree leT t0)))) __)}))
+                                                 (merge leT
+                                                   (sort_trace leT a)
+                                                   (sort_trace leT t0)))
+                                               (rev (sort_trace leT a0))))
+                                           (sort_stack Prelude.False l0)))
+                                       (cat (flatten_stack l0)
+                                         (cat (flatten_trace leT a0)
+                                           (cat (flatten_trace leT a)
+                                             (flatten_trace leT t0)))) __)}))
                                (cat
-                                 (cat (flatten_stack x2)
-                                   (flatten_tree leT x1))
-                                 (cat (flatten_tree leT x)
-                                   (flatten_tree leT t0))))
+                                 (cat (flatten_stack l0)
+                                   (flatten_trace leT a0))
+                                 (cat (flatten_trace leT a)
+                                   (flatten_trace leT t0))))
                              (cat
                                (cat
-                                 (cat (flatten_stack x2)
-                                   (flatten_tree leT x1))
-                                 (flatten_tree leT x)) (flatten_tree leT t0))}))
-                       (nilp (sort_tree leT x1))) (nilp (sort_tree leT x)))
-                   (nilp (rev (sort_tree leT x1))))
-                 (case rev (sort_tree leT x1) of {
+                                 (cat (flatten_stack l0)
+                                   (flatten_trace leT a0))
+                                 (flatten_trace leT a))
+                               (flatten_trace leT t0))}))
+                       (nilp (sort_trace leT a0))) (nilp (sort_trace leT a)))
+                   (nilp (rev (sort_trace leT a0))))
+                 (case rev (sort_trace leT a0) of {
                    ([]) -> (:) ([]) ((:)
-                    (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                    (sort_stack Prelude.False x2));
+                    (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                    (sort_stack Prelude.False l0));
                    (:) _ _ -> (:) ([]) ((:) ([])
                     (merge_sort_push leT
                       (rev
-                        (merge (\x3 y -> leT y x3)
+                        (merge geT
                           (rev
-                            (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                          (rev (sort_tree leT x1))))
-                      (sort_stack Prelude.False x2)))}))
-               (case sort_tree leT x of {
-                 ([]) -> (:) (sort_tree leT t0) ((:) (rev (sort_tree leT x1))
-                  (sort_stack Prelude.False x2));
+                            (merge leT (sort_trace leT a)
+                              (sort_trace leT t0)))
+                          (rev (sort_trace leT a0))))
+                      (sort_stack Prelude.False l0)))}))
+               (case sort_trace leT a of {
+                 ([]) -> (:) (sort_trace leT t0) ((:)
+                  (rev (sort_trace leT a0)) (sort_stack Prelude.False l0));
                  (:) _ _ ->
-                  case rev (sort_tree leT x1) of {
+                  case rev (sort_trace leT a0) of {
                    ([]) -> (:) ([]) ((:)
-                    (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                    (sort_stack Prelude.False x2));
+                    (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+                    (sort_stack Prelude.False l0));
                    (:) _ _ -> (:) ([]) ((:) ([])
                     (merge_sort_push leT
                       (rev
-                        (merge (\x3 y -> leT y x3)
+                        (merge geT
                           (rev
-                            (merge leT (sort_tree leT x) (sort_tree leT t0)))
-                          (rev (sort_tree leT x1))))
-                      (sort_stack Prelude.False x2)))}}))
-             (revmerge (\x3 y -> leT y x3)
-               (rev (merge leT (sort_tree leT x) (sort_tree leT t0)))
-               (rev (sort_tree leT x1))))
-           (revmerge leT (sort_tree leT x) (sort_tree leT t0))}}}
+                            (merge leT (sort_trace leT a)
+                              (sort_trace leT t0)))
+                          (rev (sort_trace leT a0))))
+                      (sort_stack Prelude.False l0)))}}))
+             (revmerge geT
+               (rev (merge leT (sort_trace leT a) (sort_trace leT t0)))
+               (rev (sort_trace leT a0))))
+           (revmerge leT (sort_trace leT a) (sort_trace leT t0))}}}
   in iHstack t stack)
 
-merge_sort_popP :: (Rel a1) -> Prelude.Bool -> (Tree a1) -> (([]) (Tree a1))
-                   -> Sig2 (Tree a1)
+merge_sort_popP :: (Rel a1) -> Prelude.Bool -> (Trace a1) -> (([])
+                   (Trace a1)) -> Sig2 (Trace a1)
 merge_sort_popP leT =
+  let {geT = \x y -> leT y x} in
   let {
    condrev = \r s -> case r of {
                       Prelude.True -> rev s;
                       Prelude.False -> s}}
   in
-  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_tree leT x)) ([])} in
+  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_trace leT x)) ([])} in
   let {
    sort_stack = let {
                  sort_stack mode stack =
                    case stack of {
                     ([]) -> ([]);
-                    (:) t stack0 -> (:) (condrev mode (sort_tree leT t))
+                    (:) t stack0 -> (:) (condrev mode (sort_trace leT t))
                      (sort_stack (Prelude.not mode) stack0)}}
                 in sort_stack}
   in
@@ -853,378 +872,388 @@ merge_sort_popP leT =
    iHstack mode0 t0 __top_assumption_ =
      case __top_assumption_ of {
       ([]) -> t0;
-      (:) x x0 ->
+      (:) a l ->
        eq_rect
-         (cat (flatten_stack x0)
-           (cat (flatten_tree leT x) (flatten_tree leT t0)))
+         (cat (flatten_stack l)
+           (cat (flatten_trace leT a) (flatten_trace leT t0)))
          (eq_rect_r
            (rev
-             (merge (\x1 y -> leT y x1) (condrev mode0 (sort_tree leT t0))
-               (condrev mode0 (sort_tree leT x))))
+             (merge geT (condrev mode0 (sort_trace leT t0))
+               (condrev mode0 (sort_trace leT a))))
            (eq_rect_r
              (rev
-               (merge leT (condrev mode0 (sort_tree leT x))
-                 (condrev mode0 (sort_tree leT t0))))
+               (merge leT (condrev mode0 (sort_trace leT a))
+                 (condrev mode0 (sort_trace leT t0))))
              (eq_rect_r
-               (case nilp (condrev mode0 (sort_tree leT x)) of {
+               (case nilp (condrev mode0 (sort_trace leT a)) of {
                  Prelude.True ->
-                  case sort_stack (Prelude.not mode0) x0 of {
+                  case sort_stack (Prelude.not mode0) l of {
                    ([]) ->
                     merge_sort_pop leT (Prelude.not mode0)
-                      (rev (condrev mode0 (sort_tree leT t0)))
-                      (sort_stack (Prelude.not mode0) x0);
-                   (:) l stack0 ->
-                    case l of {
+                      (rev (condrev mode0 (sort_trace leT t0)))
+                      (sort_stack (Prelude.not mode0) l);
+                   (:) l0 stack0 ->
+                    case l0 of {
                      ([]) ->
                       merge_sort_pop leT mode0
-                        (condrev mode0 (sort_tree leT t0)) stack0;
+                        (condrev mode0 (sort_trace leT t0)) stack0;
                      (:) _ _ ->
                       merge_sort_pop leT (Prelude.not mode0)
-                        (rev (condrev mode0 (sort_tree leT t0)))
-                        (sort_stack (Prelude.not mode0) x0)}};
+                        (rev (condrev mode0 (sort_trace leT t0)))
+                        (sort_stack (Prelude.not mode0) l)}};
                  Prelude.False ->
                   case mode0 of {
                    Prelude.True ->
                     merge_sort_pop leT Prelude.False
                       (rev
-                        (merge (\x1 y -> leT y x1)
-                          (condrev mode0 (sort_tree leT t0))
-                          (condrev mode0 (sort_tree leT x))))
-                      (sort_stack (Prelude.not mode0) x0);
+                        (merge geT (condrev mode0 (sort_trace leT t0))
+                          (condrev mode0 (sort_trace leT a))))
+                      (sort_stack (Prelude.not mode0) l);
                    Prelude.False ->
                     merge_sort_pop leT Prelude.True
                       (rev
-                        (merge leT (condrev mode0 (sort_tree leT x))
-                          (condrev mode0 (sort_tree leT t0))))
-                      (sort_stack (Prelude.not mode0) x0)}})
-               (eq_rect_r (nilp (sort_tree leT x))
-                 (case tree_nilP leT x of {
-                   TreeNil ->
-                    case x0 of {
+                        (merge leT (condrev mode0 (sort_trace leT a))
+                          (condrev mode0 (sort_trace leT t0))))
+                      (sort_stack (Prelude.not mode0) l)}})
+               (eq_rect_r (nilp (sort_trace leT a))
+                 (case trace_nilP leT a of {
+                   TraceNil ->
+                    case l of {
                      ([]) -> t0;
-                     (:) x1 x2 ->
+                     (:) a0 l0 ->
                       eq_rect_r
                         (rev
-                          (merge (\x3 y -> leT y x3)
-                            (rev (condrev mode0 (sort_tree leT t0)))
-                            (condrev (Prelude.not mode0) (sort_tree leT x1))))
+                          (merge geT
+                            (rev (condrev mode0 (sort_trace leT t0)))
+                            (condrev (Prelude.not mode0) (sort_trace leT a0))))
                         (eq_rect_r
                           (rev
                             (merge leT
                               (condrev (Prelude.not mode0)
-                                (sort_tree leT x1))
-                              (rev (condrev mode0 (sort_tree leT t0)))))
+                                (sort_trace leT a0))
+                              (rev (condrev mode0 (sort_trace leT t0)))))
                           (eq_rect_r
                             (case nilp
                                     (condrev (Prelude.not mode0)
-                                      (sort_tree leT x1)) of {
+                                      (sort_trace leT a0)) of {
                               Prelude.True ->
                                merge_sort_pop leT mode0
-                                 (condrev mode0 (sort_tree leT t0))
+                                 (condrev mode0 (sort_trace leT t0))
                                  (sort_stack
-                                   (Prelude.not (Prelude.not mode0)) x2);
+                                   (Prelude.not (Prelude.not mode0)) l0);
                               Prelude.False ->
                                case condrev (Prelude.not mode0)
-                                      (sort_tree leT x1) of {
+                                      (sort_trace leT a0) of {
                                 ([]) ->
                                  case sort_stack
-                                        (Prelude.not (Prelude.not mode0)) x2 of {
+                                        (Prelude.not (Prelude.not mode0)) l0 of {
                                   ([]) ->
                                    merge_sort_pop leT
                                      (Prelude.not (Prelude.not mode0))
                                      (rev
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0))))
+                                         (condrev mode0 (sort_trace leT t0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
-                                  (:) l stack0 ->
-                                   case l of {
+                                       (Prelude.not (Prelude.not mode0)) l0);
+                                  (:) l1 stack0 ->
+                                   case l1 of {
                                     ([]) ->
                                      merge_sort_pop leT (Prelude.not mode0)
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0)))
+                                         (condrev mode0 (sort_trace leT t0)))
                                        stack0;
                                     (:) _ _ ->
                                      merge_sort_pop leT
                                        (Prelude.not (Prelude.not mode0))
                                        (rev
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0))))
+                                           (condrev mode0
+                                             (sort_trace leT t0))))
                                        (sort_stack
                                          (Prelude.not (Prelude.not mode0))
-                                         x2)}};
+                                         l0)}};
                                 (:) _ _ ->
                                  case Prelude.not mode0 of {
                                   Prelude.True ->
                                    merge_sort_pop leT Prelude.False
                                      (rev
-                                       (merge (\x3 y -> leT y x3)
+                                       (merge geT
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))))
+                                           (sort_trace leT a0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
+                                       (Prelude.not (Prelude.not mode0)) l0);
                                   Prelude.False ->
                                    merge_sort_pop leT Prelude.True
                                      (rev
                                        (merge leT
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))
+                                           (sort_trace leT a0))
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2)}}})
+                                       (Prelude.not (Prelude.not mode0)) l0)}}})
                             (eq_rect_r
                               (case nilp
                                       (condrev (Prelude.not mode0)
-                                        (sort_tree leT x1)) of {
+                                        (sort_trace leT a0)) of {
                                 Prelude.True ->
                                  case sort_stack
-                                        (Prelude.not (Prelude.not mode0)) x2 of {
+                                        (Prelude.not (Prelude.not mode0)) l0 of {
                                   ([]) ->
                                    merge_sort_pop leT
                                      (Prelude.not (Prelude.not mode0))
                                      (rev
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0))))
+                                         (condrev mode0 (sort_trace leT t0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
-                                  (:) l stack0 ->
-                                   case l of {
+                                       (Prelude.not (Prelude.not mode0)) l0);
+                                  (:) l1 stack0 ->
+                                   case l1 of {
                                     ([]) ->
                                      merge_sort_pop leT (Prelude.not mode0)
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0)))
+                                         (condrev mode0 (sort_trace leT t0)))
                                        stack0;
                                     (:) _ _ ->
                                      merge_sort_pop leT
                                        (Prelude.not (Prelude.not mode0))
                                        (rev
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0))))
+                                           (condrev mode0
+                                             (sort_trace leT t0))))
                                        (sort_stack
                                          (Prelude.not (Prelude.not mode0))
-                                         x2)}};
+                                         l0)}};
                                 Prelude.False ->
                                  case Prelude.not mode0 of {
                                   Prelude.True ->
                                    merge_sort_pop leT Prelude.False
                                      (rev
-                                       (merge (\x3 y -> leT y x3)
+                                       (merge geT
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))))
+                                           (sort_trace leT a0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
+                                       (Prelude.not (Prelude.not mode0)) l0);
                                   Prelude.False ->
                                    merge_sort_pop leT Prelude.True
                                      (rev
                                        (merge leT
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))
+                                           (sort_trace leT a0))
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2)}})
-                              (eq_rect_r (nilp (sort_tree leT x1))
+                                       (Prelude.not (Prelude.not mode0)) l0)}})
+                              (eq_rect_r (nilp (sort_trace leT a0))
                                 (eq_rect_r mode0
                                   (eq_rect_r
-                                    (condrev mode0 (sort_tree leT t0))
-                                    (case tree_nilP leT x1 of {
-                                      TreeNil ->
-                                       eq_rect_r (flatten_stack x2)
-                                         (iHstack mode0 t0 x2)
-                                         (cat (flatten_stack x2) ([]));
-                                      TreeNotNil ->
+                                    (condrev mode0 (sort_trace leT t0))
+                                    (case trace_nilP leT a0 of {
+                                      TraceNil ->
+                                       eq_rect_r (flatten_stack l0)
+                                         (iHstack mode0 t0 l0)
+                                         (cat (flatten_stack l0) ([]));
+                                      TraceNotNil ->
                                        eq_rect
-                                         (cat (flatten_stack x2)
-                                           (cat (flatten_tree leT x1)
-                                             (flatten_tree leT t0)))
+                                         (cat (flatten_stack l0)
+                                           (cat (flatten_trace leT a0)
+                                             (flatten_trace leT t0)))
                                          (case mode0 of {
                                            Prelude.True ->
-                                            eq_rect_r (sort_tree leT t0)
+                                            eq_rect_r (sort_trace leT t0)
                                               (\iHstack0 -> iHstack0)
-                                              (rev (rev (sort_tree leT t0)))
-                                              (iHstack mode0 (Branch_tree
-                                                mode0 x1 t0) x2);
+                                              (rev (rev (sort_trace leT t0)))
+                                              (iHstack mode0 (Branch_trace
+                                                mode0 a0 t0) l0);
                                            Prelude.False ->
-                                            iHstack mode0 (Branch_tree mode0
-                                              x1 t0) x2})
+                                            iHstack mode0 (Branch_trace mode0
+                                              a0 t0) l0})
                                          (cat
-                                           (cat (flatten_stack x2)
-                                             (flatten_tree leT x1))
-                                           (flatten_tree leT t0))})
+                                           (cat (flatten_stack l0)
+                                             (flatten_trace leT a0))
+                                           (flatten_trace leT t0))})
                                     (rev
                                       (rev
-                                        (condrev mode0 (sort_tree leT t0)))))
+                                        (condrev mode0 (sort_trace leT t0)))))
                                   (Prelude.not (Prelude.not mode0)))
                                 (nilp
                                   (condrev (Prelude.not mode0)
-                                    (sort_tree leT x1))))
+                                    (sort_trace leT a0))))
                               (case condrev (Prelude.not mode0)
-                                      (sort_tree leT x1) of {
+                                      (sort_trace leT a0) of {
                                 ([]) ->
                                  case sort_stack
-                                        (Prelude.not (Prelude.not mode0)) x2 of {
+                                        (Prelude.not (Prelude.not mode0)) l0 of {
                                   ([]) ->
                                    merge_sort_pop leT
                                      (Prelude.not (Prelude.not mode0))
                                      (rev
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0))))
+                                         (condrev mode0 (sort_trace leT t0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
-                                  (:) l stack0 ->
-                                   case l of {
+                                       (Prelude.not (Prelude.not mode0)) l0);
+                                  (:) l1 stack0 ->
+                                   case l1 of {
                                     ([]) ->
                                      merge_sort_pop leT (Prelude.not mode0)
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0)))
+                                         (condrev mode0 (sort_trace leT t0)))
                                        stack0;
                                     (:) _ _ ->
                                      merge_sort_pop leT
                                        (Prelude.not (Prelude.not mode0))
                                        (rev
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0))))
+                                           (condrev mode0
+                                             (sort_trace leT t0))))
                                        (sort_stack
                                          (Prelude.not (Prelude.not mode0))
-                                         x2)}};
+                                         l0)}};
                                 (:) _ _ ->
                                  case Prelude.not mode0 of {
                                   Prelude.True ->
                                    merge_sort_pop leT Prelude.False
                                      (rev
-                                       (merge (\x3 y -> leT y x3)
+                                       (merge geT
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))))
+                                           (sort_trace leT a0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
+                                       (Prelude.not (Prelude.not mode0)) l0);
                                   Prelude.False ->
                                    merge_sort_pop leT Prelude.True
                                      (rev
                                        (merge leT
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))
+                                           (sort_trace leT a0))
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2)}}))
+                                       (Prelude.not (Prelude.not mode0)) l0)}}))
                             (case condrev (Prelude.not mode0)
-                                    (sort_tree leT x1) of {
+                                    (sort_trace leT a0) of {
                               ([]) ->
                                merge_sort_pop leT mode0
-                                 (condrev mode0 (sort_tree leT t0))
+                                 (condrev mode0 (sort_trace leT t0))
                                  (sort_stack
-                                   (Prelude.not (Prelude.not mode0)) x2);
+                                   (Prelude.not (Prelude.not mode0)) l0);
                               (:) _ _ ->
                                case condrev (Prelude.not mode0)
-                                      (sort_tree leT x1) of {
+                                      (sort_trace leT a0) of {
                                 ([]) ->
                                  case sort_stack
-                                        (Prelude.not (Prelude.not mode0)) x2 of {
+                                        (Prelude.not (Prelude.not mode0)) l0 of {
                                   ([]) ->
                                    merge_sort_pop leT
                                      (Prelude.not (Prelude.not mode0))
                                      (rev
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0))))
+                                         (condrev mode0 (sort_trace leT t0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
-                                  (:) l stack0 ->
-                                   case l of {
+                                       (Prelude.not (Prelude.not mode0)) l0);
+                                  (:) l1 stack0 ->
+                                   case l1 of {
                                     ([]) ->
                                      merge_sort_pop leT (Prelude.not mode0)
                                        (rev
-                                         (condrev mode0 (sort_tree leT t0)))
+                                         (condrev mode0 (sort_trace leT t0)))
                                        stack0;
                                     (:) _ _ ->
                                      merge_sort_pop leT
                                        (Prelude.not (Prelude.not mode0))
                                        (rev
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0))))
+                                           (condrev mode0
+                                             (sort_trace leT t0))))
                                        (sort_stack
                                          (Prelude.not (Prelude.not mode0))
-                                         x2)}};
+                                         l0)}};
                                 (:) _ _ ->
                                  case Prelude.not mode0 of {
                                   Prelude.True ->
                                    merge_sort_pop leT Prelude.False
                                      (rev
-                                       (merge (\x3 y -> leT y x3)
+                                       (merge geT
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))))
+                                           (sort_trace leT a0))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2);
+                                       (Prelude.not (Prelude.not mode0)) l0);
                                   Prelude.False ->
                                    merge_sort_pop leT Prelude.True
                                      (rev
                                        (merge leT
                                          (condrev (Prelude.not mode0)
-                                           (sort_tree leT x1))
+                                           (sort_trace leT a0))
                                          (rev
-                                           (condrev mode0 (sort_tree leT t0)))))
+                                           (condrev mode0
+                                             (sort_trace leT t0)))))
                                      (sort_stack
-                                       (Prelude.not (Prelude.not mode0)) x2)}}}))
+                                       (Prelude.not (Prelude.not mode0)) l0)}}}))
                           (revmerge leT
-                            (condrev (Prelude.not mode0) (sort_tree leT x1))
-                            (rev (condrev mode0 (sort_tree leT t0)))))
-                        (revmerge (\x3 y -> leT y x3)
-                          (rev (condrev mode0 (sort_tree leT t0)))
-                          (condrev (Prelude.not mode0) (sort_tree leT x1)))};
-                   TreeNotNil ->
-                    iHstack (Prelude.not mode0) (Branch_tree
-                      (Prelude.not mode0) x t0) x0})
-                 (nilp (condrev mode0 (sort_tree leT x))))
-               (case condrev mode0 (sort_tree leT x) of {
+                            (condrev (Prelude.not mode0) (sort_trace leT a0))
+                            (rev (condrev mode0 (sort_trace leT t0)))))
+                        (revmerge geT
+                          (rev (condrev mode0 (sort_trace leT t0)))
+                          (condrev (Prelude.not mode0) (sort_trace leT a0)))};
+                   TraceNotNil ->
+                    iHstack (Prelude.not mode0) (Branch_trace
+                      (Prelude.not mode0) a t0) l})
+                 (nilp (condrev mode0 (sort_trace leT a))))
+               (case condrev mode0 (sort_trace leT a) of {
                  ([]) ->
-                  case sort_stack (Prelude.not mode0) x0 of {
+                  case sort_stack (Prelude.not mode0) l of {
                    ([]) ->
                     merge_sort_pop leT (Prelude.not mode0)
-                      (rev (condrev mode0 (sort_tree leT t0)))
-                      (sort_stack (Prelude.not mode0) x0);
-                   (:) l stack0 ->
-                    case l of {
+                      (rev (condrev mode0 (sort_trace leT t0)))
+                      (sort_stack (Prelude.not mode0) l);
+                   (:) l0 stack0 ->
+                    case l0 of {
                      ([]) ->
                       merge_sort_pop leT mode0
-                        (condrev mode0 (sort_tree leT t0)) stack0;
+                        (condrev mode0 (sort_trace leT t0)) stack0;
                      (:) _ _ ->
                       merge_sort_pop leT (Prelude.not mode0)
-                        (rev (condrev mode0 (sort_tree leT t0)))
-                        (sort_stack (Prelude.not mode0) x0)}};
+                        (rev (condrev mode0 (sort_trace leT t0)))
+                        (sort_stack (Prelude.not mode0) l)}};
                  (:) _ _ ->
                   case mode0 of {
                    Prelude.True ->
                     merge_sort_pop leT Prelude.False
                       (rev
-                        (merge (\x1 y -> leT y x1)
-                          (condrev mode0 (sort_tree leT t0))
-                          (condrev mode0 (sort_tree leT x))))
-                      (sort_stack (Prelude.not mode0) x0);
+                        (merge geT (condrev mode0 (sort_trace leT t0))
+                          (condrev mode0 (sort_trace leT a))))
+                      (sort_stack (Prelude.not mode0) l);
                    Prelude.False ->
                     merge_sort_pop leT Prelude.True
                       (rev
-                        (merge leT (condrev mode0 (sort_tree leT x))
-                          (condrev mode0 (sort_tree leT t0))))
-                      (sort_stack (Prelude.not mode0) x0)}}))
-             (revmerge leT (condrev mode0 (sort_tree leT x))
-               (condrev mode0 (sort_tree leT t0))))
-           (revmerge (\x1 y -> leT y x1) (condrev mode0 (sort_tree leT t0))
-             (condrev mode0 (sort_tree leT x))))
-         (cat (cat (flatten_stack x0) (flatten_tree leT x))
-           (flatten_tree leT t0))}}
+                        (merge leT (condrev mode0 (sort_trace leT a))
+                          (condrev mode0 (sort_trace leT t0))))
+                      (sort_stack (Prelude.not mode0) l)}}))
+             (revmerge leT (condrev mode0 (sort_trace leT a))
+               (condrev mode0 (sort_trace leT t0))))
+           (revmerge geT (condrev mode0 (sort_trace leT t0))
+             (condrev mode0 (sort_trace leT a))))
+         (cat (cat (flatten_stack l) (flatten_trace leT a))
+           (flatten_trace leT t0))}}
   in iHstack mode t stack)
 
-sort1P :: (Rel a1) -> (([]) a1) -> Sig2 (Tree a1)
+sort1P :: (Rel a1) -> (([]) a1) -> Sig2 (Trace a1)
 sort1P leT =
-  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_tree leT x)) ([])} in
+  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_trace leT x)) ([])} in
   let {
    sort_stack = let {
                  sort_stack mode stack =
@@ -1232,8 +1261,8 @@ sort1P leT =
                     ([]) -> ([]);
                     (:) t stack0 -> (:)
                      (case mode of {
-                       Prelude.True -> rev (sort_tree leT t);
-                       Prelude.False -> sort_tree leT t})
+                       Prelude.True -> rev (sort_trace leT t);
+                       Prelude.False -> sort_trace leT t})
                      (sort_stack (Prelude.not mode) stack0)}}
                 in sort_stack}
   in
@@ -1243,7 +1272,7 @@ sort1P leT =
       (ssr_have __ (\_ ->
         eq_rect_r (sort_stack Prelude.False ([]))
           (list_rect (\stack ->
-            merge_sort_popP leT Prelude.False (empty_tree leT) stack)
+            merge_sort_popP leT Prelude.False (empty_trace leT) stack)
             (\x s0 iHs stack ->
             eq_rect_r (cat (cat (flatten_stack stack) ((:) x ([]))) s0)
               (\stack0 _ ->
@@ -1253,12 +1282,12 @@ sort1P leT =
                     (sort_stack Prelude.False stack)))
                 (cat (flatten_stack stack) ((:) x ([]))))
               (cat (flatten_stack stack) ((:) x s0))
-              (merge_sort_pushP leT (Leaf_tree (unsafeCoerce Prelude.True)
+              (merge_sort_pushP leT (Leaf_trace (unsafeCoerce Prelude.True)
                 ((:) x ([]))) stack) __ __) s ([])) ([]))) s))
 
-sort2P :: (Rel a1) -> (([]) a1) -> Sig2 (Tree a1)
+sort2P :: (Rel a1) -> (([]) a1) -> Sig2 (Trace a1)
 sort2P leT =
-  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_tree leT x)) ([])} in
+  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_trace leT x)) ([])} in
   let {
    sort_stack = let {
                  sort_stack mode stack =
@@ -1266,8 +1295,8 @@ sort2P leT =
                     ([]) -> ([]);
                     (:) t stack0 -> (:)
                      (case mode of {
-                       Prelude.True -> rev (sort_tree leT t);
-                       Prelude.False -> sort_tree leT t})
+                       Prelude.True -> rev (sort_trace leT t);
+                       Prelude.False -> sort_trace leT t})
                      (sort_stack (Prelude.not mode) stack0)}}
                 in sort_stack}
   in
@@ -1280,34 +1309,34 @@ sort2P leT =
             iHs stack __top_assumption_ =
               case __top_assumption_ of {
                ([]) ->
-                merge_sort_popP leT Prelude.False (Leaf_tree
+                merge_sort_popP leT Prelude.False (Leaf_trace
                   (unsafeCoerce Prelude.True) ([])) stack;
-               (:) x x0 ->
-                case x0 of {
+               (:) a l ->
+                case l of {
                  ([]) ->
-                  merge_sort_popP leT Prelude.False (Leaf_tree
-                    (unsafeCoerce Prelude.True) ((:) x ([]))) stack;
-                 (:) x1 x2 ->
+                  merge_sort_popP leT Prelude.False (Leaf_trace
+                    (unsafeCoerce Prelude.True) ((:) a ([]))) stack;
+                 (:) a0 l0 ->
                   eq_rect_r
-                    (cat (cat (flatten_stack stack) ((:) x ((:) x1 ([]))))
-                      x2) (\_ stack0 _ ->
+                    (cat (cat (flatten_stack stack) ((:) a ((:) a0 ([]))))
+                      l0) (\_ stack0 _ ->
                     eq_rect_r (flatten_stack stack0) (\_ ->
                       eq_rect_r (sort_stack Prelude.False stack0)
-                        (iHs stack0 x2)
+                        (iHs stack0 l0)
                         (merge_sort_push leT
-                          (case leT x x1 of {
-                            Prelude.True -> (:) x ((:) x1 ([]));
-                            Prelude.False -> (:) x1 ((:) x ([]))})
+                          (case leT a a0 of {
+                            Prelude.True -> (:) a ((:) a0 ([]));
+                            Prelude.False -> (:) a0 ((:) a ([]))})
                           (sort_stack Prelude.False stack)))
-                      (cat (flatten_stack stack) ((:) x ((:) x1 ([])))))
-                    (cat (flatten_stack stack) ((:) x ((:) x1 x2))) __
-                    (merge_sort_pushP leT (Leaf_tree (unsafeCoerce leT x x1)
-                      ((:) x ((:) x1 ([])))) stack) __ __}}}
+                      (cat (flatten_stack stack) ((:) a ((:) a0 ([])))))
+                    (cat (flatten_stack stack) ((:) a ((:) a0 l0))) __
+                    (merge_sort_pushP leT (Leaf_trace (unsafeCoerce leT a a0)
+                      ((:) a ((:) a0 ([])))) stack) __ __}}}
            in iHs ([]) s) ([]))) s))
 
-sort3P :: (Rel a1) -> (([]) a1) -> Sig2 (Tree a1)
+sort3P :: (Rel a1) -> (([]) a1) -> Sig2 (Trace a1)
 sort3P leT =
-  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_tree leT x)) ([])} in
+  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_trace leT x)) ([])} in
   let {
    sort_stack = let {
                  sort_stack mode stack =
@@ -1315,8 +1344,8 @@ sort3P leT =
                     ([]) -> ([]);
                     (:) t stack0 -> (:)
                      (case mode of {
-                       Prelude.True -> rev (sort_tree leT t);
-                       Prelude.False -> sort_tree leT t})
+                       Prelude.True -> rev (sort_trace leT t);
+                       Prelude.False -> sort_trace leT t})
                      (sort_stack (Prelude.not mode) stack0)}}
                 in sort_stack}
   in
@@ -1330,80 +1359,80 @@ sort3P leT =
               iHs stack __top_assumption_ =
                 case __top_assumption_ of {
                  ([]) ->
-                  merge_sort_popP leT Prelude.False (Leaf_tree
+                  merge_sort_popP leT Prelude.False (Leaf_trace
                     (unsafeCoerce Prelude.True) ([])) stack;
-                 (:) x x0 ->
-                  case x0 of {
+                 (:) a l ->
+                  case l of {
                    ([]) ->
-                    merge_sort_popP leT Prelude.False (Leaf_tree
-                      (unsafeCoerce Prelude.True) ((:) x ([]))) stack;
-                   (:) x1 x2 ->
-                    case x2 of {
+                    merge_sort_popP leT Prelude.False (Leaf_trace
+                      (unsafeCoerce Prelude.True) ((:) a ([]))) stack;
+                   (:) a0 l0 ->
+                    case l0 of {
                      ([]) ->
-                      merge_sort_popP leT Prelude.False (Leaf_tree
-                        (unsafeCoerce leT x x1) ((:) x ((:) x1 ([])))) stack;
-                     (:) x3 x4 ->
+                      merge_sort_popP leT Prelude.False (Leaf_trace
+                        (unsafeCoerce leT a a0) ((:) a ((:) a0 ([])))) stack;
+                     (:) a1 l1 ->
                       eq_rect_r
                         (cat
-                          (cat (flatten_stack stack) ((:) x ((:) x1 ((:) x3
-                            ([]))))) x4)
+                          (cat (flatten_stack stack) ((:) a ((:) a0 ((:) a1
+                            ([]))))) l1)
                         (let {
-                          stack' = merge_sort_pushP leT (Branch_tree
-                                     Prelude.False (Leaf_tree
-                                     (unsafeCoerce leT x x1) ((:) x ((:) x1
-                                     ([])))) (Leaf_tree
-                                     (unsafeCoerce Prelude.True) ((:) x3
+                          stack' = merge_sort_pushP leT (Branch_trace
+                                     Prelude.False (Leaf_trace
+                                     (unsafeCoerce leT a a0) ((:) a ((:) a0
+                                     ([])))) (Leaf_trace
+                                     (unsafeCoerce Prelude.True) ((:) a1
                                      ([])))) stack}
                          in
                          eq_rect_r (flatten_stack stack')
                            (let {
                              push2 = merge_sort_push leT
-                                       (case leT x x1 of {
+                                       (case leT a a0 of {
                                          Prelude.True ->
-                                          case leT x1 x3 of {
-                                           Prelude.True -> (:) x ((:) x1 ((:)
-                                            x3 ([])));
+                                          case leT a0 a1 of {
+                                           Prelude.True -> (:) a ((:) a0 ((:)
+                                            a1 ([])));
                                            Prelude.False ->
-                                            case leT x x3 of {
-                                             Prelude.True -> (:) x ((:) x3
-                                              ((:) x1 ([])));
-                                             Prelude.False -> (:) x3 ((:) x
-                                              ((:) x1 ([])))}};
+                                            case leT a a1 of {
+                                             Prelude.True -> (:) a ((:) a1
+                                              ((:) a0 ([])));
+                                             Prelude.False -> (:) a1 ((:) a
+                                              ((:) a0 ([])))}};
                                          Prelude.False ->
-                                          case leT x x3 of {
-                                           Prelude.True -> (:) x1 ((:) x ((:)
-                                            x3 ([])));
+                                          case leT a a1 of {
+                                           Prelude.True -> (:) a0 ((:) a ((:)
+                                            a1 ([])));
                                            Prelude.False ->
-                                            case leT x1 x3 of {
-                                             Prelude.True -> (:) x1 ((:) x3
-                                              ((:) x ([])));
-                                             Prelude.False -> (:) x3 ((:) x1
-                                              ((:) x ([])))}}})
+                                            case leT a0 a1 of {
+                                             Prelude.True -> (:) a0 ((:) a1
+                                              ((:) a ([])));
+                                             Prelude.False -> (:) a1 ((:) a0
+                                              ((:) a ([])))}}})
                                        (sort_stack Prelude.False stack)}
                             in
                             ssr_have __ (\_ ->
                               eq_rect_r push2 (\_ ->
                                 eq_rect_r (sort_stack Prelude.False stack')
-                                  (iHs stack' x4) push2)
+                                  (iHs stack' l1) push2)
                                 (merge_sort_push leT
                                   (rev
-                                    (merge (\x5 y -> leT y x5)
-                                      (rev ((:) x3 ([])))
+                                    (merge (\x y -> leT y x)
+                                      (rev ((:) a1 ([])))
                                       (rev
-                                        (case leT x x1 of {
-                                          Prelude.True -> (:) x ((:) x1 ([]));
+                                        (case leT a a0 of {
+                                          Prelude.True -> (:) a ((:) a0 ([]));
                                           Prelude.False ->
-                                           rev ((:) x ((:) x1 ([])))}))))
+                                           rev ((:) a ((:) a0 ([])))}))))
                                   (sort_stack Prelude.False stack))))
-                           (cat (flatten_stack stack) ((:) x ((:) x1 ((:) x3
+                           (cat (flatten_stack stack) ((:) a ((:) a0 ((:) a1
                              ([]))))) __)
-                        (cat (flatten_stack stack) ((:) x ((:) x1 ((:) x3
-                          x4))))}}}}
+                        (cat (flatten_stack stack) ((:) a ((:) a0 ((:) a1
+                          l1))))}}}}
              in iHs ([]) s) ([]))) s)))
 
-sortNP :: (Rel a1) -> (([]) a1) -> Sig2 (Tree a1)
+sortNP :: (Rel a1) -> (([]) a1) -> Sig2 (Trace a1)
 sortNP leT =
-  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_tree leT x)) ([])} in
+  let {flatten_stack = foldr (\x x0 -> cat x0 (flatten_trace leT x)) ([])} in
   let {
    sort_stack = let {
                  sort_stack mode stack =
@@ -1411,163 +1440,162 @@ sortNP leT =
                     ([]) -> ([]);
                     (:) t stack0 -> (:)
                      (case mode of {
-                       Prelude.True -> rev (sort_tree leT t);
-                       Prelude.False -> sort_tree leT t})
+                       Prelude.True -> rev (sort_trace leT t);
+                       Prelude.False -> sort_trace leT t})
                      (sort_stack (Prelude.not mode) stack0)}}
                 in sort_stack}
   in
   (\s ->
   case s of {
-   ([]) -> empty_tree leT;
-   (:) x x0 ->
+   ([]) -> empty_trace leT;
+   (:) a l ->
     ssr_have __ (\_ ->
-      eq_rect_r (cat (flatten_stack ([])) ((:) x x0))
+      eq_rect_r (cat (flatten_stack ([])) ((:) a l))
         (ssr_have __ (\_ ->
           eq_rect_r (sort_stack Prelude.False ([]))
             (let {
-              iHs stack x1 __top_assumption_ =
+              iHs stack x __top_assumption_ =
                 case __top_assumption_ of {
                  ([]) ->
-                  merge_sort_popP leT Prelude.False (Leaf_tree
-                    (unsafeCoerce Prelude.True) ((:) x1 ([]))) stack;
-                 (:) x2 x3 ->
+                  merge_sort_popP leT Prelude.False (Leaf_trace
+                    (unsafeCoerce Prelude.True) ((:) x ([]))) stack;
+                 (:) a0 l0 ->
                   ssr_have __
                     (ssr_have __ (\_ ->
-                      eq_rect_r (cat (rev ((:) x2 ((:) x1 ([])))) x3)
-                        (list_rect (\ord x4 acc ->
+                      eq_rect_r (cat (rev ((:) a0 ((:) x ([])))) l0)
+                        (list_rect (\ord x0 acc ->
                           eq_rect
-                            (sorted (\x5 z ->
-                              eq_op bool_eqType (unsafeCoerce leT x5 z)
-                                (unsafeCoerce ord)) (rev ((:) x4 acc)))
-                            (eq_rect_r (rev ((:) x4 acc)) (\_ ->
+                            (sorted (\x1 z ->
+                              eq_op bool_eqType (unsafeCoerce leT x1 z)
+                                (unsafeCoerce ord)) (rev ((:) x0 acc)))
+                            (eq_rect_r (rev ((:) x0 acc)) (\_ ->
                               let {
                                t = merge_sort_popP leT Prelude.False
-                                     (Leaf_tree (unsafeCoerce ord)
-                                     (rev ((:) x4 acc))) stack}
+                                     (Leaf_trace (unsafeCoerce ord)
+                                     (rev ((:) x0 acc))) stack}
                               in
-                              eq_rect_r (flatten_tree leT t)
-                                (eq_rect_r ((:) x4 acc) (\_ ->
+                              eq_rect_r (flatten_trace leT t)
+                                (eq_rect_r ((:) x0 acc) (\_ ->
                                   case ord of {
                                    Prelude.True ->
-                                    eq_rect_r (sort_tree leT t) t
+                                    eq_rect_r (sort_trace leT t) t
                                       (merge_sort_pop leT Prelude.False
-                                        (catrev acc ((:) x4 ([])))
+                                        (catrev acc ((:) x0 ([])))
                                         (sort_stack Prelude.False stack));
                                    Prelude.False ->
-                                    eq_rect_r (sort_tree leT t) t
+                                    eq_rect_r (sort_trace leT t) t
                                       (merge_sort_pop leT Prelude.False ((:)
-                                        x4 acc)
+                                        x0 acc)
                                         (sort_stack Prelude.False stack))})
-                                  (rev (rev ((:) x4 acc))))
+                                  (rev (rev ((:) x0 acc))))
                                 (cat (flatten_stack stack)
-                                  (rev ((:) x4 acc))) __)
-                              (cat (rev ((:) x4 acc)) ([])))
-                            (sorted (\y x5 ->
-                              eq_op bool_eqType (unsafeCoerce leT x5 y)
-                                (unsafeCoerce ord)) ((:) x4 acc)))
-                          (\y s0 iHs' ord x4 acc ->
+                                  (rev ((:) x0 acc))) __)
+                              (cat (rev ((:) x0 acc)) ([])))
+                            (sorted (\y x1 ->
+                              eq_op bool_eqType (unsafeCoerce leT x1 y)
+                                (unsafeCoerce ord)) ((:) x0 acc)))
+                          (\y s0 iHs' ord x0 acc ->
                           case ord of {
                            Prelude.True ->
-                            case boolP (leT x4 y) of {
+                            case boolP (leT x0 y) of {
                              AltTrue -> (\_ ->
                               ssr_have __ (\_ ->
-                                let {t = iHs' Prelude.True y ((:) x4 acc) __}
+                                let {t = iHs' Prelude.True y ((:) x0 acc) __}
                                 in
-                                eq_rect (cat (rcons (rev ((:) x4 acc)) y) s0)
-                                  (eq_rect (rev ((:) y ((:) x4 acc))) (\_ ->
-                                    eq_rect_r (flatten_tree leT t) (\_ ->
-                                      eq_rect_r (sort_tree leT t) t
-                                        (ascending leT
-                                          (sort_stack Prelude.False stack)
-                                          ((:) x4 acc) y s0))
+                                eq_rect (cat (rcons (rev ((:) x0 acc)) y) s0)
+                                  (eq_rect (rev ((:) y ((:) x0 acc))) (\_ ->
+                                    eq_rect_r (flatten_trace leT t) (\_ ->
+                                      eq_rect_r (sort_trace leT t) t
+                                        (incr leT
+                                          (sort_stack Prelude.False stack) y
+                                          s0 ((:) x0 acc)))
                                       (cat (flatten_stack stack)
-                                        (cat (rev ((:) y ((:) x4 acc))) s0)))
-                                    (rcons (rev ((:) x4 acc)) y))
-                                  (cat (rev ((:) x4 acc)) ((:) y s0)) __ __));
+                                        (cat (rev ((:) y ((:) x0 acc))) s0)))
+                                    (rcons (rev ((:) x0 acc)) y))
+                                  (cat (rev ((:) x0 acc)) ((:) y s0)) __ __));
                              AltFalse ->
                               eq_rect
-                                (sorted (\x5 z ->
-                                  eq_op bool_eqType (unsafeCoerce leT x5 z)
+                                (sorted (\x1 z ->
+                                  eq_op bool_eqType (unsafeCoerce leT x1 z)
                                     (unsafeCoerce Prelude.True))
-                                  (rev ((:) x4 acc))) (\_ ->
+                                  (rev ((:) x0 acc))) (\_ ->
                                 let {
-                                 stack' = merge_sort_pushP leT (Leaf_tree
+                                 stack' = merge_sort_pushP leT (Leaf_trace
                                             (unsafeCoerce Prelude.True)
-                                            (rev ((:) x4 acc))) stack}
+                                            (rev ((:) x0 acc))) stack}
                                 in
                                 eq_rect_r
                                   (cat
                                     (cat (flatten_stack stack)
-                                      (rev ((:) x4 acc))) ((:) y s0)) (\_ ->
+                                      (rev ((:) x0 acc))) ((:) y s0)) (\_ ->
                                   eq_rect_r (flatten_stack stack') (\_ ->
                                     eq_rect_r
                                       (sort_stack Prelude.False stack')
                                       (iHs stack' y s0)
                                       (merge_sort_push leT
-                                        (catrev acc ((:) x4 ([])))
+                                        (catrev acc ((:) x0 ([])))
                                         (sort_stack Prelude.False stack)))
                                     (cat (flatten_stack stack)
-                                      (rev ((:) x4 acc))))
+                                      (rev ((:) x0 acc))))
                                   (cat (flatten_stack stack)
-                                    (cat (rev ((:) x4 acc)) ((:) y s0))) __
+                                    (cat (rev ((:) x0 acc)) ((:) y s0))) __
                                   __)
-                                (sorted (\y0 x5 ->
-                                  eq_op bool_eqType (unsafeCoerce leT x5 y0)
-                                    (unsafeCoerce Prelude.True)) ((:) x4
+                                (sorted (\y0 x1 ->
+                                  eq_op bool_eqType (unsafeCoerce leT x1 y0)
+                                    (unsafeCoerce Prelude.True)) ((:) x0
                                   acc))};
                            Prelude.False ->
-                            case boolP (leT x4 y) of {
+                            case boolP (leT x0 y) of {
                              AltTrue ->
                               eq_rect
-                                (sorted (\x5 z ->
-                                  eq_op bool_eqType (unsafeCoerce leT x5 z)
+                                (sorted (\x1 z ->
+                                  eq_op bool_eqType (unsafeCoerce leT x1 z)
                                     (unsafeCoerce Prelude.False))
-                                  (rev ((:) x4 acc))) (\_ ->
+                                  (rev ((:) x0 acc))) (\_ ->
                                 let {
-                                 stack' = merge_sort_pushP leT (Leaf_tree
+                                 stack' = merge_sort_pushP leT (Leaf_trace
                                             (unsafeCoerce Prelude.False)
-                                            (rev ((:) x4 acc))) stack}
+                                            (rev ((:) x0 acc))) stack}
                                 in
                                 eq_rect_r
                                   (cat
                                     (cat (flatten_stack stack)
-                                      (rev ((:) x4 acc))) ((:) y s0))
-                                  (eq_rect_r ((:) x4 acc) (\_ ->
+                                      (rev ((:) x0 acc))) ((:) y s0))
+                                  (eq_rect_r ((:) x0 acc) (\_ ->
                                     eq_rect_r (flatten_stack stack') (\_ ->
                                       eq_rect_r
                                         (sort_stack Prelude.False stack')
                                         (iHs stack' y s0)
-                                        (merge_sort_push leT ((:) x4 acc)
+                                        (merge_sort_push leT ((:) x0 acc)
                                           (sort_stack Prelude.False stack)))
                                       (cat (flatten_stack stack)
-                                        (rev ((:) x4 acc))))
-                                    (rev (rev ((:) x4 acc))))
+                                        (rev ((:) x0 acc))))
+                                    (rev (rev ((:) x0 acc))))
                                   (cat (flatten_stack stack)
-                                    (cat (rev ((:) x4 acc)) ((:) y s0))) __
+                                    (cat (rev ((:) x0 acc)) ((:) y s0))) __
                                   __)
-                                (sorted (\y0 x5 ->
-                                  eq_op bool_eqType (unsafeCoerce leT x5 y0)
-                                    (unsafeCoerce Prelude.False)) ((:) x4
+                                (sorted (\y0 x1 ->
+                                  eq_op bool_eqType (unsafeCoerce leT x1 y0)
+                                    (unsafeCoerce Prelude.False)) ((:) x0
                                   acc));
                              AltFalse -> (\_ ->
                               ssr_have __ (\_ ->
                                 let {
-                                 t = iHs' Prelude.False y ((:) x4 acc) __}
+                                 t = iHs' Prelude.False y ((:) x0 acc) __}
                                 in
-                                eq_rect (cat (rcons (rev ((:) x4 acc)) y) s0)
-                                  (eq_rect (rev ((:) y ((:) x4 acc))) (\_ ->
-                                    eq_rect_r (flatten_tree leT t) (\_ ->
-                                      eq_rect_r (sort_tree leT t) t
-                                        (descending leT
-                                          (sort_stack Prelude.False stack)
-                                          ((:) x4 acc) y s0))
+                                eq_rect (cat (rcons (rev ((:) x0 acc)) y) s0)
+                                  (eq_rect (rev ((:) y ((:) x0 acc))) (\_ ->
+                                    eq_rect_r (flatten_trace leT t) (\_ ->
+                                      eq_rect_r (sort_trace leT t) t
+                                        (decr leT
+                                          (sort_stack Prelude.False stack) y
+                                          s0 ((:) x0 acc)))
                                       (cat (flatten_stack stack)
-                                        (cat (rev ((:) y ((:) x4 acc))) s0)))
-                                    (rcons (rev ((:) x4 acc)) y))
-                                  (cat (rev ((:) x4 acc)) ((:) y s0)) __ __))}})
-                          x3 (leT x1 x2) x2 ((:) x1 ([]))) ((:) x1 ((:) x2
-                        x3))))}}
-             in iHs ([]) x x0) ([]))) ((:) x x0))})
+                                        (cat (rev ((:) y ((:) x0 acc))) s0)))
+                                    (rcons (rev ((:) x0 acc)) y))
+                                  (cat (rev ((:) x0 acc)) ((:) y s0)) __ __))}})
+                          l0 (leT x a0) a0 ((:) x ([]))) ((:) x ((:) a0 l0))))}}
+             in iHs ([]) a l) ([]))) ((:) a l))})
 
 revmerge_R0 :: (Rel a1) -> (Rel a2) -> (Rel_R a1 a2 a3) -> (([]) a1) -> (([])
                a2) -> (List_R a1 a2 a3) -> (([]) a1) -> (([]) a2) -> (List_R
@@ -1581,6 +1609,8 @@ merge_sort_push_R :: (Rel a1) -> (Rel a2) -> (Rel_R a1 a2 a3) -> (([])
                      (([]) a2) (List_R a1 a2 a3)) -> List_R (([]) a1)
                      (([]) a2) (List_R a1 a2 a3)
 merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
+  let {geT_UU2081_ = \x y -> leT_UU2081_ y x} in
+  let {geT_UU2082_ = \x y -> leT_UU2082_ y x} in
   let {
    fix_merge_sort_push_1 = let {
                             merge_sort_push0 xs stack =
@@ -1599,7 +1629,7 @@ merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
                                       (revmerge leT_UU2081_ ys xs) stack1);
                                      (:) _ _ -> (:) ([]) ((:) ([])
                                       (merge_sort_push0
-                                        (revmerge (\x y -> leT_UU2081_ y x)
+                                        (revmerge geT_UU2081_
                                           (revmerge leT_UU2081_ ys xs) zs)
                                         stack1))}}}}}
                            in merge_sort_push0}
@@ -1622,7 +1652,7 @@ merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
                                       (revmerge leT_UU2082_ ys xs) stack1);
                                      (:) _ _ -> (:) ([]) ((:) ([])
                                       (merge_sort_push0
-                                        (revmerge (\x y -> leT_UU2082_ y x)
+                                        (revmerge geT_UU2082_
                                           (revmerge leT_UU2082_ ys xs) zs)
                                         stack1))}}}}}
                            in merge_sort_push0}
@@ -1645,8 +1675,8 @@ merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
                 stack0);
                (:) _ _ -> (:) ([]) ((:) ([])
                 (fix_merge_sort_push_1
-                  (revmerge (\x y -> leT_UU2081_ y x)
-                    (revmerge leT_UU2081_ ys xs_UU2081_) zs) stack0))}}}})
+                  (revmerge geT_UU2081_ (revmerge leT_UU2081_ ys xs_UU2081_)
+                    zs) stack0))}}}})
        (eq_rect
          (case stack_UU2082_ of {
            ([]) -> (:) xs_UU2082_ stack_UU2082_;
@@ -1663,7 +1693,7 @@ merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
                   stack0);
                  (:) _ _ -> (:) ([]) ((:) ([])
                   (fix_merge_sort_push_2
-                    (revmerge (\x y -> leT_UU2082_ y x)
+                    (revmerge geT_UU2082_
                       (revmerge leT_UU2082_ ys xs_UU2082_) zs) stack0))}}}})
          (case stack_R of {
            List_R_nil_R -> List_R_cons_R xs_UU2081_ xs_UU2082_ xs_R
@@ -1700,31 +1730,30 @@ merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R =
                  List_R_cons_R _ _ _ _ _ _ -> List_R_cons_R ([]) ([])
                   List_R_nil_R ((:) ([])
                   (fix_merge_sort_push_1
-                    (revmerge (\x y -> leT_UU2081_ y x)
+                    (revmerge geT_UU2081_
                       (revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
                       zs_UU2081_) stack_UU2081_1)) ((:) ([])
                   (fix_merge_sort_push_2
-                    (revmerge (\x y -> leT_UU2082_ y x)
+                    (revmerge geT_UU2082_
                       (revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
                       zs_UU2082_) stack_UU2082_1)) (List_R_cons_R ([]) ([])
                   List_R_nil_R
                   (fix_merge_sort_push_1
-                    (revmerge (\x y -> leT_UU2081_ y x)
+                    (revmerge geT_UU2081_
                       (revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
                       zs_UU2081_) stack_UU2081_1)
                   (fix_merge_sort_push_2
-                    (revmerge (\x y -> leT_UU2082_ y x)
+                    (revmerge geT_UU2082_
                       (revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
                       zs_UU2082_) stack_UU2082_1)
                   (merge_sort_push_R0
-                    (revmerge (\x y -> leT_UU2081_ y x)
+                    (revmerge geT_UU2081_
                       (revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
                       zs_UU2081_)
-                    (revmerge (\x y -> leT_UU2082_ y x)
+                    (revmerge geT_UU2082_
                       (revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
                       zs_UU2082_)
-                    (revmerge_R0 (\x y -> leT_UU2081_ y x) (\x y ->
-                      leT_UU2082_ y x)
+                    (revmerge_R0 geT_UU2081_ geT_UU2082_
                       (\x_UU2081_ x_UU2082_ x_R y_UU2081_ y_UU2082_ y_R ->
                       leT_R y_UU2081_ y_UU2082_ y_R x_UU2081_ x_UU2082_ x_R)
                       (revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
@@ -1742,89 +1771,91 @@ merge_sort_pop_R :: (Rel a1) -> (Rel a2) -> (Rel_R a1 a2 a3) -> Prelude.Bool
                     (List_R a1 a2 a3) -> (([]) (([]) a1)) -> (([]) (([]) a2))
                     -> (List_R (([]) a1) (([]) a2) (List_R a1 a2 a3)) ->
                     List_R a1 a2 a3
-merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R mode_UU2081_ mode_UU2082_ mode_R xs_UU2081_ xs_UU2082_ xs_R _ _ stack_R =
-  case stack_R of {
-   List_R_nil_R ->
-    case mode_R of {
-     Bool_R_true_R ->
-      let {
-       catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-         case s1_R of {
-          List_R_nil_R -> s2_R;
-          List_R_cons_R x_UU2081_ x_UU2082_ x_R s1'_UU2081_ s1'_UU2082_
-           s1'_R ->
-           catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_ s2_UU2081_)
-             ((:) x_UU2082_ s2_UU2082_) (List_R_cons_R x_UU2081_ x_UU2082_
-             x_R s2_UU2081_ s2_UU2082_ s2_R)}}
-      in catrev_R xs_UU2081_ xs_UU2082_ xs_R ([]) ([]) List_R_nil_R;
-     Bool_R_false_R -> xs_R};
-   List_R_cons_R ys_UU2081_ ys_UU2082_ ys_R stack_UU2081_ stack_UU2082_
-    stack_R0 ->
-    case ys_R of {
-     List_R_nil_R ->
-      case stack_R0 of {
-       List_R_nil_R ->
-        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
-          (Prelude.not mode_UU2081_) (Prelude.not mode_UU2082_)
-          (case mode_R of {
-            Bool_R_true_R -> Bool_R_false_R;
-            Bool_R_false_R -> Bool_R_true_R}) (rev xs_UU2081_)
-          (rev xs_UU2082_)
-          (let {
-            catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-              case s1_R of {
-               List_R_nil_R -> s2_R;
-               List_R_cons_R x_UU2081_ x_UU2082_ x_R s1'_UU2081_ s1'_UU2082_
-                s1'_R ->
-                catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_
-                  s2_UU2081_) ((:) x_UU2082_ s2_UU2082_) (List_R_cons_R
-                  x_UU2081_ x_UU2082_ x_R s2_UU2081_ s2_UU2082_ s2_R)}}
-           in catrev_R xs_UU2081_ xs_UU2082_ xs_R ([]) ([]) List_R_nil_R)
-          stack_UU2081_ stack_UU2082_ stack_R0;
-       List_R_cons_R _ _ l_R stack_UU2081_0 stack_UU2082_0 stack_R1 ->
-        case l_R of {
-         List_R_nil_R ->
-          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R mode_UU2081_
-            mode_UU2082_ mode_R xs_UU2081_ xs_UU2082_ xs_R stack_UU2081_0
-            stack_UU2082_0 stack_R1;
-         List_R_cons_R _ _ _ _ _ _ ->
-          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R
-            (Prelude.not mode_UU2081_) (Prelude.not mode_UU2082_)
-            (case mode_R of {
-              Bool_R_true_R -> Bool_R_false_R;
-              Bool_R_false_R -> Bool_R_true_R}) (rev xs_UU2081_)
-            (rev xs_UU2082_)
-            (let {
-              catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
-                case s1_R of {
-                 List_R_nil_R -> s2_R;
-                 List_R_cons_R x_UU2081_ x_UU2082_ x_R s1'_UU2081_
-                  s1'_UU2082_ s1'_R ->
-                  catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_
-                    s2_UU2081_) ((:) x_UU2082_ s2_UU2082_) (List_R_cons_R
-                    x_UU2081_ x_UU2082_ x_R s2_UU2081_ s2_UU2082_ s2_R)}}
-             in catrev_R xs_UU2081_ xs_UU2082_ xs_R ([]) ([]) List_R_nil_R)
-            stack_UU2081_ stack_UU2082_ stack_R0}};
-     List_R_cons_R _ _ _ _ _ _ ->
-      case mode_R of {
-       Bool_R_true_R ->
-        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R Prelude.False
-          Prelude.False Bool_R_false_R
-          (revmerge (\x y -> leT_UU2081_ y x) xs_UU2081_ ys_UU2081_)
-          (revmerge (\x y -> leT_UU2082_ y x) xs_UU2082_ ys_UU2082_)
-          (revmerge_R0 (\x y -> leT_UU2081_ y x) (\x y -> leT_UU2082_ y x)
-            (\x_UU2081_ x_UU2082_ x_R y_UU2081_ y_UU2082_ y_R ->
-            leT_R y_UU2081_ y_UU2082_ y_R x_UU2081_ x_UU2082_ x_R) xs_UU2081_
-            xs_UU2082_ xs_R ys_UU2081_ ys_UU2082_ ys_R) stack_UU2081_
-          stack_UU2082_ stack_R0;
-       Bool_R_false_R ->
-        merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R Prelude.True
-          Prelude.True Bool_R_true_R
-          (revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
-          (revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
-          (revmerge_R0 leT_UU2081_ leT_UU2082_ leT_R ys_UU2081_ ys_UU2082_
-            ys_R xs_UU2081_ xs_UU2082_ xs_R) stack_UU2081_ stack_UU2082_
-          stack_R0}}}
+merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R =
+  let {geT_UU2081_ = \x y -> leT_UU2081_ y x} in
+  let {geT_UU2082_ = \x y -> leT_UU2082_ y x} in
+  let {
+   merge_sort_pop_R0 mode_UU2081_ mode_UU2082_ mode_R xs_UU2081_ xs_UU2082_ xs_R _ _ stack_R =
+     case stack_R of {
+      List_R_nil_R ->
+       case mode_R of {
+        Bool_R_true_R ->
+         let {
+          catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+            case s1_R of {
+             List_R_nil_R -> s2_R;
+             List_R_cons_R x_UU2081_ x_UU2082_ x_R s1'_UU2081_ s1'_UU2082_
+              s1'_R ->
+              catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_
+                s2_UU2081_) ((:) x_UU2082_ s2_UU2082_) (List_R_cons_R
+                x_UU2081_ x_UU2082_ x_R s2_UU2081_ s2_UU2082_ s2_R)}}
+         in catrev_R xs_UU2081_ xs_UU2082_ xs_R ([]) ([]) List_R_nil_R;
+        Bool_R_false_R -> xs_R};
+      List_R_cons_R ys_UU2081_ ys_UU2082_ ys_R stack_UU2081_ stack_UU2082_
+       stack_R0 ->
+       case ys_R of {
+        List_R_nil_R ->
+         case stack_R0 of {
+          List_R_nil_R ->
+           merge_sort_pop_R0 (Prelude.not mode_UU2081_)
+             (Prelude.not mode_UU2082_)
+             (case mode_R of {
+               Bool_R_true_R -> Bool_R_false_R;
+               Bool_R_false_R -> Bool_R_true_R}) (rev xs_UU2081_)
+             (rev xs_UU2082_)
+             (let {
+               catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+                 case s1_R of {
+                  List_R_nil_R -> s2_R;
+                  List_R_cons_R x_UU2081_ x_UU2082_ x_R s1'_UU2081_
+                   s1'_UU2082_ s1'_R ->
+                   catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_
+                     s2_UU2081_) ((:) x_UU2082_ s2_UU2082_) (List_R_cons_R
+                     x_UU2081_ x_UU2082_ x_R s2_UU2081_ s2_UU2082_ s2_R)}}
+              in catrev_R xs_UU2081_ xs_UU2082_ xs_R ([]) ([]) List_R_nil_R)
+             stack_UU2081_ stack_UU2082_ stack_R0;
+          List_R_cons_R _ _ l_R stack_UU2081_0 stack_UU2082_0 stack_R1 ->
+           case l_R of {
+            List_R_nil_R ->
+             merge_sort_pop_R0 mode_UU2081_ mode_UU2082_ mode_R xs_UU2081_
+               xs_UU2082_ xs_R stack_UU2081_0 stack_UU2082_0 stack_R1;
+            List_R_cons_R _ _ _ _ _ _ ->
+             merge_sort_pop_R0 (Prelude.not mode_UU2081_)
+               (Prelude.not mode_UU2082_)
+               (case mode_R of {
+                 Bool_R_true_R -> Bool_R_false_R;
+                 Bool_R_false_R -> Bool_R_true_R}) (rev xs_UU2081_)
+               (rev xs_UU2082_)
+               (let {
+                 catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
+                   case s1_R of {
+                    List_R_nil_R -> s2_R;
+                    List_R_cons_R x_UU2081_ x_UU2082_ x_R s1'_UU2081_
+                     s1'_UU2082_ s1'_R ->
+                     catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_
+                       s2_UU2081_) ((:) x_UU2082_ s2_UU2082_) (List_R_cons_R
+                       x_UU2081_ x_UU2082_ x_R s2_UU2081_ s2_UU2082_ s2_R)}}
+                in catrev_R xs_UU2081_ xs_UU2082_ xs_R ([]) ([]) List_R_nil_R)
+               stack_UU2081_ stack_UU2082_ stack_R0}};
+        List_R_cons_R _ _ _ _ _ _ ->
+         case mode_R of {
+          Bool_R_true_R ->
+           merge_sort_pop_R0 Prelude.False Prelude.False Bool_R_false_R
+             (revmerge geT_UU2081_ xs_UU2081_ ys_UU2081_)
+             (revmerge geT_UU2082_ xs_UU2082_ ys_UU2082_)
+             (revmerge_R0 geT_UU2081_ geT_UU2082_
+               (\x_UU2081_ x_UU2082_ x_R y_UU2081_ y_UU2082_ y_R ->
+               leT_R y_UU2081_ y_UU2082_ y_R x_UU2081_ x_UU2082_ x_R)
+               xs_UU2081_ xs_UU2082_ xs_R ys_UU2081_ ys_UU2082_ ys_R)
+             stack_UU2081_ stack_UU2082_ stack_R0;
+          Bool_R_false_R ->
+           merge_sort_pop_R0 Prelude.True Prelude.True Bool_R_true_R
+             (revmerge leT_UU2081_ ys_UU2081_ xs_UU2081_)
+             (revmerge leT_UU2082_ ys_UU2082_ xs_UU2082_)
+             (revmerge_R0 leT_UU2081_ leT_UU2082_ leT_R ys_UU2081_ ys_UU2082_
+               ys_R xs_UU2081_ xs_UU2082_ xs_R) stack_UU2081_ stack_UU2082_
+             stack_R0}}}}
+  in merge_sort_pop_R0
 
 sort1_R :: (Rel a1) -> (Rel a2) -> (Rel_R a1 a2 a3) -> (([]) a1) -> (([]) 
            a2) -> (List_R a1 a2 a3) -> List_R a1 a2 a3
@@ -1851,81 +1882,84 @@ sort2_R :: (Rel a1) -> (Rel a2) -> (Rel_R a1 a2 a3) -> (([]) a1) -> (([])
 sort2_R leT_UU2081_ leT_UU2082_ leT_R =
   let {
    fix_sort2rec_1 = let {
-                     sort2rec0 ss s =
+                     sort2rec0 stack s =
                        case s of {
-                        ([]) -> merge_sort_pop leT_UU2081_ Prelude.False s ss;
+                        ([]) ->
+                         merge_sort_pop leT_UU2081_ Prelude.False s stack;
                         (:) x1 l ->
                          case l of {
                           ([]) ->
-                           merge_sort_pop leT_UU2081_ Prelude.False s ss;
+                           merge_sort_pop leT_UU2081_ Prelude.False s stack;
                           (:) x2 s' ->
                            sort2rec0
                              (merge_sort_push leT_UU2081_
                                (case leT_UU2081_ x1 x2 of {
                                  Prelude.True -> (:) x1 ((:) x2 ([]));
-                                 Prelude.False -> (:) x2 ((:) x1 ([]))}) ss)
-                             s'}}}
+                                 Prelude.False -> (:) x2 ((:) x1 ([]))})
+                               stack) s'}}}
                     in sort2rec0}
   in
   let {
    fix_sort2rec_2 = let {
-                     sort2rec0 ss s =
+                     sort2rec0 stack s =
                        case s of {
-                        ([]) -> merge_sort_pop leT_UU2082_ Prelude.False s ss;
+                        ([]) ->
+                         merge_sort_pop leT_UU2082_ Prelude.False s stack;
                         (:) x1 l ->
                          case l of {
                           ([]) ->
-                           merge_sort_pop leT_UU2082_ Prelude.False s ss;
+                           merge_sort_pop leT_UU2082_ Prelude.False s stack;
                           (:) x2 s' ->
                            sort2rec0
                              (merge_sort_push leT_UU2082_
                                (case leT_UU2082_ x1 x2 of {
                                  Prelude.True -> (:) x1 ((:) x2 ([]));
-                                 Prelude.False -> (:) x2 ((:) x1 ([]))}) ss)
-                             s'}}}
+                                 Prelude.False -> (:) x2 ((:) x1 ([]))})
+                               stack) s'}}}
                     in sort2rec0}
   in
   let {
-   sort2rec_R ss_UU2081_ ss_UU2082_ ss_R s_UU2081_ s_UU2082_ s_R =
+   sort2rec_R stack_UU2081_ stack_UU2082_ stack_R s_UU2081_ s_UU2082_ s_R =
      eq_rect
        (case s_UU2081_ of {
          ([]) ->
-          merge_sort_pop leT_UU2081_ Prelude.False s_UU2081_ ss_UU2081_;
+          merge_sort_pop leT_UU2081_ Prelude.False s_UU2081_ stack_UU2081_;
          (:) x1 l ->
           case l of {
            ([]) ->
-            merge_sort_pop leT_UU2081_ Prelude.False s_UU2081_ ss_UU2081_;
+            merge_sort_pop leT_UU2081_ Prelude.False s_UU2081_ stack_UU2081_;
            (:) x2 s' ->
             fix_sort2rec_1
               (merge_sort_push leT_UU2081_
                 (case leT_UU2081_ x1 x2 of {
                   Prelude.True -> (:) x1 ((:) x2 ([]));
-                  Prelude.False -> (:) x2 ((:) x1 ([]))}) ss_UU2081_) s'}})
+                  Prelude.False -> (:) x2 ((:) x1 ([]))}) stack_UU2081_) s'}})
        (eq_rect
          (case s_UU2082_ of {
            ([]) ->
-            merge_sort_pop leT_UU2082_ Prelude.False s_UU2082_ ss_UU2082_;
+            merge_sort_pop leT_UU2082_ Prelude.False s_UU2082_ stack_UU2082_;
            (:) x1 l ->
             case l of {
              ([]) ->
-              merge_sort_pop leT_UU2082_ Prelude.False s_UU2082_ ss_UU2082_;
+              merge_sort_pop leT_UU2082_ Prelude.False s_UU2082_
+                stack_UU2082_;
              (:) x2 s' ->
               fix_sort2rec_2
                 (merge_sort_push leT_UU2082_
                   (case leT_UU2082_ x1 x2 of {
                     Prelude.True -> (:) x1 ((:) x2 ([]));
-                    Prelude.False -> (:) x2 ((:) x1 ([]))}) ss_UU2082_) s'}})
+                    Prelude.False -> (:) x2 ((:) x1 ([]))}) stack_UU2082_) s'}})
          (case s_R of {
            List_R_nil_R ->
             merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R Prelude.False
-              Prelude.False Bool_R_false_R s_UU2081_ s_UU2082_ s_R ss_UU2081_
-              ss_UU2082_ ss_R;
+              Prelude.False Bool_R_false_R s_UU2081_ s_UU2082_ s_R
+              stack_UU2081_ stack_UU2082_ stack_R;
            List_R_cons_R x1_UU2081_ x1_UU2082_ x1_R _ _ l_R ->
             case l_R of {
              List_R_nil_R ->
               merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R Prelude.False
                 Prelude.False Bool_R_false_R s_UU2081_ s_UU2082_ s_R
-                ss_UU2081_ ss_UU2082_ ss_R;
+                stack_UU2081_ stack_UU2082_ stack_R;
              List_R_cons_R x2_UU2081_ x2_UU2082_ x2_R s'_UU2081_ s'_UU2082_
               s'_R ->
               let {
@@ -1942,8 +1976,9 @@ sort2_R leT_UU2081_ leT_UU2082_ leT_R =
                              Prelude.False -> (:) x2_UU2082_ ((:) x1_UU2082_
                               ([]))}}
               in
-              sort2rec_R (merge_sort_push leT_UU2081_ s1_UU2081_ ss_UU2081_)
-                (merge_sort_push leT_UU2082_ s1_UU2082_ ss_UU2082_)
+              sort2rec_R
+                (merge_sort_push leT_UU2081_ s1_UU2081_ stack_UU2081_)
+                (merge_sort_push leT_UU2082_ s1_UU2082_ stack_UU2082_)
                 (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R s1_UU2081_
                   s1_UU2082_
                   (case leT_R x1_UU2081_ x1_UU2082_ x1_R x2_UU2081_
@@ -1955,9 +1990,10 @@ sort2_R leT_UU2081_ leT_UU2082_ leT_R =
                     Bool_R_false_R -> List_R_cons_R x2_UU2081_ x2_UU2082_
                      x2_R ((:) x1_UU2081_ ([])) ((:) x1_UU2082_ ([]))
                      (List_R_cons_R x1_UU2081_ x1_UU2082_ x1_R ([]) ([])
-                     List_R_nil_R)}) ss_UU2081_ ss_UU2082_ ss_R) s'_UU2081_
-                s'_UU2082_ s'_R}}) (fix_sort2rec_2 ss_UU2082_ s_UU2082_))
-       (fix_sort2rec_1 ss_UU2081_ s_UU2081_)}
+                     List_R_nil_R)}) stack_UU2081_ stack_UU2082_ stack_R)
+                s'_UU2081_ s'_UU2082_ s'_R}})
+         (fix_sort2rec_2 stack_UU2082_ s_UU2082_))
+       (fix_sort2rec_1 stack_UU2081_ s_UU2081_)}
   in sort2rec_R ([]) ([]) List_R_nil_R
 
 sort3_R :: (Rel a1) -> (Rel a2) -> (Rel_R a1 a2 a3) -> (([]) a1) -> (([]) 
@@ -2280,22 +2316,22 @@ sortN_R leT_UU2081_ leT_UU2082_ leT_R _ _ s_R =
         List_R_cons_R y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2 ->
          case leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R of {
           Bool_R_true_R ->
-           ascending_R stack_UU2081_ stack_UU2082_ stack_R ((:) x_UU2081_0
-             ([])) ((:) x_UU2082_0 ([])) (List_R_cons_R x_UU2081_0 x_UU2082_0
-             x_R0 ([]) ([]) List_R_nil_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0
-             s_UU2082_0 s_R2;
+           incr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 ((:) x_UU2081_0 ([])) ((:) x_UU2082_0
+             ([])) (List_R_cons_R x_UU2081_0 x_UU2082_0 x_R0 ([]) ([])
+             List_R_nil_R);
           Bool_R_false_R ->
-           descending_R stack_UU2081_ stack_UU2082_ stack_R ((:) x_UU2081_0
-             ([])) ((:) x_UU2082_0 ([])) (List_R_cons_R x_UU2081_0 x_UU2082_0
-             x_R0 ([]) ([]) List_R_nil_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0
-             s_UU2082_0 s_R2}};
-     ascending_R stack_UU2081_ stack_UU2082_ stack_R acc_UU2081_ acc_UU2082_ acc_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 =
+           decr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 ((:) x_UU2081_0 ([])) ((:) x_UU2082_0
+             ([])) (List_R_cons_R x_UU2081_0 x_UU2082_0 x_R0 ([]) ([])
+             List_R_nil_R)}};
+     incr_R stack_UU2081_ stack_UU2082_ stack_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 accu_UU2081_ accu_UU2082_ accu_R =
        case s_R1 of {
         List_R_nil_R ->
          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R Prelude.False
            Prelude.False Bool_R_false_R
-           (catrev acc_UU2081_ ((:) x_UU2081_0 ([])))
-           (catrev acc_UU2082_ ((:) x_UU2082_0 ([])))
+           (catrev accu_UU2081_ ((:) x_UU2081_0 ([])))
+           (catrev accu_UU2082_ ((:) x_UU2082_0 ([])))
            (let {
              catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
                case s1_R of {
@@ -2305,26 +2341,26 @@ sortN_R leT_UU2081_ leT_UU2082_ leT_R _ _ s_R =
                  catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_1
                    s2_UU2081_) ((:) x_UU2082_1 s2_UU2082_) (List_R_cons_R
                    x_UU2081_1 x_UU2082_1 x_R1 s2_UU2081_ s2_UU2082_ s2_R)}}
-            in catrev_R acc_UU2081_ acc_UU2082_ acc_R ((:) x_UU2081_0 ([]))
-                 ((:) x_UU2082_0 ([])) (List_R_cons_R x_UU2081_0 x_UU2082_0
-                 x_R0 ([]) ([]) List_R_nil_R)) stack_UU2081_ stack_UU2082_
-           stack_R;
+            in catrev_R accu_UU2081_ accu_UU2082_ accu_R ((:) x_UU2081_0
+                 ([])) ((:) x_UU2082_0 ([])) (List_R_cons_R x_UU2081_0
+                 x_UU2082_0 x_R0 ([]) ([]) List_R_nil_R)) stack_UU2081_
+           stack_UU2082_ stack_R;
         List_R_cons_R y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2 ->
          case leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R of {
           Bool_R_true_R ->
-           ascending_R stack_UU2081_ stack_UU2082_ stack_R ((:) x_UU2081_0
-             acc_UU2081_) ((:) x_UU2082_0 acc_UU2082_) (List_R_cons_R
-             x_UU2081_0 x_UU2082_0 x_R0 acc_UU2081_ acc_UU2082_ acc_R)
-             y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2;
+           incr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 ((:) x_UU2081_0 accu_UU2081_) ((:)
+             x_UU2082_0 accu_UU2082_) (List_R_cons_R x_UU2081_0 x_UU2082_0
+             x_R0 accu_UU2081_ accu_UU2082_ accu_R);
           Bool_R_false_R ->
            sortNrec_R
              (merge_sort_push leT_UU2081_
-               (catrev acc_UU2081_ ((:) x_UU2081_0 ([]))) stack_UU2081_)
+               (catrev accu_UU2081_ ((:) x_UU2081_0 ([]))) stack_UU2081_)
              (merge_sort_push leT_UU2082_
-               (catrev acc_UU2082_ ((:) x_UU2082_0 ([]))) stack_UU2082_)
+               (catrev accu_UU2082_ ((:) x_UU2082_0 ([]))) stack_UU2082_)
              (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R
-               (catrev acc_UU2081_ ((:) x_UU2081_0 ([])))
-               (catrev acc_UU2082_ ((:) x_UU2082_0 ([])))
+               (catrev accu_UU2081_ ((:) x_UU2081_0 ([])))
+               (catrev accu_UU2082_ ((:) x_UU2082_0 ([])))
                (let {
                  catrev_R _ _ s1_R s2_UU2081_ s2_UU2082_ s2_R =
                    case s1_R of {
@@ -2334,52 +2370,53 @@ sortN_R leT_UU2081_ leT_UU2082_ leT_R _ _ s_R =
                      catrev_R s1'_UU2081_ s1'_UU2082_ s1'_R ((:) x_UU2081_1
                        s2_UU2081_) ((:) x_UU2082_1 s2_UU2082_) (List_R_cons_R
                        x_UU2081_1 x_UU2082_1 x_R1 s2_UU2081_ s2_UU2082_ s2_R)}}
-                in catrev_R acc_UU2081_ acc_UU2082_ acc_R ((:) x_UU2081_0
+                in catrev_R accu_UU2081_ accu_UU2082_ accu_R ((:) x_UU2081_0
                      ([])) ((:) x_UU2082_0 ([])) (List_R_cons_R x_UU2081_0
                      x_UU2082_0 x_R0 ([]) ([]) List_R_nil_R)) stack_UU2081_
                stack_UU2082_ stack_R) y_UU2081_ y_UU2082_ y_R s_UU2081_0
              s_UU2082_0 s_R2}};
-     descending_R stack_UU2081_ stack_UU2082_ stack_R acc_UU2081_ acc_UU2082_ acc_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 =
+     decr_R stack_UU2081_ stack_UU2082_ stack_R x_UU2081_0 x_UU2082_0 x_R0 _ _ s_R1 accu_UU2081_ accu_UU2082_ accu_R =
        case s_R1 of {
         List_R_nil_R ->
          merge_sort_pop_R leT_UU2081_ leT_UU2082_ leT_R Prelude.False
-           Prelude.False Bool_R_false_R ((:) x_UU2081_0 acc_UU2081_) ((:)
-           x_UU2082_0 acc_UU2082_) (List_R_cons_R x_UU2081_0 x_UU2082_0 x_R0
-           acc_UU2081_ acc_UU2082_ acc_R) stack_UU2081_ stack_UU2082_ stack_R;
+           Prelude.False Bool_R_false_R ((:) x_UU2081_0 accu_UU2081_) ((:)
+           x_UU2082_0 accu_UU2082_) (List_R_cons_R x_UU2081_0 x_UU2082_0 x_R0
+           accu_UU2081_ accu_UU2082_ accu_R) stack_UU2081_ stack_UU2082_
+           stack_R;
         List_R_cons_R y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2 ->
          case leT_R x_UU2081_0 x_UU2082_0 x_R0 y_UU2081_ y_UU2082_ y_R of {
           Bool_R_true_R ->
            sortNrec_R
-             (merge_sort_push leT_UU2081_ ((:) x_UU2081_0 acc_UU2081_)
+             (merge_sort_push leT_UU2081_ ((:) x_UU2081_0 accu_UU2081_)
                stack_UU2081_)
-             (merge_sort_push leT_UU2082_ ((:) x_UU2082_0 acc_UU2082_)
+             (merge_sort_push leT_UU2082_ ((:) x_UU2082_0 accu_UU2082_)
                stack_UU2082_)
              (merge_sort_push_R leT_UU2081_ leT_UU2082_ leT_R ((:) x_UU2081_0
-               acc_UU2081_) ((:) x_UU2082_0 acc_UU2082_) (List_R_cons_R
-               x_UU2081_0 x_UU2082_0 x_R0 acc_UU2081_ acc_UU2082_ acc_R)
+               accu_UU2081_) ((:) x_UU2082_0 accu_UU2082_) (List_R_cons_R
+               x_UU2081_0 x_UU2082_0 x_R0 accu_UU2081_ accu_UU2082_ accu_R)
                stack_UU2081_ stack_UU2082_ stack_R) y_UU2081_ y_UU2082_ y_R
              s_UU2081_0 s_UU2082_0 s_R2;
           Bool_R_false_R ->
-           descending_R stack_UU2081_ stack_UU2082_ stack_R ((:) x_UU2081_0
-             acc_UU2081_) ((:) x_UU2082_0 acc_UU2082_) (List_R_cons_R
-             x_UU2081_0 x_UU2082_0 x_R0 acc_UU2081_ acc_UU2082_ acc_R)
-             y_UU2081_ y_UU2082_ y_R s_UU2081_0 s_UU2082_0 s_R2}}}
+           decr_R stack_UU2081_ stack_UU2082_ stack_R y_UU2081_ y_UU2082_ y_R
+             s_UU2081_0 s_UU2082_0 s_R2 ((:) x_UU2081_0 accu_UU2081_) ((:)
+             x_UU2082_0 accu_UU2082_) (List_R_cons_R x_UU2081_0 x_UU2082_0
+             x_R0 accu_UU2081_ accu_UU2082_ accu_R)}}}
     in sortNrec_R ([]) ([]) List_R_nil_R x_UU2081_ x_UU2082_ x_R s_UU2081_
          s_UU2082_ s_R0}
 
-sort1_stable :: Interface0
+sort1_stable :: Function
 sort1_stable =
-  Interface (\_ -> sort1) (\_ _ _ -> sort1_R) (\_ -> sort1P)
+  Pack (\_ -> sort1) (\_ _ _ -> sort1_R) (\_ -> sort1P)
 
-sort2_stable :: Interface0
+sort2_stable :: Function
 sort2_stable =
-  Interface (\_ -> sort2) (\_ _ _ -> sort2_R) (\_ -> sort2P)
+  Pack (\_ -> sort2) (\_ _ _ -> sort2_R) (\_ -> sort2P)
 
-sort3_stable :: Interface0
+sort3_stable :: Function
 sort3_stable =
-  Interface (\_ -> sort3) (\_ _ _ -> sort3_R) (\_ -> sort3P)
+  Pack (\_ -> sort3) (\_ _ _ -> sort3_R) (\_ -> sort3P)
 
-sortN_stable :: Interface0
+sortN_stable :: Function
 sortN_stable =
-  Interface (\_ -> sortN) (\_ _ _ -> sortN_R) (\_ -> sortNP)
+  Pack (\_ -> sortN) (\_ _ _ -> sortN_R) (\_ -> sortNP)
 
