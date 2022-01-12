@@ -4,7 +4,11 @@ EXTRACTED_HS_FILES := \
   benchmark/haskell/MergesortCoqCbv.hs \
   benchmark/haskell/MergesortCoqCbvAcc.hs
 
-EXTRACTED_ML_FILES := benchmark/ocaml/mergesort_coq.ml
+EXTRACTED_ML_FILES := \
+  benchmark/ocaml/mergesort_coq_cbn.ml \
+  benchmark/ocaml/mergesort_coq_cbnacc.ml \
+  benchmark/ocaml/mergesort_coq_cbv.ml \
+  benchmark/ocaml/mergesort_coq_cbvacc.ml
 
 HS_FILES := $(EXTRACTED_HS_FILES) benchmark/haskell/Benchmark.hs
 
@@ -22,7 +26,17 @@ benchmark/ocaml/benchmark.native: $(ML_FILES)
 	cd benchmark/ocaml && \
 	  ocamlbuild benchmark.native -package unix -tag 'optimize(3)'
 
-$(EXTRACTED_HS_FILES) $(EXTRACTED_ML_FILES): benchmark/extraction.vo
+benchmark/haskell/MergesortCoqCbn.hs benchmark/ocaml/mergesort_coq_cbn.ml: \
+    benchmark/extraction_cbn.vo
+
+benchmark/haskell/MergesortCoqCbnAcc.hs benchmark/ocaml/mergesort_coq_cbnacc.ml: \
+    benchmark/extraction_cbnacc.vo
+
+benchmark/haskell/MergesortCoqCbv.hs benchmark/ocaml/mergesort_coq_cbv.ml: \
+    benchmark/extraction_cbv.vo
+
+benchmark/haskell/MergesortCoqCbvAcc.hs benchmark/ocaml/mergesort_coq_cbvacc.ml: \
+    benchmark/extraction_cbvacc.vo
 
 post-all:: $(EXTRACTED_BINARIES)
 

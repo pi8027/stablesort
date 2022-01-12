@@ -1,5 +1,8 @@
 benchmark/benchmark.v
-benchmark/extraction.v
+benchmark/extraction_cbn.v
+benchmark/extraction_cbnacc.v
+benchmark/extraction_cbv.v
+benchmark/extraction_cbvacc.v
 
 -R theories stablesort
 -R benchmark benchmark

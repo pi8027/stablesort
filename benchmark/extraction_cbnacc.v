@@ -4,6 +4,8 @@ From Coq Require Import Extraction.
 
 Set Extraction Flag 2031.
 
+Include CBNAcc.
+
 (******************************************************************************)
 
 Extraction Language Haskell.
@@ -15,10 +17,7 @@ Extract Inlined Constant eqb => "(Prelude.==)".
 
 Extract Inductive list => "([])" ["([])" "(:)"].
 
-Extraction "benchmark/haskell/MergesortCoqCbn.hs"    CBN.
-Extraction "benchmark/haskell/MergesortCoqCbnAcc.hs" CBNAcc.
-Extraction "benchmark/haskell/MergesortCoqCbv.hs"    CBV.
-Extraction "benchmark/haskell/MergesortCoqCbvAcc.hs" CBVAcc.
+Extraction "benchmark/haskell/MergesortCoqCbnAcc.hs" sort1 sort2 sort3 sortN.
 
 (******************************************************************************)
 
@@ -34,4 +33,4 @@ Extract Inductive list => "list" ["[]" "(::)"].
 Extract Inlined Constant catrev => "List.rev_append".
 Extract Inlined Constant rev => "List.rev".
 
-Extraction "benchmark/ocaml/mergesort_coq.ml" CBN CBNAcc CBV CBVAcc.
+Extraction "benchmark/ocaml/mergesort_coq_cbnacc.ml" sort1 sort2 sort3 sortN.

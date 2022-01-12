@@ -97,40 +97,40 @@ let rec sort_blocks (n : int) = function
 
 benchmark "ocaml1" (List.init 40 (fun i -> 25000 * (i + 1))) (fun xs -> xs)
   [("List.stable.sort", List.stable_sort           (compare : int -> int -> int));
-   ("CBN.sort1",        Mergesort_coq.CBN.sort1    ((<=) : int -> int -> bool));
-   ("CBN.sort2",        Mergesort_coq.CBN.sort2    ((<=) : int -> int -> bool));
-   ("CBN.sort3",        Mergesort_coq.CBN.sort3    ((<=) : int -> int -> bool));
-   ("CBN.sortN",        Mergesort_coq.CBN.sortN    ((<=) : int -> int -> bool));
-   ("CBNAcc.sort1",     Mergesort_coq.CBNAcc.sort1 ((<=) : int -> int -> bool));
-   ("CBNAcc.sort2",     Mergesort_coq.CBNAcc.sort2 ((<=) : int -> int -> bool));
-   ("CBNAcc.sort3",     Mergesort_coq.CBNAcc.sort3 ((<=) : int -> int -> bool));
-   ("CBNAcc.sortN",     Mergesort_coq.CBNAcc.sortN ((<=) : int -> int -> bool));
-   ("CBV.sort1",        Mergesort_coq.CBV.sort1    ((<=) : int -> int -> bool));
-   ("CBV.sort2",        Mergesort_coq.CBV.sort2    ((<=) : int -> int -> bool));
-   ("CBV.sort3",        Mergesort_coq.CBV.sort3    ((<=) : int -> int -> bool));
-   ("CBV.sortN",        Mergesort_coq.CBV.sortN    ((<=) : int -> int -> bool));
-   ("CBVAcc.sort1",     Mergesort_coq.CBVAcc.sort1 ((<=) : int -> int -> bool));
-   ("CBVAcc.sort2",     Mergesort_coq.CBVAcc.sort2 ((<=) : int -> int -> bool));
-   ("CBVAcc.sort3",     Mergesort_coq.CBVAcc.sort3 ((<=) : int -> int -> bool));
-   ("CBVAcc.sortN",     Mergesort_coq.CBVAcc.sortN ((<=) : int -> int -> bool))]
+   ("CBN.sort1",        Mergesort_coq_cbn.sort1    ((<=) : int -> int -> bool));
+   ("CBN.sort2",        Mergesort_coq_cbn.sort2    ((<=) : int -> int -> bool));
+   ("CBN.sort3",        Mergesort_coq_cbn.sort3    ((<=) : int -> int -> bool));
+   ("CBN.sortN",        Mergesort_coq_cbn.sortN    ((<=) : int -> int -> bool));
+   ("CBNAcc.sort1",     Mergesort_coq_cbnacc.sort1 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort2",     Mergesort_coq_cbnacc.sort2 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort3",     Mergesort_coq_cbnacc.sort3 ((<=) : int -> int -> bool));
+   ("CBNAcc.sortN",     Mergesort_coq_cbnacc.sortN ((<=) : int -> int -> bool));
+   ("CBV.sort1",        Mergesort_coq_cbv.sort1    ((<=) : int -> int -> bool));
+   ("CBV.sort2",        Mergesort_coq_cbv.sort2    ((<=) : int -> int -> bool));
+   ("CBV.sort3",        Mergesort_coq_cbv.sort3    ((<=) : int -> int -> bool));
+   ("CBV.sortN",        Mergesort_coq_cbv.sortN    ((<=) : int -> int -> bool));
+   ("CBVAcc.sort1",     Mergesort_coq_cbvacc.sort1 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort2",     Mergesort_coq_cbvacc.sort2 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort3",     Mergesort_coq_cbvacc.sort3 ((<=) : int -> int -> bool));
+   ("CBVAcc.sortN",     Mergesort_coq_cbvacc.sortN ((<=) : int -> int -> bool))]
 ;;
 
 benchmark "ocaml2" (List.init 40 (fun i -> 25000 * (i + 1))) (sort_blocks 50)
   [("List.stable.sort", List.stable_sort           (compare : int -> int -> int));
-   ("CBN.sort1",        Mergesort_coq.CBN.sort1    ((<=) : int -> int -> bool));
-   ("CBN.sort2",        Mergesort_coq.CBN.sort2    ((<=) : int -> int -> bool));
-   ("CBN.sort3",        Mergesort_coq.CBN.sort3    ((<=) : int -> int -> bool));
-   ("CBN.sortN",        Mergesort_coq.CBN.sortN    ((<=) : int -> int -> bool));
-   ("CBNAcc.sort1",     Mergesort_coq.CBNAcc.sort1 ((<=) : int -> int -> bool));
-   ("CBNAcc.sort2",     Mergesort_coq.CBNAcc.sort2 ((<=) : int -> int -> bool));
-   ("CBNAcc.sort3",     Mergesort_coq.CBNAcc.sort3 ((<=) : int -> int -> bool));
-   ("CBNAcc.sortN",     Mergesort_coq.CBNAcc.sortN ((<=) : int -> int -> bool));
-   ("CBV.sort1",        Mergesort_coq.CBV.sort1    ((<=) : int -> int -> bool));
-   ("CBV.sort2",        Mergesort_coq.CBV.sort2    ((<=) : int -> int -> bool));
-   ("CBV.sort3",        Mergesort_coq.CBV.sort3    ((<=) : int -> int -> bool));
-   ("CBV.sortN",        Mergesort_coq.CBV.sortN    ((<=) : int -> int -> bool));
-   ("CBVAcc.sort1",     Mergesort_coq.CBVAcc.sort1 ((<=) : int -> int -> bool));
-   ("CBVAcc.sort2",     Mergesort_coq.CBVAcc.sort2 ((<=) : int -> int -> bool));
-   ("CBVAcc.sort3",     Mergesort_coq.CBVAcc.sort3 ((<=) : int -> int -> bool));
-   ("CBVAcc.sortN",     Mergesort_coq.CBVAcc.sortN ((<=) : int -> int -> bool))]
+   ("CBN.sort1",        Mergesort_coq_cbn.sort1    ((<=) : int -> int -> bool));
+   ("CBN.sort2",        Mergesort_coq_cbn.sort2    ((<=) : int -> int -> bool));
+   ("CBN.sort3",        Mergesort_coq_cbn.sort3    ((<=) : int -> int -> bool));
+   ("CBN.sortN",        Mergesort_coq_cbn.sortN    ((<=) : int -> int -> bool));
+   ("CBNAcc.sort1",     Mergesort_coq_cbnacc.sort1 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort2",     Mergesort_coq_cbnacc.sort2 ((<=) : int -> int -> bool));
+   ("CBNAcc.sort3",     Mergesort_coq_cbnacc.sort3 ((<=) : int -> int -> bool));
+   ("CBNAcc.sortN",     Mergesort_coq_cbnacc.sortN ((<=) : int -> int -> bool));
+   ("CBV.sort1",        Mergesort_coq_cbv.sort1    ((<=) : int -> int -> bool));
+   ("CBV.sort2",        Mergesort_coq_cbv.sort2    ((<=) : int -> int -> bool));
+   ("CBV.sort3",        Mergesort_coq_cbv.sort3    ((<=) : int -> int -> bool));
+   ("CBV.sortN",        Mergesort_coq_cbv.sortN    ((<=) : int -> int -> bool));
+   ("CBVAcc.sort1",     Mergesort_coq_cbvacc.sort1 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort2",     Mergesort_coq_cbvacc.sort2 ((<=) : int -> int -> bool));
+   ("CBVAcc.sort3",     Mergesort_coq_cbvacc.sort3 ((<=) : int -> int -> bool));
+   ("CBVAcc.sortN",     Mergesort_coq_cbvacc.sortN ((<=) : int -> int -> bool))]
 ;;
