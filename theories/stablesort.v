@@ -357,6 +357,10 @@ End Insertion.
 
 Canonical Insertion.sort_stable.
 
+Lemma cat_eq0P {T : Type} (s1 s2 : seq T) :
+   (s1 ++ s2 = [::]) <-> (s1 = [::]) /\ (s2 = [::]).
+Proof. by case: s1 => [|x ?]; rewrite ?cats0/=; split=> // -[]. Qed.
+
 (******************************************************************************)
 (* The [CBN_] functor module takes a module [M] of type [MergeSig] and        *)
 (* provides a family of mergesort functions [sort1], [sort2], [sort3], and    *)
@@ -470,27 +474,31 @@ Fixpoint merge_Tr_push (s : Tr) (stack : seq Tr) : seq Tr :=
 Fixpoint merge_Tr_pop (s1 : Tr) (stack : seq Tr) : Tr :=
   if stack is s2 :: stack' then merge_Tr_pop (brTr s2 s1) stack' else s1.
 
-Fixpoint Tr1rec (stack : seq Tr) (s : seq T) : Tr :=
-  if s is x :: s then Tr1rec (merge_Tr_push (oneTr x) stack) s else
-  merge_Tr_pop nilTr stack.
+Context (St : Type) (push1 : T -> St -> St) (push2 : T -> T -> St -> St)
+   (push3 : T -> T -> T -> St -> St).
+Context (pop0 : St -> Tr) (pop1 : T -> St -> Tr) (pop2 : T -> T -> St -> Tr).
 
-Fixpoint Tr2rec (stack : seq Tr) (s : seq T) : Tr :=  match s with
-  | [:: x1, x2 & s'] => Tr2rec (merge_Tr_push (twoTr x1 x2) stack) s'
-  | [:: x] => merge_Tr_pop (oneTr x) stack
-  | [::] => merge_Tr_pop nilTr stack
+Fixpoint Tr1rec (stack : St) (s : seq T) : Tr :=
+  if s is x :: s then Tr1rec (push1 x stack) s else pop0 stack.
+
+Fixpoint Tr2rec (stack : St) (s : seq T) : Tr :=  match s with
+  | [:: x1, x2 & s'] => Tr2rec (push2 x1 x2 stack) s'
+  | [:: x] => pop1 x stack
+  | [::] => pop0 stack
   end.
 
-Fixpoint Tr3rec (stack : seq Tr) (s : seq T) : Tr :=
+Fixpoint Tr3rec (stack : St) (s : seq T) : Tr :=
   match s with
-  | [:: x1, x2, x3 & s'] => Tr3rec
-      (merge_Tr_push (brTr (twoTr x1 x2) (oneTr x3)) stack) s'
-  | [:: x1; x2] =>  merge_Tr_pop (twoTr x1 x2) stack
-  | [:: x] => merge_Tr_pop (oneTr x) stack
-  | [::] => merge_Tr_pop nilTr stack
+  | [:: x1, x2, x3 & s'] => Tr3rec (push3 x1 x2 x3 stack) s'
+  | [:: x1; x2] => pop2 x1 x2 stack
+  | [:: x] => pop1 x stack
+  | [::] => pop0 stack
   end.
 End abstract.
 
 Realizer T as T_R := (@eq T).
+Parametricity merge_Tr_pop.
+Parametricity merge_Tr_push.
 Parametricity Tr1rec.
 
 
@@ -499,46 +507,191 @@ Local Notation trace := (trace leT).
 Local Notation merge := (merge leT).
 Inductive box T := Box of T.
 Arguments nilp {_}.
+Local Notation niltr := (nilp \o flatten_trace).
 
+Let flatten_stack := foldr (fun x => cat^~ (@flatten_trace _ leT x)) nil.
 
-Lemma merge_seq_pop (s : seq T) ss : merge_Tr_pop cat s ss = flatten (rev ss) ++ s.
+Lemma merge_seq_pop (s : seq T) ss : merge_Tr_pop cat s ss = flatten (rev (s :: ss)).
 Proof.
-by elim: ss s => [|s ss +] s' //= => ->; rewrite rev_cons flatten_rcons catA.
+elim: ss s => [|s ss +] s'/= => [|->]; rewrite ?cats0 //. 
+by rewrite !rev_cons !flatten_rcons catA.
 Qed.
 
 Lemma merge_tr_pop (s : seq T) ss : merge_Tr_pop merge s ss = merge_sort_pop s ss.
-Proof. by elim: ss s => //= x s + s' => ->; rewrite M.mergeE. Qed.
+Proof. by elim: ss s => //= s ss + s' => ->; rewrite M.mergeE. Qed.
+
+Lemma merge0s s : merge [::] s = s. Proof. by elim: s. Qed.
+Lemma merges0 s : merge s [::] = s. Proof. by elim: s. Qed.
+
+Lemma merge_cons x y s s' : merge (x :: s) (y :: s') =
+  if leT x y then x :: merge s (y :: s') else y :: merge (x :: s) s'.
+Proof. by []. Qed.
+
+Lemma merge_eq0P s1 s2 : (merge s1 s2 = [::]) <-> (s1 = [::]) /\ (s2 = [::]).
+Proof.
+elim: s1 => [|x s1 IHs1]/= in s2 *; rewrite /= ?merge0s; first by split=> // -[].
+case: s2 => [|y s2]; first by split=> // -[].
+by rewrite merge_cons; case: ifP => //=; split=> // -[].
+Qed.
+
+Lemma merge_Tr_popE s ss : merge_Tr_pop merge s ss = foldr merge s (rev ss).
+Proof.
+elim: ss s => [|s ss IHss]/= s'; rewrite ?merges0// IHss//=.
+by rewrite !rev_cons !foldr_rcons//.
+Qed.
+
+Lemma merge_sort_popE s ss : merge_sort_pop s ss = foldr merge s (rev ss).
+Proof. by rewrite -merge_tr_pop merge_Tr_popE. Qed.
 
 Lemma merge_tr_push (s : seq T) ss :
   merge_Tr_push merge nilp [::] s ss = merge_sort_push s ss.
 Proof. by elim: ss s => //= -[|x s] ss + s' => ->; rewrite ?M.mergeE. Qed.
 
-Lemma merge_seq_push (s s' : seq T) ss : merge_Tr_push cat nilp [::] s (s' :: ss) = s :: ss.
+Lemma merge_seq_push (s : seq T) ss :
+  flatten (rev (merge_Tr_push cat nilp [::] s ss)) = flatten (rev (s :: ss)).
 Proof.
-rewrite /=.
+elim: ss s => [|s ss IHss] s' //=; case: nilP=> [->|_]//;
+by rewrite ?(rev_cons, flatten_rcons, rev_cat, IHss, cats0, catA).
+Qed.
 
-elim: ss s s' => [|s ss +] s' s'' //= => ->.
-case: nilP=> [->|].
-case: (@nilP s).
-Admitted.
+Lemma map_br_push (t : trace) st :
+  map flatten_trace (merge_Tr_push (branch_trace true) niltr [tr] t st) =
+  merge_Tr_push cat nilp [::] (flatten_trace t) (map flatten_trace st).
+Proof.
+elim: st t => [|t st IHst] t'/=; rewrite ?cats0//=.
+by case: nilP => //= _; rewrite IHst.
+Qed.
+
+Lemma flatten_stackE st : flatten_stack st = flatten (rev (map flatten_trace st)).
+Proof. by elim: st => //= t st ->; rewrite rev_cons flatten_rcons. Qed.
+
+(* Lemma flatten_stackE st : *)
+(*   flatten_stack st = foldr (fun x y => cat y x) nil (map flatten_trace st). *)
+(* Proof. by elim: st => //= t st ->. Qed. *)
+
+Lemma br_push (t : trace) st :
+  flatten_stack (merge_Tr_push (branch_trace true) niltr [tr] t st) =
+  flatten_stack st ++ flatten_trace t.
+Proof.
+by rewrite !flatten_stackE/= map_br_push/= merge_seq_push rev_cons flatten_rcons.
+Qed.
+
+Lemma br_pop (t : trace) (st : seq trace) :
+  flatten_trace (merge_Tr_pop (branch_trace true) t st) =
+  flatten_stack st ++ flatten_trace t.
+Proof. by elim: st t => [|t st IHst] t'//=; rewrite IHst/= catA. Qed.
+
+Local Definition eqstk (st : seq trace) (ss : seq (seq T)) :=
+  map flatten_trace st = ss.
+Arguments eqstk st ss /.
+Local Definition Rfl : trace -> _ -> Prop := eq \o flatten_trace.
+Arguments Rfl t s /.
+Local Definition Rst : trace -> _ -> Prop := eq \o sort_trace.
+Arguments Rst t s /.
 
 Lemma sort1P : trace_sort leT sort1.
 Proof.
-have f st s := @Tr1rec_R trace (seq T) (eq \o flatten_trace)
-  (branch_trace true) cat (fun _ _ e1 _ _ e2 => congr2 cat e1 e2)
-  (nilp \o flatten_trace) nilp (fun _ _ e => bool_R_refl (congr1 nilp  e))
+pose mgpush1 x (st : seq trace) :=
+  merge_Tr_push (branch_trace true) niltr [tr] [tr<= x] st.
+pose nopush1 (x : T) ss := [:: x] :: ss.
+pose mgpop0 (st : seq trace) := merge_Tr_pop (branch_trace true) [tr] st.
+move=> [: push1R pop0R].
+have /(_ _)/Box[] := @Tr1rec_R _ _ Rfl _ _ eqstk mgpush1 nopush1.
+  abstract: push1R.
+  move=> x _ <- ? ? /= <- /=.
+  
+
+ rewrite rev_cons flatten_rcons => <-; rewrite br_push.
+move=> /(_ mgpop0 (flatten \o rev) _)/Box[].
+  by abstract: pop0R; move=> st ss /= <-; rewrite br_pop/= cats0.
+have /(_ _)/Box[] := @Tr1rec_R _ _ Rst _ _ eqstk _ _ push1R mgpop0 (merge_sort_pop [::]).
+  move=> st ss /= eqstss.
+  transitivity (merge_sort_pop [::] (map sort_trace st)).
+    rewrite -merge_tr_pop.
+    apply: (@merge_Tr_pop_R _ _ Rst) => //=.
+      by move=> ? _ <- ? _ <-.
+    exact: map_rel_map.
+  rewrite !merge_sort_popE/=.
+  
+
+Local Definition eqstk (st : seq trace) ss := flatten_stack st = flatten (rev ss).
+Arguments eqstk st ss /.
+Local Definition Rfl : trace -> _ -> Prop := eq \o flatten_trace.
+Arguments Rfl t s /.
+Local Definition Rst : trace -> _ -> Prop := eq \o sort_trace.
+Arguments Rst t s /.
+
+Lemma sort1P : trace_sort leT sort1.
+Proof.
+pose mgpush1 x (st : seq trace) :=
+  merge_Tr_push (branch_trace true) niltr [tr] [tr<= x] st.
+pose nopush1 (x : T) ss := [:: x] :: ss.
+pose mgpop0 (st : seq trace) := merge_Tr_pop (branch_trace true) [tr] st.
+move=> [: push1R pop0R].
+have /(_ _)/Box[] := @Tr1rec_R _ _ Rfl _ _ eqstk mgpush1 nopush1.
+  abstract: push1R.
+  by move=> x _ <- ? ? /=; rewrite rev_cons flatten_rcons => <-; rewrite br_push.
+move=> /(_ mgpop0 (flatten \o rev) _)/Box[].
+  by abstract: pop0R; move=> st ss /= <-; rewrite br_pop/= cats0.
+have /(_ _)/Box[] := @Tr1rec_R _ _ Rst _ _ eqstk _ _ push1R mgpop0 (merge_sort_pop [::]).
+  move=> st ss /= eqstss.
+  transitivity (merge_sort_pop [::] (map sort_trace st)).
+    rewrite -merge_tr_pop.
+    apply: (@merge_Tr_pop_R _ _ Rst) => //=.
+      by move=> ? _ <- ? _ <-.
+    exact: map_rel_map.
+  rewrite !merge_sort_popE/=.
+  
+  elim: st ss eqstss => [|t st IHst] [|s ss]; rewrite ?rev_cons ?flatten_rcons//=.  
+  - by move=> _; apply: list_R_nil_R.
+  - 
+  
+  apply=> //.
+apply: 
+
+  (branch_trace true) merge (fun _ _ e1 _ _ e2 => congr2 merge e1 e2)
+  niltr nilp
+  (fun _ _ e => bool_R_refl (etrans (esym (trace_nilp _)) (congr1 nilp e)))
   [tr] [::] erefl
   (fun x => [tr<= x]) (fun x => [:: x]) (fun _ _ e => congr1 _ e)
+  st (map sort_trace st) (map_rel_map _ _) s (map id s) (map_rel_map _ _).
+
+move=> /(_ mgpop0 (flatten \o rev) _)/Box[].
+  by move=> st ss /= <-; rewrite br_pop/= cats0.
+
+set gettrace := Tr1rec _ _; set dontsort := Tr1rec _ _.
+move=> /(_ _ _ _ _ (map id _) (map_rel_map _ _))/= f.
+move=> s; exists (gettrace [::] s).
+  rewrite (f _ [::])// map_id.
+  suff /(_ [::]) : forall l, flatten (rev l) ++ s = dontsort l s by [].
+  elim: s => [|x s IHs]//= l; rewrite ?cats0//.
+  by rewrite -IHs/= rev_cons flatten_rcons -catA/=.
+
+
+  case: s.
+
+
+  suff : forall l, flatten_stack l ++ s = flatten_trace (Tr1rec mgpush1 mgpop0 l s).
+    by move=> /(_ [::]).
+  move=> l ; rewrite (f _ [:: flatten_stack l])//=.
+  suff : forall l, flatten_stack l ++ s = flatten_trace (Tr1rec mgpush1 mgpop0 l s).
+    by move=> /(_ [::]).
+  elim: s => //=.
+
+move=> /(_ (branch_trace true) cat (fun _ _ e1 _ _ e2 => congr2 cat e1 e2)).
+  niltr nilp (fun _ _ e => bool_R_refl (congr1 nilp  e))
+  [tr] [::] erefl
+  (fun x => [tr<= x]) (fun x => [:: x]) (fun _ _ e => congr1 _ e).
   st (map flatten_trace st) (map_rel_map _ _) s (map id s) (map_rel_map _ _).
 have g st s := @Tr1rec_R trace (seq T) (eq \o sort_trace)
   (branch_trace true) merge (fun _ _ e1 _ _ e2 => congr2 merge e1 e2)
-  (nilp \o flatten_trace) nilp
+  niltr nilp
   (fun _ _ e => bool_R_refl (etrans (esym (trace_nilp _)) (congr1 nilp e)))
   [tr] [::] erefl
   (fun x => [tr<= x]) (fun x => [:: x]) (fun _ _ e => congr1 _ e)
   st (map sort_trace st) (map_rel_map _ _) s (map id s) (map_rel_map _ _).
 rewrite /= in f g => s.
-exists (Tr1rec (branch_trace true) (nilp \o flatten_trace) [tr] (fun x => [tr<= x]) [::] s).
+exists (Tr1rec (branch_trace true) niltr [tr] (fun x => [tr<= x]) [::] s).
 rewrite f/= map_id /=.
   suff /(_ [::])/=: forall ss, s ++ flatten (rev ss) = Tr1rec cat nilp [::] (fun x => [:: x]) ss s.
      by rewrite cats0.
@@ -565,7 +718,7 @@ by rewrite (catA _ [:: _]) => {}stack /= -> ->; exact: IHs.
 Qed.
 
 Let Tr1rec_cat := @Tr1rec_R trace (seq T) (eq \o flatten_trace)
-  (nilp \o flatten_trace) nilp (fun _ _ e => bool_R_refl (congr1 nilp  e))
+  niltr nilp (fun _ _ e => bool_R_refl (congr1 nilp  e))
   [tr] [::] erefl
   (branch_trace true) cat (fun _ _ e1 _ _ e2 => congr2 cat e1 e2).
 
@@ -575,7 +728,7 @@ Let Tr1rec_merge := @Tr1rec_R trace (seq T) (eq \o sort_trace)
   (branch_trace true) merge (fun _ _ e1 _ _ e2 => congr2 merge e1 e2).
 
 Let Tr1rec_cat := @Tr1rec_R (seq T) trace (fun s t => flatten_trace t = s)
-  nilp (nilp \o flatten_trace) (fun _ _ e => bool_R_refl (congr1 nilp (esym e)))
+  nilp niltr (fun _ _ e => bool_R_refl (congr1 nilp (esym e)))
   [::] [tr] erefl cat (branch_trace true) (fun _ _ e1 _ _ e2 => congr2 cat e1 e2).
 
 Let push_merge := @merge_Tr_push_R (seq T) trace (fun s t => s = sort_trace t)
@@ -585,7 +738,7 @@ Let push_merge := @merge_Tr_push_R (seq T) trace (fun s t => s = sort_trace t)
 
 
 Let push_cat := @merge_Tr_push_R (seq T) trace (fun s t => s = flatten_trace t)
-  nilp (nilp \o flatten_trace) (fun _ _ e => bool_R_refl (congr1 nilp e))
+  nilp niltr (fun _ _ e => bool_R_refl (congr1 nilp e))
   [::] [tr] erefl cat (branch_trace true) (fun _ _ e1 _ _ e2 => congr2 cat e1 e2).
 
 Let push_merge := @merge_Tr_push_R (seq T) trace (fun s t => s = sort_trace t)
@@ -660,7 +813,6 @@ Fixpoint trace3rec (stack : seq trace) (s : seq T) : trace :=
 (* Import StableSort. *)
 
 Local Notation trace_sort := (trace_sort leT).
-Let flatten_stack := foldr (fun x => cat^~ (@flatten_trace _ leT x)) nil.
 
 Lemma flatten_merge_push t st :
   flatten_stack (merge_trace_push t st) = flatten_stack st ++ flatten_trace t.
@@ -705,7 +857,7 @@ rewrite M.mergeE ifnilE -catA; case: trace_nilP => _ _.
   by exists (t :: stack); rewrite //= cats0.
 have [/= {IHstack}stack -> ->] := IHstack (branch_trace true t' t).
 by exists (empty_trace :: stack); rewrite //= cats0.
-Qed.
+Qed.!
 
 Lemma merge_sort_popP (t : trace) (stack : seq trace) :
   {t' : trace |
