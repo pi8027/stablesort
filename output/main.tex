@@ -3,6 +3,15 @@
 \usepackage{tikz, pgfplots}
 \usetikzlibrary{plotmarks,external}
 
+\definecolor{plotcolor1}{RGB}{0,100,0}
+\definecolor{plotcolor2}{RGB}{255,0,0}
+\definecolor{plotcolor3}{RGB}{255,215,0}
+\definecolor{plotcolor4}{RGB}{0,255,255}
+\definecolor{plotcolor5}{RGB}{199,21,133}
+\definecolor{plotcolor6}{RGB}{0,0,255}
+\definecolor{plotcolor7}{RGB}{0,255,0}
+\definecolor{plotcolor8}{RGB}{30,144,255}
+
 \pgfplotsset
 {enlargelimits=0.03, xlabel near ticks, ylabel near ticks,
  yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=5},
@@ -18,29 +27,33 @@
 \pgfplotsset
 {scaled x ticks=base 10:-6,
  cycle list={{mark=x},
-             {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-             {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-             {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-             {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-             {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-             {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-             {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-             {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}}
+             {mark=*, every mark/.append style={fill=plotcolor1}}, {mark=*, every mark/.append style={fill=plotcolor2}},
+             {mark=*, every mark/.append style={fill=plotcolor3}}, {mark=*, every mark/.append style={fill=plotcolor4}},
+             {mark=*, every mark/.append style={fill=plotcolor5}}, {mark=*, every mark/.append style={fill=plotcolor6}},
+             {mark=*, every mark/.append style={fill=plotcolor7}}, {mark=*, every mark/.append style={fill=plotcolor8}},
+             {mark=oplus*, every mark/.append style={fill=plotcolor1}}, {mark=oplus*, every mark/.append style={fill=plotcolor2}},
+             {mark=oplus*, every mark/.append style={fill=plotcolor3}}, {mark=oplus*, every mark/.append style={fill=plotcolor4}},
+             {mark=oplus*, every mark/.append style={fill=plotcolor5}}, {mark=oplus*, every mark/.append style={fill=plotcolor6}},
+             {mark=oplus*, every mark/.append style={fill=plotcolor7}}, {mark=oplus*, every mark/.append style={fill=plotcolor8}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor1}}, {mark=otimes*, every mark/.append style={fill=plotcolor2}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor3}}, {mark=otimes*, every mark/.append style={fill=plotcolor4}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor5}}, {mark=otimes*, every mark/.append style={fill=plotcolor6}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor7}}, {mark=otimes*, every mark/.append style={fill=plotcolor8}}}
 }
 
 \begin{figure}[p]
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{ocaml1.time.out}
   \end{axis}
- \end{tikzpicture}%
+ \end{tikzpicture}
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{ocaml1.mem.out}
@@ -53,15 +66,15 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{ocaml2.time.out}
   \end{axis}
- \end{tikzpicture}%
+ \end{tikzpicture}
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{ocaml2.mem.out}
@@ -73,21 +86,21 @@
 \pgfplotsset
 {scaled x ticks=base 10:-6,
  cycle list={{mark=x},
-             {mark=o}, {mark=*, every mark/.append style={fill=blue!60!white}},
-             {mark=*, every mark/.append style={fill=green!60!white}}, {mark=*, every mark/.append style={fill=red!60!white}},
-             {mark=otimes}, {mark=otimes*, every mark/.append style={fill=blue!60!white}},
-             {mark=otimes*, every mark/.append style={fill=green!60!white}}, {mark=otimes*, every mark/.append style={fill=red!60!white}},
-             {mark=square}, {mark=square*, every mark/.append style={fill=blue!60!white}},
-             {mark=square*, every mark/.append style={fill=green!60!white}}, {mark=square*, every mark/.append style={fill=red!60!white}},
-             {mark=diamond}, {mark=diamond*, every mark/.append style={fill=blue!60!white}},
-             {mark=diamond*, every mark/.append style={fill=green!60!white}}, {mark=diamond*, every mark/.append style={fill=red!60!white}}},
+             {mark=*, every mark/.append style={fill=plotcolor1}}, {mark=*, every mark/.append style={fill=plotcolor2}},
+             {mark=*, every mark/.append style={fill=plotcolor3}}, {mark=*, every mark/.append style={fill=plotcolor4}},
+             {mark=*, every mark/.append style={fill=plotcolor5}}, {mark=*, every mark/.append style={fill=plotcolor6}},
+             {mark=*, every mark/.append style={fill=plotcolor7}}, {mark=*, every mark/.append style={fill=plotcolor8}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor1}}, {mark=otimes*, every mark/.append style={fill=plotcolor2}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor3}}, {mark=otimes*, every mark/.append style={fill=plotcolor4}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor5}}, {mark=otimes*, every mark/.append style={fill=plotcolor6}},
+             {mark=otimes*, every mark/.append style={fill=plotcolor7}}, {mark=otimes*, every mark/.append style={fill=plotcolor8}}}
 }
 
 \begin{figure}[p]
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{haskell1.time.out}
@@ -100,7 +113,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{haskell2.time.out}
@@ -113,7 +126,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{haskell3.time.out}
@@ -126,7 +139,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=\textwidth, height=12cm, line width=0.1mm,
+   [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{haskell4.time.out}
@@ -151,7 +164,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{lazy1.time.out}
@@ -159,7 +172,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{lazy1.mem.out}
@@ -172,7 +185,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{lazy2.time.out}
@@ -180,7 +193,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{lazy2.mem.out}
@@ -193,7 +206,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{lazy3.time.out}
@@ -201,7 +214,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{lazy3.mem.out}
@@ -214,7 +227,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{lazy4.time.out}
@@ -222,7 +235,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{lazy4.mem.out}
@@ -235,7 +248,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{compute1.time.out}
@@ -243,7 +256,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{compute1.mem.out}
@@ -256,7 +269,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{compute2.time.out}
@@ -264,7 +277,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{compute2.mem.out}
@@ -277,7 +290,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{vm1.time.out}
@@ -285,7 +298,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{vm1.mem.out}
@@ -298,7 +311,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{vm2.time.out}
@@ -306,7 +319,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{vm2.mem.out}
@@ -319,7 +332,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{native1.time.out}
@@ -327,7 +340,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{native1.mem.out}
@@ -340,7 +353,7 @@
  \centering
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
    \input{native2.time.out}
@@ -348,7 +361,7 @@
  \end{tikzpicture}%
  \begin{tikzpicture}
   \begin{axis}
-   [width=.5\textwidth, height=12cm, line width=0.1mm,
+   [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
    \input{native2.mem.out}
