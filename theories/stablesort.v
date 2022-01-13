@@ -474,6 +474,9 @@ Fixpoint merge_Tr_push (s : Tr) (stack : seq Tr) : seq Tr :=
 Fixpoint merge_Tr_pop (s1 : Tr) (stack : seq Tr) : Tr :=
   if stack is s2 :: stack' then merge_Tr_pop (brTr s2 s1) stack' else s1.
 
+(* Fixpoint merge_Tr_pop (s1 : Tr) (stack : seq Tr) : Tr := *)
+(*   if stack is s2 :: stack' then if isNilTr s1 then merge_Tr_pop s2 stack' else merge_Tr_pop (brTr s2 s1) stack' else s1. *)
+
 Context (St : Type) (push1 : T -> St -> St) (push2 : T -> T -> St -> St)
    (push3 : T -> T -> T -> St -> St).
 Context (pop0 : St -> Tr) (pop1 : T -> St -> Tr) (pop2 : T -> T -> St -> Tr).
@@ -501,15 +504,30 @@ Parametricity merge_Tr_pop.
 Parametricity merge_Tr_push.
 Parametricity Tr1rec.
 
+End CBN.
+
+Import StableSort.
+Arguments nilp {_}.
+Local Notation niltr := (nilp \o flatten_trace).
+
+Local Notation branch := (@branch_trace _ _ _).
+Local Notation tr0 := (@leaf_trace _ _ _ [::] _).
+
+Eval lazy in 
+  @Tr1rec nat (trace leq) (seq (trace leq))
+    (fun x st => merge_Tr_push (@branch_trace nat leq true) (niltr) [tr] [tr<= x] st)
+    (merge_Tr_pop (@branch_trace nat leq true) niltr [tr])
+    [::]
+    [:: 5; 1; 2; 7; 0; 4; 3; 6].
 
 Import StableSort.
 Local Notation trace := (trace leT).
 Local Notation merge := (merge leT).
 Inductive box T := Box of T.
 Arguments nilp {_}.
-Local Notation niltr := (nilp \o flatten_trace).
 
 Let flatten_stack := foldr (fun x => cat^~ (@flatten_trace _ leT x)) nil.
+
 
 Lemma merge_seq_pop (s : seq T) ss : merge_Tr_pop cat s ss = flatten (rev (s :: ss)).
 Proof.
@@ -1285,7 +1303,7 @@ Section StableSortTheory_Part1.
 Variable (sort : stableSort).
 
 Local Lemma param_sort : StableSort.sort_ty_R sort sort.
-Proof. by case: sort => ? param ?; exact: param. Qed.
+Proof. by case: sort => ?. Qed.
 
 Lemma map_sort (T T' : Type) (f : T' -> T) (leT' : rel T') (leT : rel T) :
   {mono f : x y / leT' x y >-> leT x y} ->
