@@ -155,8 +155,10 @@ get-reduction-machine "lazy" Red :- !,
 get-reduction-machine "compute"  Red :- !,
   Red = t\ _\ tred\ coq.reduction.cbv.norm t tred.
 get-reduction-machine "vm_compute" coq.reduction.vm.norm :- !.
-get-reduction-machine "native_compute" coq.reduction.native.norm :- !,
-  coq.reduction.native.available?.
+get-reduction-machine "native_compute" coq.reduction.native.norm :-
+  coq.reduction.native.available?, !.
+get-reduction-machine M _ :-
+  coq.error "Reduction machine" M "is not available".
 
 pred parse-config i:list argument, o: list (pair string term).
 parse-config [] [] :- !.
@@ -178,11 +180,14 @@ main [str FileName, str RedStr, trm Size, trm Preproc | ConfList] :- std.do! [
   % pgfplot
   open_out {calc (FileName ^ ".time.out")} TStream,
   output TStream "% time consumption\n",
-  std.forall TSS (ts\ sigma Str\
+  std.forall2 Config TSS (conf\ ts\ sigma Name Str\
+    conf = pr Name _,
     output TStream "\\addplot coordinates {",
     std.string.concat " " ts Str,
     output TStream Str,
-    output TStream "};\n"),
+    output TStream "}; % ",
+    output TStream Name,
+    output TStream "\n"),
   output TStream "\\legend{",
   output TStream
     {std.string.concat ", " {std.map Config (c\ n\ sigma T\ c = pr n T)} },
@@ -190,11 +195,14 @@ main [str FileName, str RedStr, trm Size, trm Preproc | ConfList] :- std.do! [
   close_out TStream,
   open_out {calc (FileName ^ ".mem.out")} MStream,
   output MStream "% memory consumption\n",
-  std.forall MSS (ms\ sigma Str\
+  std.forall2 Config MSS (conf\ ms\ sigma Name Str\
+    conf = pr Name _,
     output MStream "\\addplot coordinates {",
     std.string.concat " " ms Str,
     output MStream Str,
-    output MStream "};\n"),
+    output MStream "}; % ",
+    output MStream Name,
+    output MStream "\n"),
   output MStream "\\legend{",
   output MStream
     {std.string.concat ", " {std.map Config (c\ n\ sigma T\ c = pr n T)} },

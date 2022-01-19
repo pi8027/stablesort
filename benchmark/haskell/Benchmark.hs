@@ -50,10 +50,10 @@ benchmark filename size preproc config = do
     return $ map (\(_, time) -> (size, time)) r) size seeds
   withFile (filename ++ ".time.out") WriteMode $ \handle -> do
     hPrintf handle "%% time consumption\n"
-    mapM_ (\res -> do
+    zipWithM_ (\res (name, _) -> do
       hPrintf handle "\\addplot coordinates {"
       mapM_ (uncurry (hPrintf handle "(%d, %f) ")) res
-      hPrintf handle "};\n") $ transpose rs
+      hPrintf handle "}; %% %s\n" name) (transpose rs) (config)
 
 path :: Ord a => a -> [a] -> Bool
 path _ [] = True
