@@ -5,7 +5,7 @@ From benchmark Require Import benchmark.
 
 Elpi sort_benchmark
   "lazy1" "lazy"
-  (map (N.mul 100) (N_iota 1 40)) (id)
+  5 (map (N.mul 100) (N_iota 1 40)) (id)
   "CBN.sort1"    (lazy_bench CBN.sort1)
   "CBN.sort2"    (lazy_bench CBN.sort2)
   "CBN.sort3"    (lazy_bench CBN.sort3)
@@ -25,7 +25,7 @@ Elpi sort_benchmark
 
 Elpi sort_benchmark
   "lazy2" "lazy"
-  (map (N.mul 100) (N_iota 1 40)) (sort_blocks N.leb 50)
+  5 (map (N.mul 100) (N_iota 1 40)) (sort_blocks N.leb 50)
   "CBN.sort1"    (lazy_bench CBN.sort1)
   "CBN.sort2"    (lazy_bench CBN.sort2)
   "CBN.sort3"    (lazy_bench CBN.sort3)
@@ -45,7 +45,7 @@ Elpi sort_benchmark
 
 Elpi sort_benchmark
   "lazy3" "lazy"
-  (map (N.mul 100) (N_iota 1 40)) (id)
+  5 (map (N.mul 100) (N_iota 1 40)) (id)
   "CBN.sort1"    (eager_bench CBN.sort1)
   "CBN.sort2"    (eager_bench CBN.sort2)
   "CBN.sort3"    (eager_bench CBN.sort3)
@@ -65,7 +65,7 @@ Elpi sort_benchmark
 
 Elpi sort_benchmark
   "lazy4" "lazy"
-  (map (N.mul 100) (N_iota 1 40)) (sort_blocks N.leb 50)
+  5 (map (N.mul 100) (N_iota 1 40)) (sort_blocks N.leb 50)
   "CBN.sort1"    (eager_bench CBN.sort1)
   "CBN.sort2"    (eager_bench CBN.sort2)
   "CBN.sort3"    (eager_bench CBN.sort3)

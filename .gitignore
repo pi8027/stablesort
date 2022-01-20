@@ -13,8 +13,10 @@ Make*.coq.conf
 # OCaml
 _build
 benchmark/ocaml/benchmark.native
+benchmark/ocaml/benchmark_exp.native
 
 # Haskell
 *.hi
 *.o
 benchmark/haskell/Benchmark
+benchmark/haskell/BenchmarkExp

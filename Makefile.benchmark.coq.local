@@ -2,49 +2,58 @@ HSDIR := benchmark/haskell
 MLDIR := benchmark/ocaml
 
 EXTRACTED_HS_FILES := \
-  ${HSDIR}/MergesortCoqCbn.hs \
-  ${HSDIR}/MergesortCoqCbnAcc.hs \
-  ${HSDIR}/MergesortCoqCbv.hs \
-  ${HSDIR}/MergesortCoqCbvAcc.hs
+  $(HSDIR)/MergesortCoqCbn.hs \
+  $(HSDIR)/MergesortCoqCbnAcc.hs \
+  $(HSDIR)/MergesortCoqCbv.hs \
+  $(HSDIR)/MergesortCoqCbvAcc.hs
+
+HS_FLAGS := -with-rtsopts="-T -I0 -A8G -G1 -m1" -O2
 
 EXTRACTED_ML_FILES := \
-  ${MLDIR}/mergesort_coq_cbn.ml \
-  ${MLDIR}/mergesort_coq_cbnacc.ml \
-  ${MLDIR}/mergesort_coq_cbv.ml \
-  ${MLDIR}/mergesort_coq_cbvacc.ml \
-  ${MLDIR}/mergesort_coq_cbn_tmc.ml \
-  ${MLDIR}/mergesort_coq_cbnacc_tmc.ml
+  $(MLDIR)/mergesort_coq_cbn.ml \
+  $(MLDIR)/mergesort_coq_cbnacc.ml \
+  $(MLDIR)/mergesort_coq_cbv.ml \
+  $(MLDIR)/mergesort_coq_cbvacc.ml \
+  $(MLDIR)/mergesort_coq_cbn_tmc.ml \
+  $(MLDIR)/mergesort_coq_cbnacc_tmc.ml
 
-HS_FILES := $(EXTRACTED_HS_FILES) ${HSDIR}/Benchmark.hs
+ML_FLAGS := -cflags -w,a -verbose 0 -package unix -tag 'optimize(3)'
 
-ML_FILES := $(EXTRACTED_ML_FILES) ${MLDIR}/benchmark.ml
+EXTRACTED_BINARIES := $(HSDIR)/Benchmark $(HSDIR)/BenchmarkExp \
+  $(MLDIR)/benchmark.native $(MLDIR)/benchmark_exp.native
 
-EXTRACTED_BINARIES := ${HSDIR}/Benchmark ${MLDIR}/benchmark.native
+$(HSDIR)/Benchmark: $(HSDIR)/Benchmark.hs $(HSDIR)/Benchlib.hs \
+                    $(EXTRACTED_HS_FILES)
+	cd $(HSDIR) && stack ghc Benchmark.hs -- $(HS_FLAGS)
 
-${HSDIR}/Benchmark: $(HS_FILES)
-	cd ${HSDIR} && \
-	  stack ghc Benchmark.hs -- -with-rtsopts="-T -I0 -A8G -G1 -m1" -O2
+$(HSDIR)/BenchmarkExp: $(HSDIR)/BenchmarkExp.hs $(HSDIR)/Benchlib.hs \
+                       $(EXTRACTED_HS_FILES)
+	cd $(HSDIR) && stack ghc BenchmarkExp.hs -- $(HS_FLAGS)
 
-${MLDIR}/benchmark.native: $(ML_FILES) $(EXTRACTED_ML_FILES:.ml=.mli)
-	cd ${MLDIR} && \
-	  ocamlbuild benchmark.native -cflags -w,a -verbose 0 -package unix -tag 'optimize(3)'
+$(MLDIR)/benchmark.native: $(MLDIR)/benchmark.ml $(MLDIR)/benchlib.ml \
+                           $(EXTRACTED_ML_FILES) $(EXTRACTED_ML_FILES:.ml=.mli)
+	cd $(MLDIR) && ocamlbuild benchmark.native $(ML_FLAGS)
 
-${HSDIR}/MergesortCoqCbn.hs ${MLDIR}/mergesort_coq_cbn.ml: \
+$(MLDIR)/benchmark_exp.native: $(MLDIR)/benchmark_exp.ml $(MLDIR)/benchlib.ml \
+                               $(EXTRACTED_ML_FILES) $(EXTRACTED_ML_FILES:.ml=.mli)
+	cd $(MLDIR) && ocamlbuild benchmark_exp.native $(ML_FLAGS)
+
+$(HSDIR)/MergesortCoqCbn.hs $(MLDIR)/mergesort_coq_cbn.ml: \
     benchmark/extraction_cbn.vo
 
-${HSDIR}/MergesortCoqCbnAcc.hs ${MLDIR}/mergesort_coq_cbnacc.ml: \
+$(HSDIR)/MergesortCoqCbnAcc.hs $(MLDIR)/mergesort_coq_cbnacc.ml: \
     benchmark/extraction_cbnacc.vo
 
-${HSDIR}/MergesortCoqCbv.hs ${MLDIR}/mergesort_coq_cbv.ml: \
+$(HSDIR)/MergesortCoqCbv.hs $(MLDIR)/mergesort_coq_cbv.ml: \
     benchmark/extraction_cbv.vo
 
-${HSDIR}/MergesortCoqCbvAcc.hs ${MLDIR}/mergesort_coq_cbvacc.ml: \
+$(HSDIR)/MergesortCoqCbvAcc.hs $(MLDIR)/mergesort_coq_cbvacc.ml: \
     benchmark/extraction_cbvacc.vo
 
-${MLDIR}/%_tmc.ml: ${MLDIR}/%.ml ${MLDIR}/%_tmc.patch
+$(MLDIR)/%_tmc.ml: $(MLDIR)/%.ml $(MLDIR)/%_tmc.patch
 	patch $^ -o $@
 
-${MLDIR}/%_tmc.mli: ${MLDIR}/%.mli
+$(MLDIR)/%_tmc.mli: $(MLDIR)/%.mli
 	cp $< $@
 
 post-all:: $(EXTRACTED_BINARIES)
