@@ -101,3 +101,23 @@ Lemma eq_allrel2 {T S : eqType} (r : T -> S -> bool)
     (s1 s1' : seq T) (s2 s2' : seq S) :
   s1 =i s1' -> s2 =i s2' -> allrel r s1 s2 = allrel r s1' s2'.
 Proof. by move=> /eq_allrel_l -> /eq_allrel_r ->. Qed.
+
+Section MergeProps.
+Context {T : Type} {leT : rel T}.
+Implicit Type s : seq T.
+
+Lemma merge0s s : merge leT [::] s = s. Proof. by elim: s. Qed.
+Lemma merges0 s : merge leT s [::] = s. Proof. by elim: s. Qed.
+
+Lemma merge_cons x y s s' : merge leT (x :: s) (y :: s') =
+  if leT x y then x :: merge leT s (y :: s') else y :: merge leT (x :: s) s'.
+Proof. by []. Qed.
+
+Lemma merge_eq0P s1 s2 : (merge leT s1 s2 = [::]) <-> (s1 = [::]) /\ (s2 = [::]).
+Proof.
+elim: s1 => [|x s1 IHs1]/= in s2 *; rewrite /= ?merge0s; first by split=> // -[].
+case: s2 => [|y s2]; first by split=> // -[].
+by rewrite merge_cons; case: ifP => //=; split=> // -[].
+Qed.
+
+End MergeProps.
