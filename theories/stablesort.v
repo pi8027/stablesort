@@ -504,27 +504,25 @@ Parametricity merge_Tr_pop.
 Parametricity merge_Tr_push.
 Parametricity Tr1rec.
 
-End CBN.
+(* End CBN. *)
 
 Import StableSort.
 Arguments nilp {_}.
 Local Notation niltr := (nilp \o flatten_trace).
 
-Local Notation branch := (@branch_trace _ _ _).
-Local Notation tr0 := (@leaf_trace _ _ _ [::] _).
+(* Local Notation branch := (@branch_trace _ _ _). *)
+(* Local Notation tr0 := (@leaf_trace _ _ _ [::] _). *)
 
-Eval lazy in 
-  @Tr1rec nat (trace leq) (seq (trace leq))
-    (fun x st => merge_Tr_push (@branch_trace nat leq true) (niltr) [tr] [tr<= x] st)
-    (merge_Tr_pop (@branch_trace nat leq true) niltr [tr])
-    [::]
-    [:: 5; 1; 2; 7; 0; 4; 3; 6].
+(* Eval lazy in *)
+(*   @Tr1rec nat (trace leq) (seq (trace leq)) *)
+(*     (fun x st => merge_Tr_push (@branch_trace nat leq true) (niltr) [tr] [tr<= x] st) *)
+(*     (merge_Tr_pop (@branch_trace nat leq true) niltr [tr]) *)
+(*     [::] *)
+(*     [:: 5; 1; 2; 7; 0; 4; 3; 6]. *)
 
-Import StableSort.
 Local Notation trace := (trace leT).
 Local Notation merge := (merge leT).
 Inductive box T := Box of T.
-Arguments nilp {_}.
 
 Let flatten_stack := foldr (fun x => cat^~ (@flatten_trace _ leT x)) nil.
 
