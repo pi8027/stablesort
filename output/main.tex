@@ -48,7 +48,40 @@
    [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{ocaml1.time.out}
+   \addplot table [x=Size, y={List.stable_sort}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sort1 (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2 (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3 (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1 (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2 (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3 (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN (TMC)}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {ocaml1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {ocaml1.time.csv};
+   \legend{
+   List.stable\_sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBN.sort1 (TMC), CBN.sort2 (TMC), CBN.sort3 (TMC), CBN.sortN (TMC),
+   CBNAcc.sort1 (TMC), CBNAcc.sort2 (TMC), CBNAcc.sort3 (TMC), CBNAcc.sortN (TMC),
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \begin{tikzpicture}
@@ -56,7 +89,40 @@
    [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{ocaml1.mem.out}
+   \addplot table [x=Size, y={List.stable_sort}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort1 (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2 (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3 (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1 (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2 (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3 (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN (TMC)}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {ocaml1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {ocaml1.mem.csv};
+   \legend{
+   List.stable\_sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBN.sort1 (TMC), CBN.sort2 (TMC), CBN.sort3 (TMC), CBN.sortN (TMC),
+   CBNAcc.sort1 (TMC), CBNAcc.sort2 (TMC), CBNAcc.sort3 (TMC), CBNAcc.sortN (TMC),
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{\textit{sort} xs} in OCaml, where \texttt{\textit{sort}} is \texttt{List.stable\_sort compare} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{int}.}
@@ -69,7 +135,40 @@
    [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{ocaml2.time.out}
+   \addplot table [x=Size, y={List.stable_sort}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sort1 (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2 (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3 (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1 (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2 (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3 (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN (TMC)}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {ocaml2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {ocaml2.time.csv};
+   \legend{
+   List.stable\_sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBN.sort1 (TMC), CBN.sort2 (TMC), CBN.sort3 (TMC), CBN.sortN (TMC),
+   CBNAcc.sort1 (TMC), CBNAcc.sort2 (TMC), CBNAcc.sort3 (TMC), CBNAcc.sortN (TMC),
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \begin{tikzpicture}
@@ -77,7 +176,40 @@
    [width=\textwidth, height=12.5cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{ocaml2.mem.out}
+   \addplot table [x=Size, y={List.stable_sort}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort1 (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2 (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3 (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1 (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2 (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3 (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN (TMC)}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {ocaml2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {ocaml2.mem.csv};
+   \legend{
+   List.stable\_sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBN.sort1 (TMC), CBN.sort2 (TMC), CBN.sort3 (TMC), CBN.sortN (TMC),
+   CBNAcc.sort1 (TMC), CBNAcc.sort2 (TMC), CBNAcc.sort3 (TMC), CBNAcc.sortN (TMC),
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{\textit{sort} xs} in OCaml, where \texttt{\textit{sort}} is \texttt{List.stable\_sort compare} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{int} but its every block of length 50 is sorted in ascending order.}
@@ -103,7 +235,30 @@
    [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{haskell1.time.out}
+   \addplot table [x=Size, y={Data.List.sort}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {haskell1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {haskell1.time.csv};
+   \legend{
+   Data.List.sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted (\textcolor{red}{take 1000} (\textit{sort} xs))} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int}.}
@@ -116,7 +271,30 @@
    [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{haskell2.time.out}
+   \addplot table [x=Size, y={Data.List.sort}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {haskell2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {haskell2.time.csv};
+   \legend{
+   Data.List.sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted (\textcolor{red}{take 1000} (\textit{sort} xs))} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int} but its every block of length 50 is sorted in ascending order.}
@@ -129,7 +307,30 @@
    [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{haskell3.time.out}
+   \addplot table [x=Size, y={Data.List.sort}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {haskell3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {haskell3.time.csv};
+   \legend{
+   Data.List.sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted (\textit{sort} xs)} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int}.}
@@ -142,7 +343,30 @@
    [width=\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{haskell4.time.out}
+   \addplot table [x=Size, y={Data.List.sort}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {haskell4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {haskell4.time.csv};
+   \legend{
+   Data.List.sort,
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted (\textit{sort} xs)} in Haskell, where \texttt{\textit{sort}} is \texttt{Data.List.sort} or an extracted sorting function applied to \texttt{(<=)}, and \texttt{xs} is a list of random natural numbers of type \texttt{Int} but its every block of length 50 is sorted in ascending order.}
@@ -167,7 +391,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{lazy1.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy1.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -175,7 +420,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{lazy1.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy1.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textcolor{red}{take 10} (\textit{sort} N.leb xs))} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
@@ -188,7 +454,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{lazy2.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy2.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -196,7 +483,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{lazy2.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy2.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textcolor{red}{take 10} (\textit{sort} N.leb xs))} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
@@ -209,7 +517,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{lazy3.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy3.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy3.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -217,7 +546,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{lazy3.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy3.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy3.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
@@ -230,7 +580,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{lazy4.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy4.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy4.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -238,7 +609,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{lazy4.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {lazy4.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {lazy4.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{lazy}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
@@ -251,7 +643,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{compute1.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {compute1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {compute1.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -259,7 +672,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{compute1.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {compute1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {compute1.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
@@ -272,7 +706,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{compute2.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {compute2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {compute2.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -280,7 +735,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{compute2.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {compute2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {compute2.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
@@ -293,7 +769,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{vm1.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {vm1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {vm1.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -301,7 +798,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{vm1.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {vm1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {vm1.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{vm\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
@@ -314,7 +832,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{vm2.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {vm2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {vm2.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -322,7 +861,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{vm2.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {vm2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {vm2.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{vm\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
@@ -335,7 +895,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{native1.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {native1.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {native1.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -343,7 +924,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{native1.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {native1.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {native1.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{native\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N}.}
@@ -356,7 +958,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=time (sec.)]
-   \input{native2.time.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {native2.time.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {native2.time.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}%
  \begin{tikzpicture}
@@ -364,7 +987,28 @@
    [width=.5\textwidth, height=12cm, line width=0.05mm,
     only marks, mark options={black, mark size=1.5},
     xlabel=size of input, ylabel=heap consumption (MB)]
-   \input{native2.mem.out}
+   \addplot table [x=Size, y={CBN.sort1}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort2}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBN.sort3}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBN.sortN}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort1}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort2}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sort3}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBNAcc.sortN}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort1}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort2}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBV.sort3}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBV.sortN}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort1}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort2}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sort3}, col sep=comma] {native2.mem.csv};
+   \addplot table [x=Size, y={CBVAcc.sortN}, col sep=comma] {native2.mem.csv};
+   \legend{
+   CBN.sort1, CBN.sort2, CBN.sort3, CBN.sortN,
+   CBNAcc.sort1, CBNAcc.sort2, CBNAcc.sort3, CBNAcc.sortN,
+   CBV.sort1, CBV.sort2, CBV.sort3, CBV.sortN,
+   CBVAcc.sort1, CBVAcc.sort2, CBVAcc.sort3, CBVAcc.sortN
+   }
   \end{axis}
  \end{tikzpicture}
  \caption{Benchmark result of \texttt{sorted N.leb (\textit{sort} N.leb xs)} with \texttt{native\_compute}, where \texttt{\textit{sort}} is a sorting function, and \texttt{xs} is a list of random natural numbers of type \texttt{N} but its every block of length 50 is sorted in ascending order.}
