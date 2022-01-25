@@ -35,16 +35,22 @@ Variables (T : Type) (P : {pred T}) (leT : rel T).
 (* naive algorithms such as insertion sort, since there is no such formal     *)
 (* "balanced" restriction.                                                    *)
 Inductive trace :=
-  | branch_trace   : bool -> trace -> trace -> trace
-  | leaf_trace b s : sorted (fun x y => leT x y == b) s -> trace.
+  | branch_trace : bool -> trace -> trace -> trace
+  | leaf_trace   : bool -> seq T -> trace.
 
-Definition empty_trace := @leaf_trace false [::] erefl.
+Definition empty_trace := @leaf_trace false [::].
+
+Fixpoint valid_trace (t : trace) : bool :=
+  match t with
+    | branch_trace _ l r => valid_trace l && valid_trace r
+    | leaf_trace b s => sorted (fun x y => leT x y == b) s
+  end.
 
 (* By flattening a trace, the input list can be obtained.                     *)
 Fixpoint flatten_trace (t : trace) : seq T :=
   match t with
     | branch_trace _ l r => flatten_trace l ++ flatten_trace r
-    | leaf_trace _ s _ => s
+    | leaf_trace _ s => s
   end.
 
 (* By sorting a trace, the output list can be obtained.                       *)
@@ -53,8 +59,8 @@ Fixpoint sort_trace (t : trace) : seq T :=
     | branch_trace true  l r => merge leT (sort_trace l) (sort_trace r)
     | branch_trace false l r =>
       rev (merge (fun x y => leT y x) (rev (sort_trace r)) (rev (sort_trace l)))
-    | leaf_trace true  s _ => s
-    | leaf_trace false s _ => rev s
+    | leaf_trace true  s => s
+    | leaf_trace false s => rev s
   end.
 
 Lemma all_trace (t : trace) : all P (sort_trace t) = all P (flatten_trace t).
@@ -88,15 +94,16 @@ case: nilP (trace_nilp t); case: nilP => //; last by constructor.
 by move=> /[dup] ? -> /[dup] ? ->; constructor.
 Qed.
 
-Definition trace_sort sort := forall s,
-   {t : trace | s = flatten_trace t & sort s = sort_trace t}.
+Variant trace_sort sort s := TraceSort :
+  forall t, valid_trace t -> s = flatten_trace t -> sort s = sort_trace t ->
+            trace_sort sort s.
 
 End Traces.
 
-Lemma perm_trace (T : eqType) (leT : rel T) (t : trace leT) :
-  perm_eql (sort_trace t) (flatten_trace t).
+Lemma perm_trace (T : eqType) (leT : rel T) (t : trace T) :
+  perm_eql (sort_trace leT t) (flatten_trace t).
 Proof.
-apply/permPl; elim: t => [b l IHl r IHr|[] s _] //=; rewrite ?perm_rev //.
+apply/permPl; elim: t => [b l IHl r IHr|[] s] //=; rewrite ?perm_rev //.
 by case: b; rewrite /= ?perm_rev perm_merge -?rev_cat ?perm_rev perm_cat.
 Qed.
 
@@ -115,14 +122,16 @@ Structure function := Pack {
   (*       list_R T_R xs ys -> list_R T_R (apply leT1 xs) (apply leT2 ys);    *)
   _ : sort_ty_R apply apply;
   (* Characterization by traces *)
-  _ : forall (T : Type) (leT : rel T), trace_sort leT (apply leT);
+  _ : forall (T : Type) (leT : rel T) (s : seq T), trace_sort leT (apply leT) s;
 }.
 
 Module Exports.
-Arguments leaf_trace {T leT} b s _.
-Arguments empty_trace {T leT}.
-Arguments flatten_trace {T leT} t.
-Arguments sort_trace {T leT} t.
+Arguments leaf_trace {T} b s.
+Arguments empty_trace {T}.
+Arguments flatten_trace {T} t.
+Arguments sort_trace {T} leT t.
+Notation trace_sort := trace_sort.
+Notation TraceSort := TraceSort.
 Arguments Pack apply _ _ : clear implicits.
 Notation stableSort := function.
 Notation StableSort := Pack.
@@ -133,9 +142,9 @@ End StableSort.
 Export StableSort.Exports.
 
 Notation "[ tr]" := StableSort.empty_trace.
-Notation "[ 'tr<=' ]" := (StableSort.leaf_trace true [::] erefl)
+Notation "[ 'tr<=' ]" := (StableSort.leaf_trace true [::])
   (format "[ 'tr<=' ]").
-Notation "[ 'tr<=' x ]" := (StableSort.leaf_trace true [:: x] erefl)
+Notation "[ 'tr<=' x ]" := (StableSort.leaf_trace true [:: x])
   (format "[ 'tr<='  x ]").
 
 Lemma trace2_subproof T (leT : rel T) (x y : T) :
@@ -341,10 +350,12 @@ Definition sort := foldr (fun x => merge leT [:: x]) [::].
 
 Import StableSort.
 
-Lemma sortP : trace_sort leT sort.
+Lemma sortP s : trace_sort leT sort s.
 Proof.
-elim=> [|x _ [t -> /= ->]]; first by exists empty_trace.
-by exists (branch_trace true (leaf_trace true [:: x] erefl) t).
+elim: s => [|x ? [t t_valid -> /= t_sortE]].
+  exact: TraceSort empty_trace _ _ _.
+apply: TraceSort (branch_trace true (leaf_trace true [:: x]) t) _ _ _ => //=.
+by rewrite t_sortE.
 Qed.
 
 End Insertion.
@@ -475,50 +486,65 @@ End abstract_push_pop.
 
 Section abstract_Trrec.
 
-Context (Tr : Type) (St : Type) (push1 : T -> St -> St) (push2 : T -> T -> St -> St)
-   (push3 : T -> T -> T -> St -> St).
-Context (pop0 : St -> Tr) (pop1 : T -> St -> Tr) (pop2 : T -> T -> St -> Tr).
+Context (Tr : Type) (St : Type).
+Context (branch_Tr : bool -> Tr -> Tr -> Tr) (leaf_Tr : bool -> seq T -> Tr).
+Context (push : Tr -> St -> St) (pop : Tr -> St -> Tr).
 
 Fixpoint Tr1rec (stack : St) (s : seq T) : Tr :=
-  if s is x :: s then Tr1rec (push1 x stack) s else pop0 stack.
+  if s is x :: s then
+    Tr1rec (push (leaf_Tr true [:: x]) stack) s
+  else
+    pop (leaf_Tr true [::]) stack.
 
-Fixpoint Tr2rec (stack : St) (s : seq T) : Tr :=  match s with
-  | [:: x1, x2 & s'] => Tr2rec (push2 x1 x2 stack) s'
-  | [:: x] => pop1 x stack
-  | [::] => pop0 stack
-  end.
+Fixpoint Tr2rec (stack : St) (s : seq T) : Tr :=
+  if s is [:: x1, x2 & s'] then
+    let t1 := leaf_Tr (leT x1 x2) [:: x1; x2] in Tr2rec (push t1 stack) s'
+  else pop (leaf_Tr true s) stack.
 
 Fixpoint Tr3rec (stack : St) (s : seq T) : Tr :=
   match s with
-  | [:: x1, x2, x3 & s'] => Tr3rec (push3 x1 x2 x3 stack) s'
-  | [:: x1; x2] => pop2 x1 x2 stack
-  | [:: x] => pop1 x stack
-  | [::] => pop0 stack
+    | [:: x1, x2, x3 & s'] =>
+      let t1 := branch_Tr false (leaf_Tr (leT x1 x2) [:: x1; x2])
+                          (leaf_Tr true [:: x3]) in
+      Tr3rec (push t1 stack) s'
+    | [:: x1; x2] =>
+      let t1 := leaf_Tr (leT x1 x2) [:: x1; x2] in pop t1 stack
+    | _ => pop (leaf_Tr true s) stack
   end.
+
 End abstract_Trrec.
 
 Realizer T as T_R := (@eq T).
+
+Lemma leT_R' (x1 x2 : T) (R1 : T_R x1 x2) (y1 y2 : T) (R2 : T_R y1 y2) :
+  bool_R (leT x1 y1) (leT x2 y2).
+Proof. by apply: bool_R_refl; congr leT. Qed.
+
+Realizer leT as leT_R := leT_R'.
+
 Parametricity pop.
 Parametricity push.
 Parametricity Tr1rec.
+Fail Parametricity Tr2rec.
+Fail Parametricity Tr3rec.
 
 (* End CBN. *)
 
 Import StableSort.
 Arguments nilp {_}.
 Local Notation niltr := (nilp \o flatten_trace).
-Local Notation trace := (trace leT).
+Local Notation trace := (trace T).
 Local Notation merge := (merge leT).
 Implicit Type s : seq T.
 
 (* The relations *)
 Definition Rflatst : seq trace -> _ -> Prop := eq \o map flatten_trace.
 Arguments Rflatst st ss /.
-Definition Rsortst : seq trace -> _ -> Prop := eq \o map sort_trace.
+Definition Rsortst : seq trace -> _ -> Prop := eq \o map (sort_trace leT).
 Arguments Rsortst st ss /.
 Definition Rflat : trace -> _ -> Prop := eq \o flatten_trace.
 Arguments Rflat t s /.
-Definition Rsort : trace -> _ -> Prop := eq \o sort_trace.
+Definition Rsort : trace -> _ -> Prop := eq \o sort_trace leT.
 Arguments Rsort t s /.
 
 (* basic relations between branch_trace and cat/merge *)
@@ -530,7 +556,7 @@ Let Rmerge t1 s1 (e1 : Rsort t1 s1) t2 s2 (e2 : Rsort t2 s2) :
 (* basic relations betwee niltr and nilp *)
 Let Rflatnilp t s (e : Rflat t s) := bool_R_refl (congr1 nilp e).
 Let Rsortnilp t s (e : Rsort t s) :=
-  bool_R_refl (etrans (esym (trace_nilp _)) (congr1 nilp e)).
+  bool_R_refl (etrans (esym (trace_nilp _ _)) (congr1 nilp e)).
 
 (* pop and push general properties *)
 Let sort_pop t st (m := pop_R Rmerge) := m t _ erefl st _ (map_rel_map _ _).
@@ -558,45 +584,74 @@ by case: nilP => [->|_] //=; rewrite IHss catA.
 Qed.
 
 (* about push1 and pop0 *)
-(* TODO generalze to pop and push with arbitrary arguments *)
-(* requires to separate the trace into a pretrace (without proof) *)
-(* and a trace as a sigma type of pretrace and a wf predicate *)
 
-Let bpush1 x : _ -> seq trace := push (branch_trace true) niltr [tr] [tr<= x].
-Let mpush1 (x : T) ss := push merge nilp [::] [:: x] ss.
-Let cpush1 (x : T) ss := push cat nilp [::] [:: x] ss.
-Let bpop0 (st : seq trace) := pop (branch_trace true) [tr] st.
-Let mpop0 (ss : seq (seq T)) := pop merge [::] ss.
-Let cpop0 (ss : seq (seq T)) := pop cat [::] ss.
+Let mleaf (b : bool) (s : seq T) := if b then s else rev s.
+Let cleaf (b : bool) (s : seq T) := s.
+Let bpush : trace -> seq trace -> seq trace :=
+  push (branch_trace true) niltr [tr].
+Let mpush : seq T -> seq (seq T) -> seq (seq T) := push merge nilp [::].
+Let cpush : seq T -> seq (seq T) -> seq (seq T) := push cat nilp [::].
+Let bpop : trace -> seq trace -> trace := pop (branch_trace true).
+Let mpop : seq T -> seq (seq T) -> seq T := pop merge.
+Let cpop : seq T -> seq (seq T) -> seq T := pop cat.
 
-Parametricity Translation (fun St => T -> St -> St) as push1_tyR.
-Parametricity Translation (fun Tr St => St -> Tr) as pop0_tyR.
+Parametricity Translation (fun Tr => bool -> seq T -> Tr) as leaf_tyR.
+Parametricity Translation (fun Tr St => Tr -> St -> St) as push_tyR.
+Parametricity Translation (fun Tr St => Tr -> St -> Tr) as pop_tyR.
 
-Let cpush1R : push1_tyR Rflatst bpush1 cpush1.
-Proof. by move=> x _ <- st _ <- /=; rewrite -flatten_push. Qed.
-Let mpush1R : push1_tyR Rsortst bpush1 mpush1.
-Proof. by move=> x _ <- st _ <- /=; rewrite -sort_push. Qed.
-
-Let cpop0R : pop0_tyR Rflat Rflatst bpop0 cpop0.
-Proof. by move=> st _ <- /=; rewrite flatten_pop. Qed.
-Let mpop0R : pop0_tyR Rsort Rsortst bpop0 mpop0.
-Proof. by move=> st _ <- /=; rewrite sort_pop. Qed.
-
-(* Correctness of sort1 *)
-Lemma Tr1c s acc : Tr1rec cpush1 cpop0 acc s = pop cat s acc.
-Proof. by elim: s acc => //= x s IHs acc; rewrite IHs//= pop_push_cat. Qed.
-
-Lemma Tr1m s acc : Tr1rec mpush1 mpop0 acc s = sort1rec acc s.
+Lemma bpush_valid tr st : valid_trace leT tr -> all (valid_trace leT) st ->
+  all (valid_trace leT) (bpush tr st).
 Proof.
-elim: s acc => /= [|x s IHs] acc; first by rewrite -merge_pop.
-by rewrite IHs//= /mpush1 merge_push.
+elim: st tr => /= [_ ->|tr2 st IHst tr1 Htr1 /andP[Htr2 Hst]] //=.
+by case: ifP; rewrite /= ?IHst /= ?Htr2 ?Htr1.
 Qed.
 
-Lemma sort1P : trace_sort leT sort1.
+Lemma bpop_valid tr st : valid_trace leT tr -> all (valid_trace leT) st ->
+  valid_trace leT (bpop tr st).
 Proof.
-move=> s; exists (Tr1rec bpush1 bpop0 [::] s).
-  by rewrite (Tr1rec_R cpush1R cpop0R erefl (map_rel_map _ _)) Tr1c/= map_id.
-by rewrite (Tr1rec_R mpush1R mpop0R erefl (map_rel_map _ _)) Tr1m/= map_id.
+elim: st tr => //= tr2 st IHst tr1 IHtr1 /andP[Htr2 Hst].
+exact/IHst/Hst/andP.
+Qed.
+
+Let cleafR : leaf_tyR Rflat leaf_trace cleaf.
+Proof. by move=> b _ /refl_bool_R <- ? ? /rel_map_map ->; rewrite map_id. Qed.
+Let mleafR : leaf_tyR Rsort leaf_trace mleaf.
+Proof. by move=> b _ /refl_bool_R <- ? ? /rel_map_map ->; rewrite map_id. Qed.
+Let cpushR : push_tyR Rflat Rflatst bpush cpush.
+Proof. by move=> x _ <- st _ <- /=; rewrite -flatten_push. Qed.
+Let mpushR : push_tyR Rsort Rsortst bpush mpush.
+Proof. by move=> x _ <- st _ <- /=; rewrite -sort_push. Qed.
+Let cpopR : pop_tyR Rflat Rflatst bpop cpop.
+Proof. by move=> tr _ <- st _ <- /=; rewrite flatten_pop. Qed.
+Let mpopR : pop_tyR Rsort Rsortst bpop mpop.
+Proof. by move=> tr _ <- st _ <- /=; rewrite sort_pop. Qed.
+
+(* Correctness of sort1 *)
+
+Lemma Tr1_valid s acc : all (valid_trace leT) acc ->
+  valid_trace leT (Tr1rec leaf_trace bpush bpop acc s).
+Proof.
+elim: s acc => [|x s IHs] acc /=; first exact/bpop_valid.
+by move=> Hacc; apply/IHs/bpush_valid.
+Qed.
+
+Lemma Tr1c s acc : Tr1rec cleaf cpush cpop acc s = pop cat s acc.
+Proof. by elim: s acc => //= x s IHs acc; rewrite IHs//= pop_push_cat. Qed.
+
+Lemma Tr1m s acc : Tr1rec mleaf mpush mpop acc s = sort1rec acc s.
+Proof.
+elim: s acc => /= [|x s IHs] acc; first by rewrite -merge_pop.
+by rewrite IHs//= /mpush merge_push.
+Qed.
+
+Lemma sort1P s : trace_sort leT sort1 s.
+Proof.
+apply: TraceSort (Tr1rec leaf_trace bpush bpop [::] s) _ _ _.
+- exact: Tr1_valid.
+- rewrite (Tr1rec_R cleafR cpushR cpopR erefl (map_rel_map _ _)).
+  by rewrite Tr1c /= map_id.
+- rewrite (Tr1rec_R mleafR mpushR mpopR erefl (map_rel_map _ _)).
+  by rewrite Tr1m/= map_id.
 Qed.
 
 (* I stopped here *)

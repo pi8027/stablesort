@@ -28,6 +28,9 @@ Parametricity BinNums.N.
 Lemma bool_R_refl b1 b2 : b1 = b2 -> bool_R b1 b2.
 Proof. by case: b1 => <-; constructor. Qed.
 
+Lemma refl_bool_R b1 b2 : bool_R b1 b2 -> b1 = b2.
+Proof. by case. Qed.
+
 Lemma map_rel_map A B (f : A -> B) (l : seq A) :
   list_R (fun x y => f x = y) l (map f l).
 Proof. by elim: l; constructor. Qed.
