@@ -553,12 +553,8 @@ Proof. by elim: ss s => //= -[|x s] ss + s' => ->; rewrite ?M.mergeE. Qed.
 Lemma pop_push_cat s s' acc :
    pop cat s (push cat nilp [::] s' acc) = pop cat (s' ++ s) acc.
 Proof.
-pose simp := (rev_cons, flatten_rcons, rev_cat, cats0, catA).
-have cat_pop : forall ss (s : seq T), pop cat s ss = flatten (rev ss) ++ s.
-  by elim=> [|? ? +] ? /= => [|->]; rewrite ?simp.
-rewrite !cat_pop !simp; congr (_ ++ _).
-elim: acc s' => [|s'' ss IHss] s'; rewrite ?simp//=.
-by case: nilP=> [->|_]//=; rewrite ?(IHss, simp).
+elim: acc s' => //= s'' ss IHss s'.
+by case: nilP => [->|_] //=; rewrite IHss catA.
 Qed.
 
 (* about push1 and pop0 *)
@@ -592,7 +588,7 @@ Proof. by elim: s acc => //= x s IHs acc; rewrite IHs//= pop_push_cat. Qed.
 
 Lemma Tr1m s acc : Tr1rec mpush1 mpop0 acc s = sort1rec acc s.
 Proof.
-elim: s acc => /= [|x s IHs] acc//=; first by rewrite /mpop0 merge_pop.
+elim: s acc => /= [|x s IHs] acc; first by rewrite -merge_pop.
 by rewrite IHs//= /mpush1 merge_push.
 Qed.
 
