@@ -1000,11 +1000,11 @@ move=> leT_total leT_tr p s; case Ds: s => [|x s1]; first by rewrite sort_nil.
 pose lt := lexord (relpre (nth x s) leT) ltn.
 have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
 rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
-- by move=> ?; rewrite /= ltnn implybF andbN.
+have lt_irr : irreflexive lt by move=> ?; rewrite /= ltnn implybF andbN.
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=; last 1 first.
+- by move=> ?; rewrite !(mem_filter, mem_sort).
 - exact/sorted_filter/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/sorted_filter/iota_ltn_sorted/ltn_trans/ltn_trans.
-- by move=> ?; rewrite !(mem_filter, mem_sort).
 Qed.
 
 Lemma filter_sort_in (T : Type) (P : {pred T}) (leT : rel T) :
