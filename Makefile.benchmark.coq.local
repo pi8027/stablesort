@@ -1,3 +1,12 @@
+# Workaround for the issue that building the benchmark programs require two
+# versions of OCaml.
+OCAML_OPAMSWITCH?=
+ifeq (,$(OCAML_OPAMSWITCH))
+OCAMLBUILD?= ocamlbuild
+else
+OCAMLBUILD?= opam exec --switch $(OCAML_OPAMSWITCH) -- ocamlbuild
+endif
+
 HSDIR := benchmark/haskell
 MLDIR := benchmark/ocaml
 
@@ -32,11 +41,11 @@ $(HSDIR)/BenchmarkExp: $(HSDIR)/BenchmarkExp.hs $(HSDIR)/Benchlib.hs \
 
 $(MLDIR)/benchmark.native: $(MLDIR)/benchmark.ml $(MLDIR)/benchlib.ml \
                            $(EXTRACTED_ML_FILES) $(EXTRACTED_ML_FILES:.ml=.mli)
-	cd $(MLDIR) && ocamlbuild benchmark.native $(ML_FLAGS)
+	cd $(MLDIR) && $(OCAMLBUILD) benchmark.native $(ML_FLAGS)
 
 $(MLDIR)/benchmark_exp.native: $(MLDIR)/benchmark_exp.ml $(MLDIR)/benchlib.ml \
                                $(EXTRACTED_ML_FILES) $(EXTRACTED_ML_FILES:.ml=.mli)
-	cd $(MLDIR) && ocamlbuild benchmark_exp.native $(ML_FLAGS)
+	cd $(MLDIR) && $(OCAMLBUILD) benchmark_exp.native $(ML_FLAGS)
 
 $(HSDIR)/MergesortCoqCbn.hs $(MLDIR)/mergesort_coq_cbn.ml: \
     benchmark/extraction_cbn.vo
