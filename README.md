@@ -45,7 +45,7 @@ by providing a lemma corresponding to the binary tree construction.
 - Compatible Coq versions: 8.10 or later
 - Additional dependencies:
   - [MathComp](https://math-comp.github.io) 1.12.0 or later
-  - [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.2 or later
+  - [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.3 or later
 - Coq namespace: `stablesort`
 - Related publication(s): none
 
