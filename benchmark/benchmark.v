@@ -86,9 +86,9 @@ time-median N P Time Words :- !, time-median-rec N P [] [] Time Words.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 pred benchmark-case
-  i:string, i:(term -> term -> term -> prop),
-  i:list (pair string term), i:term, i:int, o:list string, o:list string.
-benchmark-case RedStr Red Config Preproc Size TS MS :- std.do! [
+  i:string, i:(term -> term -> term -> prop), i:int, i:list (pair string term),
+  i:term, i:term, i:int, o:list string, o:list string.
+benchmark-case RedStr Red MedianOf Config Preproc SizeC Size TS MS :- std.do! [
   coq.env.begin-section "Sec",
   coq.reduction.vm.norm
     (app [Preproc, {random-N-list Size Size}]) {{ list N }} Input,
@@ -98,16 +98,18 @@ benchmark-case RedStr Red Config Preproc Size TS MS :- std.do! [
       Red (global (const C)) _ _)
      (@local! => coq.env.add-const "input" Input {{ list N }} @transparent! C),
   std.map Config
-    (c\ r\ sigma Name Func Comp CompTy Time Words Mem TStr MStr\ std.do! [
-      c = pr Name Func,
-      Comp = {{ lp:Func lp:{{ global (const C) }} }},
-      std.assert-ok! (coq.typecheck Comp CompTy) "bad term",
-      time-median 5 (Red Comp CompTy _) Time Words,
-      std.any->string Time TStr,
-      Mem is Words / (128.0 * 1024.0), % memory consumption in MBs
-      std.any->string Mem MStr,
-      r is triple Name TStr MStr
-    ]) RS,
+    (c\ r\ sigma Name Func Comp SimplComp CompTy Time Words Mem TStr MStr\
+      std.do! [
+        c = pr Name Func,
+        Comp = {{ lp:Func lp:SizeC lp:{{ global (const C) }} }},
+        std.assert-ok! (coq.typecheck Comp CompTy) "bad term",
+        hd-beta-zeta-reduce Comp SimplComp,
+        time-median MedianOf (Red SimplComp CompTy _) Time Words,
+        std.any->string Time TStr,
+        Mem is Words / (128.0 * 1024.0), % memory consumption in MBs
+        std.any->string Mem MStr,
+        r is triple Name TStr MStr
+      ]) RS,
   std.any->string Size SizeStr,
   Str is RedStr ^ ", size: " ^ SizeStr ^ "; " ^
          {std.string.concat "; "
@@ -115,38 +117,31 @@ benchmark-case RedStr Red Config Preproc Size TS MS :- std.do! [
                r = triple Name TStr MStr,
                s is Name ^ ": " ^ TStr ^ "s, " ^ MStr ^ "MB")} },
   coq.say Str,
-  std.map RS (r\ s\ sigma Name TStr MStr\
-    r = triple Name TStr MStr,
-    s is "(" ^ SizeStr ^ ", " ^ TStr ^ ")"
-  ) TS,
-  std.map RS (r\ s\ sigma Name TStr MStr\
-    r = triple Name TStr MStr,
-    s is "(" ^ SizeStr ^ ", " ^ MStr ^ ")"
-  ) MS,
+  std.map RS (r\ s\ r = triple _ s _) TS,
+  std.map RS (r\ s\ r = triple _ _ s) MS,
   coq.env.end-section
 ].
 
 pred benchmark
-  i:string, i:(term -> term -> term -> prop), i:list (pair string term),
+  i:string, i:(term -> term -> term -> prop), i:int, i:list (pair string term),
   i:term, i:term, o:list (list string), o:list (list string).
-benchmark RedStr Red Config Preproc Size TSS MSS :- !,
-  benchmark_aux RedStr Red Config Preproc
+benchmark RedStr Red MedianOf Config Preproc Size TSS MSS :- !,
+  benchmark_aux RedStr Red MedianOf Config Preproc
                 {coq.reduction.lazy.whd_all Size} TSS MSS.
 
 pred benchmark_aux
-  i:string, i:(term -> term -> term -> prop), i:list (pair string term),
+  i:string, i:(term -> term -> term -> prop), i:int, i:list (pair string term),
   i:term, i:term, o:list (list string), o:list (list string).
-benchmark_aux _ _ Config _ {{ @nil _ }} SS SS :- !,
-  std.map Config (_\ r\ r = []) SS.
-benchmark_aux RedStr Red Config Preproc
-              {{ @cons _ lp:SizeH lp:Size }} TSS' MSS' :- std.do! [
-  n-constant SizeH' {coq.reduction.cbv.norm SizeH},
-  benchmark-case RedStr Red Config Preproc SizeH' TS MS,
-  benchmark RedStr Red Config Preproc Size TSS MSS,
-  std.map2 TS TSS (t\ ts\ ts'\ ts' = [t|ts]) TSS',
-  std.map2 MS MSS (m\ ms\ ms'\ ms' = [m|ms]) MSS'
+benchmark_aux _ _ _ _ _ {{ @nil _ }} [] [] :- !.
+benchmark_aux RedStr Red MedianOf Config Preproc {{ @cons _ lp:SizeH lp:Size }}
+              [[SizeHStr|TS]|TSS] [[SizeHStr|MS]|MSS] :- std.do! [
+  coq.reduction.cbv.norm SizeH SizeH',
+  n-constant SizeH'' SizeH',
+  std.any->string SizeH'' SizeHStr,
+  benchmark-case RedStr Red MedianOf Config Preproc SizeH' SizeH'' TS MS,
+  benchmark RedStr Red MedianOf Config Preproc Size TSS MSS
 ].
-benchmark_aux _ _ _ _ _ _ _ :-
+benchmark_aux _ _ _ _ _ _ _ _ :-
   coq.error "benchmark_aux: the head symbol of Size is not a constructor".
 
 pred get-reduction-machine i:string, o:(term -> term -> term -> prop).
@@ -155,8 +150,10 @@ get-reduction-machine "lazy" Red :- !,
 get-reduction-machine "compute"  Red :- !,
   Red = t\ _\ tred\ coq.reduction.cbv.norm t tred.
 get-reduction-machine "vm_compute" coq.reduction.vm.norm :- !.
-get-reduction-machine "native_compute" coq.reduction.native.norm :- !,
-  coq.reduction.native.available?.
+get-reduction-machine "native_compute" coq.reduction.native.norm :-
+  coq.reduction.native.available?, !.
+get-reduction-machine M _ :-
+  coq.error "Reduction machine" M "is not available".
 
 pred parse-config i:list argument, o: list (pair string term).
 parse-config [] [] :- !.
@@ -164,41 +161,45 @@ parse-config [str Name, trm Func | ConfList] [pr Name Func | Conf] :- !,
   parse-config ConfList Conf.
 parse-config _ _ :- coq.error "ill-formed arguments".
 
-main [str FileName, str RedStr, trm Size, trm Preproc | ConfList] :- std.do! [
+main [str FileName, str RedStr, int MedianOf, trm Size, trm Preproc |
+      ConfList] :- std.do! [
   std.assert-ok! (coq.typecheck Size {{ seq N }}) "bad term",
   std.assert-ok! (coq.typecheck Preproc {{ seq N -> seq N }}) "bad term",
   parse-config ConfList Config,
-  % enlarge the minor heap to 4GB
+  % enlarge the minor heap to 16GB
   gc.get Minor _ _ _ _ _ _ _,
-  gc.set {calc (512 * 1024 * 1024)} _ _ _ _ _ _ _,
+  gc.set {calc (2 * 1024 * 1024 * 1024)} _ _ _ _ _ _ _,
   % benchmark
-  benchmark RedStr {get-reduction-machine RedStr} Config Preproc Size TSS MSS,
+  benchmark RedStr {get-reduction-machine RedStr} MedianOf Config Preproc Size
+            TSS MSS,
   % restore the initial size of the minor heap
   gc.set Minor _ _ _ _ _ _ _,
   % pgfplot
-  open_out {calc (FileName ^ ".time.out")} TStream,
-  output TStream "% time consumption\n",
-  std.forall TSS (ts\ sigma Str\
-    output TStream "\\addplot coordinates {",
-    std.string.concat " " ts Str,
-    output TStream Str,
-    output TStream "};\n"),
-  output TStream "\\legend{",
-  output TStream
-    {std.string.concat ", " {std.map Config (c\ n\ sigma T\ c = pr n T)} },
-  output TStream "}\n",
+  open_out {calc (FileName ^ ".time.csv")} TStream,
+  output TStream "Size",
+  std.forall Config (conf\ sigma Name\
+    conf = pr Name _,
+    output TStream ", ",
+    output TStream Name),
+  output TStream "\n",
+  std.forall TSS (ts\ sigma T TS\
+    ts = [T|TS],
+    output TStream T,
+    std.forall TS (t\ output TStream ", ", output TStream t),
+    output TStream "\n"),
   close_out TStream,
-  open_out {calc (FileName ^ ".mem.out")} MStream,
-  output MStream "% memory consumption\n",
-  std.forall MSS (ms\ sigma Str\
-    output MStream "\\addplot coordinates {",
-    std.string.concat " " ms Str,
-    output MStream Str,
-    output MStream "};\n"),
-  output MStream "\\legend{",
-  output MStream
-    {std.string.concat ", " {std.map Config (c\ n\ sigma T\ c = pr n T)} },
-  output MStream "}\n",
+  open_out {calc (FileName ^ ".mem.csv")} MStream,
+  output MStream "Size",
+  std.forall Config (conf\ sigma Name\
+    conf = pr Name _,
+    output MStream ", ",
+    output MStream Name),
+  output MStream "\n",
+  std.forall MSS (ms\ sigma M MS\
+    ms = [M|MS],
+    output MStream M,
+    std.forall MS (m\ output MStream ", ", output MStream m),
+    output MStream "\n"),
   close_out MStream
 ].
 main _ :- !, coq.error "ill-formed arguments".
@@ -209,13 +210,11 @@ Elpi Typecheck.
 Definition N_iota (n m : N) : seq N :=
   N.iter m (fun f n => n :: f (N.succ n)) (fun => [::]) n.
 
-Definition lazy_bench
-  (sort : forall T : Type, rel T -> seq T -> seq T) (xs : seq N) :=
-  sorted N.leb (take 10 (sort _ N.leb xs)).
+Notation lazy_bench sort :=
+  (fun n xs => sorted N.leb (take 10 (sort _ N.leb xs))).
 
-Definition eager_bench
-  (sort : forall T : Type, rel T -> seq T -> seq T) (xs : seq N) :=
-  sorted N.leb (sort _ N.leb xs).
+Notation eager_bench sort :=
+  (fun n xs => sorted N.leb (sort _ N.leb xs)).
 
 Fixpoint sort_blocks (T : Type) (leT : rel T) (n : nat) (xs : seq T) :=
   if xs is x :: xs' then

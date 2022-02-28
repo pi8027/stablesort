@@ -5,7 +5,7 @@ From benchmark Require Import benchmark.
 
 Elpi sort_benchmark
   "native1" "native_compute"
-  (map (N.mul 1000) (N_iota 1 40)) (id)
+  5 (map (N.mul 1000) (N_iota 1 40)) (id)
   "CBN.sort1"    (eager_bench CBN.sort1)
   "CBN.sort2"    (eager_bench CBN.sort2)
   "CBN.sort3"    (eager_bench CBN.sort3)

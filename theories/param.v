@@ -1,5 +1,5 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
-Declare ML Module "paramcoq".
+From Param Require Export Param.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
