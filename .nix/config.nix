@@ -31,13 +31,13 @@
 
   ## select an entry to build in the following `bundles` set
   ## defaults to "default"
-  default-bundle = "default";
+  default-bundle = "8.14";
 
   ## write one `bundles.name` attribute set per
   ## alternative configuration
   ## When generating GitHub Action CI, one workflow file
   ## will be created per bundle
-  bundles.default = {
+  bundles."8.14" = {
 
     ## You can override Coq and other Coq coqPackages
     ## through the following attribute
