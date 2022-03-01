@@ -42,9 +42,9 @@ by providing a lemma corresponding to the binary tree construction.
 - Author(s):
   - Kazuhiko Sakaguchi (initial)
 - License: [CeCILL-B Free Software License Agreement](CeCILL-B)
-- Compatible Coq versions: 8.10 or later
+- Compatible Coq versions: 8.11 or later
 - Additional dependencies:
-  - [MathComp](https://math-comp.github.io) 1.12.0 or later
+  - [MathComp](https://math-comp.github.io) 1.13.0 or later
   - [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.3 or later
 - Coq namespace: `stablesort`
 - Related publication(s): none

@@ -6,12 +6,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-(* COMPATIBILITY HACK: [mathcomp_ext] has to be imported *before* MathComp    *)
-(* libraries since [pairwise] has to be imported from MathComp if available.  *)
-(* However, [eq_sorted] has to be imported from [mathcomp_ext] to override a  *)
-(* deprecation alias in MathComp; hence, we declare the following notation.   *)
-Local Notation eq_sorted := mathcomp_ext.eq_sorted (only parsing).
-
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
 (******************************************************************************)
