@@ -38,7 +38,7 @@ authors:
 - name: Kazuhiko Sakaguchi
   initial: true
 
-opam-file-maintainer: sakaguchi@coins.tsukuba.ac.jp
+opam-file-maintainer: kazuhiko.sakaguchi@inria.fr
 
 license:
   fullname: CeCILL-B Free Software License Agreement
@@ -80,7 +80,15 @@ tested_coq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '1.15.0-coq-8.16'
   repo: 'mathcomp/mathcomp'
-- version: '1.15.0-coq-dev'
+- version: '1.16.0-coq-8.13'
+  repo: 'mathcomp/mathcomp'
+- version: '1.16.0-coq-8.14'
+  repo: 'mathcomp/mathcomp'
+- version: '1.16.0-coq-8.15'
+  repo: 'mathcomp/mathcomp'
+- version: '1.16.0-coq-8.16'
+  repo: 'mathcomp/mathcomp'
+- version: '1.16.0-coq-8.17'
   repo: 'mathcomp/mathcomp'
 - version: 'coq-8.13'
   repo: 'mathcomp/mathcomp-dev'
@@ -89,6 +97,8 @@ tested_coq_opam_versions:
 - version: 'coq-8.15'
   repo: 'mathcomp/mathcomp-dev'
 - version: 'coq-8.16'
+  repo: 'mathcomp/mathcomp-dev'
+- version: 'coq-8.17'
   repo: 'mathcomp/mathcomp-dev'
 - version: 'coq-dev'
   repo: 'mathcomp/mathcomp-dev'
