@@ -714,7 +714,7 @@ move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
 - rewrite !M.revmergeE ifnilE trace_nilp; have [->|_] := nilP.
     by exists [:: t].
   by exists [:: empty_trace; branch_trace true t' t]; rewrite //= cats0.
-- rewrite !M.revmergeE !ifnilE nilp_rev !trace_nilp; have [->|_] := nilP.
+- rewrite !M.revmergeE !ifnilE rev_nilp !trace_nilp; have [->|_] := nilP.
     by exists [:: t, t'' & stack]; rewrite ?cats0.
   rewrite -!catA; have [->|_] := nilP.
     exists [:: empty_trace, branch_trace true t' t & stack] => //.
@@ -725,7 +725,7 @@ move: t stack; fix IHstack 2; move=> t [|t' [|t'' stack]] /=.
 Qed.
 
 Let nilp_condrev (r : bool) (s : seq T) : nilp (condrev r s) = nilp s.
-Proof. by case: r; rewrite ?nilp_rev. Qed.
+Proof. by case: r; rewrite ?rev_nilp. Qed.
 
 Lemma merge_sort_popP (mode : bool) (t : trace leT) (stack : seq (trace leT)) :
   {t' : trace leT |

@@ -4,9 +4,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Lemma nilp_rev (T : Type) (s : seq T) : nilp (rev s) = nilp s.
-Proof. by move: s (rev s) (size_rev s) => [|? ?] []. Qed.
-
 Lemma ifnilE (T A : Type) (s : seq T) (a b : A) :
   (if s is [::] then a else b) = if nilp s then a else b.
 Proof. by case: s. Qed.
