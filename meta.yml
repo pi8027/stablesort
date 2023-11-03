@@ -25,14 +25,17 @@ description: |-
   situation, in particular, the evaluation strategy and whether it should be
   incremental or not.
 
-  To prove the correctness (including stability) of these mergesort functions,
-  this library also provides a generic way to prove these properties. The
-  correctness lemmas provided in this library are overloaded using a canonical
-  structure (`StableSort.function`). Stable sort functions are characterized in
-  this interface by the parametricity axiom and binary trees representing the
-  divide-and-conquer structure of sort. Thus, one may prove the stability of a
-  new sorting function by using the parametricity translation (Paramcoq) and
-  by providing a lemma corresponding to the binary tree construction.
+  This library also provides a generic way to prove the correctness (including
+  stability) of these mergesort functions. The correctness lemmas in this
+  library are overloaded using a canonical structure (`StableSort.function`).
+  This structure characterizes stable sort functions, say `sort`, by an abstract
+  version of the sort function `asort` parameterized over the type of sorted
+  lists and its operators such as merge, the parametricity of `asort`, two
+  equational properties that `asort` instantiated with merge and concatenation
+  are `sort` and the identity function, respectively. Thus, one may prove the
+  stability of a new sorting function by defining its abstract version, using
+  the parametricity translation (Paramcoq), and manually providing the
+  equational properties.
 
 authors:
 - name: Kazuhiko Sakaguchi
@@ -46,25 +49,17 @@ license:
   file: CeCILL-B
 
 supported_coq_versions:
-  text: 8.11 or later
-  opam: '{>= "8.11"}'
+  text: 8.13 or later
+  opam: '{>= "8.13"}'
 
 tested_coq_nix_versions:
 
 tested_coq_opam_versions:
-- version: '1.13.0-coq-8.11'
-  repo: 'mathcomp/mathcomp'
-- version: '1.13.0-coq-8.12'
-  repo: 'mathcomp/mathcomp'
 - version: '1.13.0-coq-8.13'
   repo: 'mathcomp/mathcomp'
 - version: '1.13.0-coq-8.14'
   repo: 'mathcomp/mathcomp'
 - version: '1.13.0-coq-8.15'
-  repo: 'mathcomp/mathcomp'
-- version: '1.14.0-coq-8.11'
-  repo: 'mathcomp/mathcomp'
-- version: '1.14.0-coq-8.12'
   repo: 'mathcomp/mathcomp'
 - version: '1.14.0-coq-8.13'
   repo: 'mathcomp/mathcomp'
@@ -92,8 +87,6 @@ tested_coq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '1.16.0-coq-8.18'
   repo: 'mathcomp/mathcomp'
-- version: '1.16.0-coq-dev'
-  repo: 'mathcomp/mathcomp'
 - version: '1.17.0-coq-8.15'
   repo: 'mathcomp/mathcomp'
 - version: '1.17.0-coq-8.16'
@@ -102,7 +95,13 @@ tested_coq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '1.17.0-coq-8.18'
   repo: 'mathcomp/mathcomp'
-- version: '1.17.0-coq-dev'
+- version: '1.18.0-coq-8.16'
+  repo: 'mathcomp/mathcomp'
+- version: '1.18.0-coq-8.17'
+  repo: 'mathcomp/mathcomp'
+- version: '1.18.0-coq-8.18'
+  repo: 'mathcomp/mathcomp'
+- version: '1.18.0-coq-dev'
   repo: 'mathcomp/mathcomp'
 - version: '2.0.0-coq-8.16'
   repo: 'mathcomp/mathcomp'
@@ -110,7 +109,13 @@ tested_coq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '2.0.0-coq-8.18'
   repo: 'mathcomp/mathcomp'
-- version: '2.0.0-coq-dev'
+- version: '2.1.0-coq-8.16'
+  repo: 'mathcomp/mathcomp'
+- version: '2.1.0-coq-8.17'
+  repo: 'mathcomp/mathcomp'
+- version: '2.1.0-coq-8.18'
+  repo: 'mathcomp/mathcomp'
+- version: '2.1.0-coq-dev'
   repo: 'mathcomp/mathcomp'
 - version: 'coq-8.16'
   repo: 'mathcomp/mathcomp-dev'

@@ -28,19 +28,22 @@ The point is that the best mergesort function for lists depends on the
 situation, in particular, the evaluation strategy and whether it should be
 incremental or not.
 
-To prove the correctness (including stability) of these mergesort functions,
-this library also provides a generic way to prove these properties. The
-correctness lemmas provided in this library are overloaded using a canonical
-structure (`StableSort.function`). Stable sort functions are characterized in
-this interface by the parametricity axiom and binary trees representing the
-divide-and-conquer structure of sort. Thus, one may prove the stability of a
-new sorting function by using the parametricity translation (Paramcoq) and
-by providing a lemma corresponding to the binary tree construction."""
+This library also provides a generic way to prove the correctness (including
+stability) of these mergesort functions. The correctness lemmas in this
+library are overloaded using a canonical structure (`StableSort.function`).
+This structure characterizes stable sort functions, say `sort`, by an abstract
+version of the sort function `asort` parameterized over the type of sorted
+lists and its operators such as merge, the parametricity of `asort`, two
+equational properties that `asort` instantiated with merge and concatenation
+are `sort` and the identity function, respectively. Thus, one may prove the
+stability of a new sorting function by defining its abstract version, using
+the parametricity translation (Paramcoq), and manually providing the
+equational properties."""
 
 build: [make "-j%{jobs}%"]
 install: [make "install"]
 depends: [
-  "coq" {>= "8.11"}
+  "coq" {>= "8.13"}
   "coq-mathcomp-ssreflect" {>= "1.13.0"}
   "coq-paramcoq" {>= "1.1.3"}
 ]
