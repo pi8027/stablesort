@@ -6,6 +6,13 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Local Definition condrev (T : Type) (r : bool) (xs : seq T) : seq T :=
+  if r then rev xs else xs.
+
+Local Lemma condrev_nilp (T : Type) (r : bool) (xs : seq T) :
+  nilp (condrev r xs) = nilp xs.
+Proof. by case: r; rewrite /= ?rev_nilp. Qed.
+
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
 (******************************************************************************)
@@ -234,24 +241,19 @@ Module Insertion.
 Module Abstract.
 
 Definition sort (T R : Type) (leT : rel T)
-  (merge : R -> R -> R) (merge' : R -> R -> R)
-  (singleton : T -> R) (empty : R) :=
+  (merge merge' : R -> R -> R) (singleton : T -> R) (empty : R) :=
   foldr (fun x => merge (singleton x)) empty.
 
 Parametricity sort.
 
 End Abstract.
 
-Section Insertion.
+Definition sort (T : Type) (leT : rel T) : seq T -> seq T :=
+  foldr (fun x => merge leT [:: x]) [::].
 
-Variables (T : Type) (leT : rel T).
-
-Definition sort : seq T -> seq T := foldr (fun x => merge leT [:: x]) [::].
-
-Lemma asort_catE : Abstract.sort leT cat cat (fun x => [:: x]) [::] =1 id.
+Lemma asort_catE (T : Type) (leT : rel T) :
+  Abstract.sort leT cat cat (fun x => [:: x]) [::] =1 id.
 Proof. by elim=> //= x xs ->. Qed.
-
-End Insertion.
 
 Definition sort_stable :=
   StableSort sort Abstract.sort Abstract.sort_R (fun _ _ _ => erefl) asort_catE.
@@ -287,9 +289,8 @@ Module CBN_ (M : MergeSig).
 Module Abstract.
 Section Abstract.
 
-Variables (T R : Type) (leT : rel T).
-Variables (merge : R -> R -> R) (merge' : R -> R -> R).
-Variables (singleton : T -> R) (empty : R).
+Context (T R : Type) (leT : rel T).
+Context (merge merge' : R -> R -> R) (singleton : T -> R) (empty : R).
 
 Fixpoint push (xs : R) (stack : seq (option R)) : seq (option R) :=
   match stack with
@@ -339,28 +340,15 @@ Definition sort3 : seq T -> R := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (option R)) (x : T) (xs : seq T) : R :=
   if xs is y :: xs then
-    if leT x y then
-      incr stack y xs (singleton x)
-    else
-      decr stack y xs (singleton x)
-  else
-    pop (singleton x) stack
-with incr (stack : seq (option R)) (x : T) (xs : seq T) (accu : R) : R :=
+    sortNrec' (leT x y) stack y xs (singleton x) else pop (singleton x) stack
+with sortNrec' (incr : bool) (stack : seq (option R))
+       (x : T) (xs : seq T) (accu : R) : R :=
+  let accu' := (if incr then merge' else merge) accu (singleton x) in
   if xs is y :: xs then
-    if leT x y then
-      incr stack y xs (merge' accu (singleton x))
-    else
-      sortNrec (push (merge' accu (singleton x)) stack) y xs
+    if eqb incr (leT x y) then
+      sortNrec' incr stack y xs accu' else sortNrec (push accu' stack) y xs
   else
-    pop (merge' accu (singleton x)) stack
-with decr (stack : seq (option R)) (x : T) (xs : seq T) (accu : R) : R :=
-  if xs is y :: xs then
-    if leT x y then
-      sortNrec (push (merge accu (singleton x)) stack) y xs
-    else
-      decr stack y xs (merge accu (singleton x))
-  else
-    pop (merge accu (singleton x)) stack.
+    pop accu' stack.
 
 #[using="All"]
 Definition sortN (xs : seq T) : R :=
@@ -377,7 +365,7 @@ End Abstract.
 
 Section CBN.
 
-Variable (T : Type) (leT : rel T).
+Context (T : Type) (leT : rel T).
 
 Fixpoint push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
   match stack with
@@ -447,6 +435,7 @@ Definition sortN (xs : seq T) : seq T :=
 (* Proofs *)
 
 Let geT x y := leT y x.
+
 Let astack_of_stack : seq (seq T) -> seq (option (seq T)) :=
   map (fun xs => if xs is [::] then None else Some xs).
 
@@ -504,21 +493,23 @@ Qed.
 Lemma asortN_mergeE :
   Abstract.sortN leT merge merge' (fun x => [:: x]) [::] =1 sortN.
 Proof.
+have mergeEcons x y rs :
+    (if leT x y then merge' else merge) (condrev (leT x y) (x :: rs)) [:: y]
+    = condrev (leT x y) (y :: x :: rs).
+  by case: ifP; rewrite /= ?revK /geT /= => ->.
 case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN /sortN -[Nil (option _)]/(astack_of_stack [::]).
 elim: n (Nil (seq _)) x xs => // n IHn stack x [|y xs /= /ltnSE Hxs].
   by rewrite [LHS]apop_mergeE.
-rewrite /Abstract.sortNrec.
-rewrite -/(Abstract.incr _ _ merge' _) -/(Abstract.decr _ _ merge' _).
-pose rs := Nil T; rewrite -{1}[[:: x]]/(rcons (rev rs) x) -/(x :: rs).
-elim: xs Hxs x y rs => [_|z xs IHxs /= /ltnW Hxs] x y rs.
-  rewrite /Abstract.incr /Abstract.decr !apop_mergeE rev_rcons revK /= /geT.
-  by case: leT.
-rewrite /Abstract.incr -/(Abstract.incr _ _ merge' _).
-rewrite /Abstract.decr -/(Abstract.decr _ _ merge' _).
-rewrite -/(Abstract.sortNrec _ _ merge' _).
-move: (IHxs Hxs y z (x :: rs)); rewrite -rev_cons rev_rcons revK /= /geT.
-by do 2 case: leT; rewrite // apush_mergeE ?rev_nilp // IHn.
+rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
+have {1}->: [:: x] = condrev (leT x y) [:: x] by rewrite [RHS]if_same.
+move: xs Hxs x y (RS in x :: RS) {-2}(leT x y) (erefl (leT x y)).
+elim=> [_|z xs IHxs /= /ltnW Hxs] x y rs incr incrE.
+  by rewrite /Abstract.sortNrec' apop_mergeE /= incrE mergeEcons; case: ifP.
+rewrite /Abstract.sortNrec'.
+rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
+rewrite eqbE incrE mergeEcons apush_mergeE ?condrev_nilp // IHn //.
+by have [/[dup] /IHxs -> // ->|] := eqVneq; do 2?case: ifP.
 Qed.
 
 Lemma apush_catE (xs ys : seq T) stack :
@@ -562,14 +553,14 @@ case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN -[RHS]/(flatten_stack (x :: xs) [::]).
 elim: n x (Nil (option _)) xs => // n IHn x stack [|y xs /= /ltnSE Hxs];
   first by rewrite [LHS]apop_catE.
-rewrite /Abstract.sortNrec -/(Abstract.incr _ _ _ _) -/(Abstract.decr _ _ _ _).
+rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
 pose rs := Nil T; rewrite -[x :: y :: _]/(rs ++ _) -[[:: x]]/(rs ++ _).
 elim: xs Hxs x y rs => [_|z xs IHxs /= /ltnW Hxs] x y rs.
-  by rewrite if_same [LHS]apop_catE -catA.
-rewrite /Abstract.incr -/(Abstract.incr _ _ _ _).
-rewrite /Abstract.decr -/(Abstract.decr _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
-move: (IHxs Hxs y z (rcons rs x)); rewrite IHn // apush_catE -cats1 -!catA /=.
-by case: leT => ->; rewrite if_same.
+  by rewrite [LHS]apop_catE if_same -catA.
+rewrite /Abstract.sortNrec'.
+rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
+move: (IHxs Hxs y z (rcons rs x)).
+by rewrite eqbE if_same IHn // apush_catE -cats1 -!catA; case: eqVneq => // ->.
 Qed.
 
 End CBN.
@@ -621,9 +612,8 @@ Module CBV_ (M : RevmergeSig).
 Module Abstract.
 Section Abstract.
 
-Variables (T R : Type) (leT : rel T).
-Variables (merge : R -> R -> R) (merge' : R -> R -> R).
-Variables (singleton : T -> R) (empty : R).
+Context (T R : Type) (leT : rel T).
+Context (merge merge' : R -> R -> R) (singleton : T -> R) (empty : R).
 
 Fixpoint push (xs : R) (stack : seq (option R)) : seq (option R) :=
   match stack with
@@ -678,28 +668,17 @@ Definition sort3 : seq T -> R := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (option R)) (x : T) (xs : seq T) : R :=
   if xs is y :: xs then
-    if leT x y then
-      incr stack y xs (singleton x)
-    else
-      decr stack y xs (singleton x)
+    sortNrec' (leT x y) stack y xs (singleton x)
   else
     pop false (singleton x) stack
-with incr (stack : seq (option R)) (x : T) (xs : seq T) (accu : R) : R :=
+with sortNrec' (incr : bool) (stack : seq (option R))
+       (x : T) (xs : seq T) (accu : R) : R :=
+  let accu' := (if incr then merge' else merge) accu (singleton x) in
   if xs is y :: xs then
-    if leT x y then
-      incr stack y xs (merge' accu (singleton x))
-    else
-      sortNrec (push (merge' accu (singleton x)) stack) y xs
+    if eqb incr (leT x y) then
+      sortNrec' incr stack y xs accu' else sortNrec (push accu' stack) y xs
   else
-    pop false (merge' accu (singleton x)) stack
-with decr (stack : seq (option R)) (x : T) (xs : seq T) (accu : R) : R :=
-  if xs is y :: xs then
-    if leT x y then
-      sortNrec (push (merge accu (singleton x)) stack) y xs
-    else
-      decr stack y xs (merge accu (singleton x))
-  else
-    pop false (merge accu (singleton x)) stack.
+    pop false accu' stack.
 
 #[using="All"]
 Definition sortN (xs : seq T) : R :=
@@ -716,7 +695,7 @@ End Abstract.
 
 Section CBV.
 
-Variables (T : Type) (leT : rel T).
+Context (T : Type) (leT : rel T).
 Let geT x y := leT y x.
 
 Fixpoint push (xs : seq T) (stack : seq (seq T)) : seq (seq T) :=
@@ -799,15 +778,7 @@ Definition sortN (xs : seq T) : seq T :=
 
 (* Proofs *)
 
-Let condrev (r : bool) (s : seq T) : seq T := if r then rev s else s.
-
-Lemma condrev_nilp mode xs : nilp (condrev mode xs) = nilp xs.
-Proof. by case: mode; rewrite /= ?rev_nilp. Qed.
-
-Lemma condrevK mode : involutive (condrev mode).
-Proof. by case: mode; first exact: revK. Qed.
-
-Let Fixpoint astack_of_stack (mode : bool) (stack : seq (seq T)) :=
+Fixpoint astack_of_stack (mode : bool) (stack : seq (seq T)) :=
   match stack with
   | [::] => [::]
   | xs :: stack =>
@@ -874,19 +845,23 @@ Qed.
 Lemma asortN_mergeE :
   Abstract.sortN leT merge merge' (fun x => [:: x]) [::] =1 sortN.
 Proof.
+have mergeEcons x y rs :
+    (if leT x y then merge' else merge) (condrev (leT x y) (x :: rs)) [:: y]
+    = condrev (leT x y) (y :: x :: rs).
+  by case: ifP; rewrite /= ?revK /geT /= => ->.
 case=> // x xs; have [n] := ubnP (size xs).
-rewrite /Abstract.sortN /sortN -/(astack_of_stack false [::]).
+rewrite /Abstract.sortN /sortN -[Nil (option _)]/(astack_of_stack false [::]).
 elim: n (Nil (seq _)) x xs => // n IHn stack x [|y xs /= /ltnSE Hxs].
   by rewrite [LHS]apop_mergeE.
-rewrite /Abstract.sortNrec -/(Abstract.incr _ _ _ _) -/(Abstract.decr _ _ _ _).
-pose rs := Nil T; rewrite -{1}[[:: x]]/(rcons (rev rs) x) -/(x :: rs).
-elim: xs Hxs x y rs => [_|z xs IHxs /= /ltnW Hxs] x y rs.
-  rewrite /Abstract.incr /Abstract.decr !apop_mergeE rev_rcons revK /= /geT.
-  by case: leT.
-rewrite /Abstract.incr -/(Abstract.incr _ _ _ _).
-rewrite /Abstract.decr -/(Abstract.decr _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
-move: (IHxs Hxs y z (x :: rs)); rewrite -rev_cons rev_rcons revK /= /geT.
-by do 2 case: leT; rewrite // apush_mergeE ?rev_nilp // IHn.
+rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
+have {1}->: [:: x] = condrev (leT x y) [:: x] by rewrite [RHS]if_same.
+move: xs Hxs x y (RS in x :: RS) {-2}(leT x y) (erefl (leT x y)).
+elim=> [_|z xs IHxs /= /ltnW Hxs] x y rs incr incrE.
+  by rewrite /Abstract.sortNrec' apop_mergeE /= incrE mergeEcons; case: ifP.
+rewrite /Abstract.sortNrec'.
+rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
+rewrite eqbE incrE mergeEcons apush_mergeE ?condrev_nilp // IHn //.
+by have [/[dup] /IHxs -> // ->|] := eqVneq; do 2?case: ifP.
 Qed.
 
 Lemma apush_catE (xs ys : seq T) stack :
@@ -937,14 +912,14 @@ case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN -[RHS]/(flatten_stack (x :: xs) [::]).
 elim: n x (Nil (option _)) xs => // n IHn x stack [|y xs /= /ltnSE Hxs];
   first by rewrite [LHS]apop_catE.
-rewrite /Abstract.sortNrec -/(Abstract.incr _ _ _ _) -/(Abstract.decr _ _ _ _).
+rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
 pose rs := Nil T; rewrite -[x :: y :: _]/(rs ++ _) -[[:: x]]/(rs ++ _).
 elim: xs Hxs x y rs => [_|z xs IHxs /= /ltnW Hxs] x y rs.
-  by rewrite if_same [LHS]apop_catE -catA.
-rewrite /Abstract.incr -/(Abstract.incr _ _ _ _).
-rewrite /Abstract.decr -/(Abstract.decr _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
-move: (IHxs Hxs y z (rcons rs x)); rewrite IHn // apush_catE -cats1 -!catA /=.
-by case: leT => ->; rewrite if_same.
+  by rewrite [LHS]apop_catE if_same -catA.
+rewrite /Abstract.sortNrec'.
+rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
+move: (IHxs Hxs y z (rcons rs x)).
+by rewrite eqbE if_same IHn // apush_catE -cats1 -!catA; case: eqVneq => // ->.
 Qed.
 
 End CBV.
@@ -1003,7 +978,7 @@ Proof. by move=> x y /=; case: (leT x y) (leT y x) => [] []. Qed.
 
 Section StableSortTheory_Part1.
 
-Variable (sort : stableSort).
+Context (sort : stableSort).
 
 Local Lemma param_asort :
   StableSort.asort_ty_R (StableSort.asort sort) (StableSort.asort sort).
@@ -1011,7 +986,7 @@ Proof. by case: sort. Qed.
 
 Section SortSeq.
 
-Variable (T : Type) (P : {pred T}) (leT : rel T).
+Context (T : Type) (P : {pred T}) (leT : rel T).
 Let geT x y := leT y x.
 
 Local Lemma asort_mergeE :
@@ -1100,7 +1075,7 @@ Qed.
 
 Section EqSortSeq.
 
-Variables (T : eqType) (leT : rel T).
+Context (T : eqType) (leT : rel T).
 
 Lemma perm_sort (s : seq T) : perm_eql (sort _ leT s) s.
 Proof.
@@ -1275,12 +1250,12 @@ Qed.
 
 Section StableSortTheory_Part2.
 
-Variable (sort : stableSort).
+Context (sort : stableSort).
 
 Section Stability.
 
-Variables (T : Type) (leT : rel T).
-Variables (leT_total : total leT) (leT_tr : transitive leT).
+Context (T : Type) (leT : rel T).
+Context (leT_total : total leT) (leT_tr : transitive leT).
 
 Lemma eq_sort_insert : sort _ leT =1 Insertion.sort leT.
 Proof. exact: eq_sort. Qed.
@@ -1308,9 +1283,8 @@ End Stability.
 
 Section Stability_in.
 
-Variables (T : Type) (P : {pred T}) (leT : rel T).
-Hypothesis leT_total : {in P &, total leT}.
-Hypothesis leT_tr : {in P & &, transitive leT}.
+Context (T : Type) (P : {pred T}) (leT : rel T).
+Context (leT_total : {in P &, total leT}) (leT_tr : {in P & &, transitive leT}).
 
 Let le_sT := relpre (val : sig P -> _) leT.
 Let le_sT_total : total le_sT := in2_sig leT_total.
@@ -1346,8 +1320,8 @@ End Stability_in.
 
 Section Stability_subseq.
 
-Variables (T : eqType) (leT : rel T).
-Variables (leT_total : total leT) (leT_tr : transitive leT).
+Context (T : eqType) (leT : rel T).
+Context (leT_total : total leT) (leT_tr : transitive leT).
 
 Lemma subseq_sort : {homo sort _ leT : t s / subseq t s}.
 Proof.
@@ -1372,7 +1346,7 @@ End Stability_subseq.
 
 Section Stability_subseq_in.
 
-Variables (T : eqType) (leT : rel T).
+Context (T : eqType) (leT : rel T).
 
 Lemma subseq_sort_in (t s : seq T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
