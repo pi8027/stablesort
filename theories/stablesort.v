@@ -1,4 +1,3 @@
-From stablesort Require Import mathcomp_ext.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From stablesort Require Import param.
 
@@ -12,6 +11,14 @@ Local Definition condrev (T : Type) (r : bool) (xs : seq T) : seq T :=
 Local Lemma condrev_nilp (T : Type) (r : bool) (xs : seq T) :
   nilp (condrev r xs) = nilp xs.
 Proof. by case: r; rewrite /= ?rev_nilp. Qed.
+
+Local Lemma relpre_trans {T' T} {leT : rel T} {f : T' -> T} :
+  transitive leT -> transitive (relpre f leT).
+Proof. by move=> + y x z; apply. Qed.
+
+Local Lemma allrel_rev2 {T S} (r : T -> S -> bool) (s1 : seq T) (s2 : seq S) :
+  allrel r (rev s1) (rev s2) = allrel r s1 s2.
+Proof. by rewrite [LHS]all_rev [LHS]allrelC [RHS]allrelC [LHS]all_rev. Qed.
 
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
