@@ -1,5 +1,6 @@
 theories/param.v
 theories/stablesort.v
+theories/usual_stable.v
 
 -R theories stablesort
 
