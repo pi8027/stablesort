@@ -1171,6 +1171,21 @@ move=> /in2_sig leT_total /in3_sig leT_tr p _ /all_sigP[s ->].
 by rewrite !(sort_map, filter_map) filter_sort.
 Qed.
 
+Lemma sorted_filter_sort (T : Type) (leT : rel T) :
+  total leT -> transitive leT ->
+  forall (p : pred T) (s : seq T),
+  sorted leT (filter p s) -> filter p (sort _ leT s) = filter p s.
+Proof. by move=> *; rewrite filter_sort// sorted_sort. Qed.
+
+Lemma sorted_filter_sort_in (T : Type) (P : {pred T}) (leT : rel T) :
+  {in P &, total leT} -> {in P & &, transitive leT} ->
+  forall (p : pred T) (s : seq T),
+  all P s -> sorted leT (filter p s) -> filter p (sort _ leT s) = filter p s.
+Proof.
+move=> /in2_sig leT_total /in3_sig leT_tr p _ /all_sigP[s ->].
+by rewrite sort_map !filter_map sorted_map /= => /sorted_filter_sort ->.
+Qed.
+
 Lemma sort_sort (T : Type) (leT leT' : rel T) :
   total leT -> transitive leT -> total leT' -> transitive leT' ->
   forall s : seq T, sort _ leT (sort _ leT' s) = sort _ (lexord leT leT') s.
@@ -1412,6 +1427,8 @@ Arguments mem_sort                sort {T} leT s _.
 Arguments sort_uniq               sort {T} leT s.
 Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
 Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
+Arguments sorted_filter_sort      sort {T leT} leT_total leT_tr p {s} _.
+Arguments sorted_filter_sort_in   sort {T P leT} leT_total leT_tr p {s} _ _.
 Arguments sort_sort               sort {T leT leT'}
                                   leT_total leT_tr leT'_total leT'_tr s.
 Arguments sort_sort_in            sort {T P leT leT'}
