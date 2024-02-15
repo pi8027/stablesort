@@ -31,17 +31,17 @@
 
   ## select an entry to build in the following `bundles` set
   ## defaults to "default"
-  default-bundle = "8.14";
+  default-bundle = "8.18";
 
   ## write one `bundles.name` attribute set per
   ## alternative configuration
   ## When generating GitHub Action CI, one workflow file
   ## will be created per bundle
-  bundles."8.14" = {
+  bundles."8.18" = {
 
     ## You can override Coq and other Coq coqPackages
     ## through the following attribute
-    coqPackages.coq.override.version = "8.14";
+    coqPackages.coq.override.version = "8.18";
 
     ## In some cases, light overrides are not available/enough
     ## in which case you can use either
