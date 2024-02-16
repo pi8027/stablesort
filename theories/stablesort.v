@@ -517,13 +517,10 @@ case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN /sortN -[Nil (option _)]/(astack_of_stack [::]).
 elim: n (Nil (seq _)) x xs => // n IHn stack x [|y xs /= /ltnSE Hxs].
   by rewrite [LHS]apop_mergeE.
-rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
 have {1}->: [:: x] = condrev (leT x y) [:: x] by rewrite [RHS]if_same.
 move: xs Hxs x y (RS in x :: RS) {-2}(leT x y) (erefl (leT x y)).
 elim=> [_|z xs IHxs /= /ltnW Hxs] x y rs incr incrE.
   by rewrite /Abstract.sortNrec' apop_mergeE /= incrE mergeEcons; case: ifP.
-rewrite /Abstract.sortNrec'.
-rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
 rewrite eqbE incrE mergeEcons apush_mergeE ?condrev_nilp // IHn //.
 by have [/[dup] /IHxs -> // ->|] := eqVneq; do 2?case: ifP.
 Qed.
@@ -569,12 +566,9 @@ case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN -[RHS]/(flatten_stack (x :: xs) [::]).
 elim: n x (Nil (option _)) xs => // n IHn x stack [|y xs /= /ltnSE Hxs];
   first by rewrite [LHS]apop_catE.
-rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
 pose rs := Nil T; rewrite -[x :: y :: _]/(rs ++ _) -[[:: x]]/(rs ++ _).
 elim: xs Hxs x y rs => [_|z xs IHxs /= /ltnW Hxs] x y rs.
   by rewrite [LHS]apop_catE if_same -catA.
-rewrite /Abstract.sortNrec'.
-rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
 move: (IHxs Hxs y z (rcons rs x)).
 by rewrite eqbE if_same IHn // apush_catE -cats1 -!catA; case: eqVneq => // ->.
 Qed.
@@ -869,13 +863,10 @@ case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN /sortN -[Nil (option _)]/(astack_of_stack false [::]).
 elim: n (Nil (seq _)) x xs => // n IHn stack x [|y xs /= /ltnSE Hxs].
   by rewrite [LHS]apop_mergeE.
-rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
 have {1}->: [:: x] = condrev (leT x y) [:: x] by rewrite [RHS]if_same.
 move: xs Hxs x y (RS in x :: RS) {-2}(leT x y) (erefl (leT x y)).
 elim=> [_|z xs IHxs /= /ltnW Hxs] x y rs incr incrE.
   by rewrite /Abstract.sortNrec' apop_mergeE /= incrE mergeEcons; case: ifP.
-rewrite /Abstract.sortNrec'.
-rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
 rewrite eqbE incrE mergeEcons apush_mergeE ?condrev_nilp // IHn //.
 by have [/[dup] /IHxs -> // ->|] := eqVneq; do 2?case: ifP.
 Qed.
@@ -928,12 +919,9 @@ case=> // x xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sortN -[RHS]/(flatten_stack (x :: xs) [::]).
 elim: n x (Nil (option _)) xs => // n IHn x stack [|y xs /= /ltnSE Hxs];
   first by rewrite [LHS]apop_catE.
-rewrite /Abstract.sortNrec -/(Abstract.sortNrec' _ _ _ _).
 pose rs := Nil T; rewrite -[x :: y :: _]/(rs ++ _) -[[:: x]]/(rs ++ _).
 elim: xs Hxs x y rs => [_|z xs IHxs /= /ltnW Hxs] x y rs.
   by rewrite [LHS]apop_catE if_same -catA.
-rewrite /Abstract.sortNrec'.
-rewrite -/(Abstract.sortNrec' _ _ _ _) -/(Abstract.sortNrec _ _ _ _).
 move: (IHxs Hxs y z (rcons rs x)).
 by rewrite eqbE if_same IHn // apush_catE -cats1 -!catA; case: eqVneq => // ->.
 Qed.
