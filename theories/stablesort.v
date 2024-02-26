@@ -20,6 +20,14 @@ Local Lemma allrel_rev2 {T S} (r : T -> S -> bool) (s1 : seq T) (s2 : seq S) :
   allrel r (rev s1) (rev s2) = allrel r s1 s2.
 Proof. by rewrite [LHS]all_rev [LHS]allrelC [RHS]allrelC [LHS]all_rev. Qed.
 
+Local Lemma count_merge (T : Type) (leT : rel T) (p : pred T) (s1 s2 : seq T) :
+  count p (merge leT s1 s2) = count p (s1 ++ s2).
+Proof.
+rewrite count_cat; elim: s1 s2 => // x s1 IH1.
+elim=> //= [|y s2 IH2]; first by rewrite addn0.
+by case: (leT x); rewrite /= ?IH1 ?IH2 ?[p y + _]addnCA addnA.
+Qed.
+
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
 (******************************************************************************)
@@ -993,7 +1001,7 @@ Proof. by case: sort. Qed.
 
 Section SortSeq.
 
-Context (T : Type) (P : {pred T}) (leT : rel T).
+Context (T : Type) (leT leT' : rel T).
 Let geT x y := leT y x.
 
 Local Lemma asort_mergeE :
@@ -1021,35 +1029,76 @@ apply: (@param_asort _ _ eq _ _ R) => //.
 by elim: s; constructor.
 Qed.
 
-Lemma all_sort (s : seq T) : all P (sort _ leT s) = all P s.
-Proof.
-by elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys;
-  rewrite !(all_rev, all_merge) all_cat IHxs IHys // andbC.
-Qed.
-
-Lemma size_sort (s : seq T) : size (sort _ leT s) = size s.
-Proof.
-by elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys;
-  rewrite ?size_rev size_merge !size_cat ?size_rev IHxs IHys // addnC.
-Qed.
-
-Lemma sort_nil : sort _ leT [::] = [::].
-Proof. by case: (sort _) (size_sort [::]). Qed.
-
 Lemma pairwise_sort (s : seq T) : pairwise leT s -> sort _ leT s = s.
 Proof.
 elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys.
-  rewrite pairwise_cat => /and3P[hlr /IHxs -> /IHys ->].
-  by rewrite !allrel_merge.
-rewrite pairwise_cat => /and3P[hlr /IHxs -> /IHys ->].
-by rewrite allrel_merge 1?allrel_rev2 1?allrelC // rev_cat !revK.
+  by rewrite pairwise_cat => /and3P[/allrel_merge <- /IHxs -> /IHys ->].
+rewrite pairwise_cat allrelC -allrel_rev2 => /and3P[hlr /IHxs -> /IHys ->].
+by rewrite allrel_merge // rev_cat !revK.
 Qed.
 
 Lemma sorted_sort : transitive leT ->
   forall s : seq T, sorted leT s -> sort _ leT s = s.
 Proof. by move=> leT_tr s; rewrite sorted_pairwise //; apply/pairwise_sort. Qed.
 
+Lemma sort_pairwise_stable : total leT ->
+  forall s : seq T, pairwise leT' s -> sorted (lexord leT leT') (sort _ leT s).
+Proof.
+move=> leT_total s.
+suff: (forall P, all P s -> all P (sort T leT s)) /\
+        (pairwise leT' s -> sorted (lexord leT leT') (sort T leT s)).
+  by case.
+elim/sort_ind: (sort _ leT s) => // xs xs' [IHxs IHxs'] ys ys' [IHys IHys'];
+  rewrite pairwise_cat; split => [P|/and3P[hlr /IHxs' ? /IHys' ?]].
+- by rewrite all_cat all_merge => /andP[/IHxs -> /IHys ->].
+- apply/merge_stable_sorted => //=.
+  by apply/IHxs; apply/sub_all: hlr => ?; apply/IHys.
+- by rewrite all_cat all_rev all_merge !all_rev => /andP[/IHxs -> /IHys ->].
+- rewrite rev_sorted; apply/merge_stable_sorted; rewrite ?rev_sorted //.
+  rewrite allrel_rev2 allrelC.
+  by apply/IHxs; apply/sub_all: hlr => ?; apply/IHys.
+Qed.
+
+Lemma sort_stable : total leT -> transitive leT' ->
+  forall s : seq T, sorted leT' s -> sorted (lexord leT leT') (sort _ leT s).
+Proof.
+by move=> ? ? s; rewrite sorted_pairwise//; apply: sort_pairwise_stable.
+Qed.
+
 End SortSeq.
+
+Lemma count_sort (T : Type) (p : pred T) (leT : rel T) (s : seq T) :
+  count p (sort _ leT s) = count p s.
+Proof.
+by elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys;
+  rewrite ?count_rev count_merge !count_cat ?count_rev IHxs IHys // addnC.
+Qed.
+
+Lemma size_sort (T : Type) (leT : rel T) (s : seq T) :
+  size (sort _ leT s) = size s.
+Proof. exact: (count_sort predT). Qed.
+
+Lemma sort_nil (T : Type) (leT : rel T) : sort _ leT [::] = [::].
+Proof. by case: (sort _) (size_sort leT [::]). Qed.
+
+Lemma all_sort (T : Type) (p : pred T) (leT : rel T) (s : seq T) :
+  all p (sort _ leT s) = all p s.
+Proof. by rewrite !all_count count_sort size_sort. Qed.
+
+Section EqSortSeq.
+
+Context (T : eqType) (leT : rel T) (s : seq T).
+
+Lemma perm_sort : perm_eql (sort _ leT s) s.
+Proof. by apply/permPl/permP => ?; rewrite count_sort. Qed.
+
+Lemma mem_sort : sort _ leT s =i s.
+Proof. exact/perm_mem/permPl/perm_sort. Qed.
+
+Lemma sort_uniq : uniq (sort _ leT s) = uniq s.
+Proof. exact/perm_uniq/permPl/perm_sort. Qed.
+
+End EqSortSeq.
 
 Local Lemma param_sort : StableSort.sort_ty_R sort sort.
 Proof.
@@ -1080,56 +1129,12 @@ move=> /in3_sig ? _ /all_sigP[s ->].
 by rewrite sort_map sorted_map => /sorted_sort->.
 Qed.
 
-Section EqSortSeq.
-
-Context (T : eqType) (leT : rel T).
-
-Lemma perm_sort (s : seq T) : perm_eql (sort _ leT s) s.
-Proof.
-by apply/permPl; elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys;
-  rewrite 1?perm_rev perm_merge -1?rev_cat 1?perm_rev perm_cat.
-Qed.
-
-Lemma mem_sort (s : seq T) : sort _ leT s =i s.
-Proof. exact/perm_mem/permPl/perm_sort. Qed.
-
-Lemma sort_uniq (s : seq T) : uniq (sort _ leT s) = uniq s.
-Proof. exact/perm_uniq/permPl/perm_sort. Qed.
-
-End EqSortSeq.
-
-Lemma sort_pairwise_stable (T : Type) (leT leT' : rel T) :
-  total leT -> forall s : seq T, pairwise leT' s ->
-  sorted (lexord leT leT') (sort _ leT s).
-Proof.
-move=> leT_total s.
-suff: (forall P, all P s -> all P (sort T leT s)) /\
-        (pairwise leT' s -> sorted (lexord leT leT') (sort T leT s)).
-  by case.
-elim/sort_ind: (sort _ leT s) => // xs xs' [IHxs IHxs'] ys ys' [IHys IHys'];
-  rewrite pairwise_cat; split => [P|/and3P[hlr /IHxs' ? /IHys' ?]].
-- by rewrite all_cat all_merge => /andP[/IHxs -> /IHys ->].
-- apply/merge_stable_sorted => //=.
-  by apply/IHxs; apply/sub_all: hlr => ?; apply/IHys.
-- by rewrite all_cat all_rev all_merge !all_rev => /andP[/IHxs -> /IHys ->].
-- rewrite rev_sorted; apply/merge_stable_sorted; rewrite ?rev_sorted //.
-  rewrite allrel_rev2 allrelC.
-  by apply/IHxs; apply/sub_all: hlr => ?; apply/IHys.
-Qed.
-
 Lemma sort_pairwise_stable_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
   {in P &, total leT} -> forall s : seq T, all P s -> pairwise leT' s ->
   sorted (lexord leT leT') (sort _ leT s).
 Proof.
 move=> /in2_sig leT_total _ /all_sigP[s ->].
 by rewrite sort_map pairwise_map sorted_map; apply: sort_pairwise_stable.
-Qed.
-
-Lemma sort_stable (T : Type) (leT leT' : rel T) :
-  total leT -> transitive leT' -> forall s : seq T, sorted leT' s ->
-  sorted (lexord leT leT') (sort _ leT s).
-Proof.
-by move=> ? ? s; rewrite sorted_pairwise//; apply: sort_pairwise_stable.
 Qed.
 
 Lemma sort_stable_in (T : Type) (P : {pred T}) (leT leT' : rel T) :
@@ -1176,8 +1181,8 @@ pose lt' := lexord (relpre (nth x s) leT') ltn.
 pose lt := lexord (relpre (nth x s) leT) lt'.
 have lt'_tr: transitive lt' by apply/lexord_trans/ltn_trans/relpre_trans.
 have lt_tr : transitive lt by apply/lexord_trans/lt'_tr/relpre_trans.
-rewrite -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
+rewrite -(mkseq_nth x s) !sort_map; congr map.
+apply/(@irr_sorted_eq _ lt) => //; rewrite /lt /lexord //=.
 - by move=> ?; rewrite /= ltnn !(implybF, andbN).
 - exact/sort_stable/sort_stable/iota_ltn_sorted/ltn_trans.
 - under eq_sorted do rewrite lexordA.
@@ -1238,7 +1243,7 @@ Proof.
 move=> leT_total leT_tr s; case Ds: s => [|x s1]; first by rewrite !sort_nil.
 pose lt := lexord (relpre (nth x s) leT) ltn.
 have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
-rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
+rewrite -{s1}Ds -(mkseq_nth x s) !sort_map; congr map.
 apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
 - by move=> ?; rewrite /= ltnn implybF andbN.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
@@ -1333,7 +1338,7 @@ Context (leT_total : total leT) (leT_tr : transitive leT).
 Lemma subseq_sort : {homo sort _ leT : t s / subseq t s}.
 Proof.
 move=> _ s /subseqP [m _ ->].
-have [m' <-] := mask_sort leT_total leT_tr s m; exact: mask_subseq.
+by have [m' <-] := mask_sort leT_total leT_tr s m; exact: mask_subseq.
 Qed.
 
 Lemma sorted_subseq_sort (t s : seq T) :
@@ -1360,7 +1365,8 @@ Lemma subseq_sort_in (t s : seq T) :
   subseq t s -> subseq (sort _ leT t) (sort _ leT s).
 Proof.
 move=> leT_total leT_tr /subseqP [m _ ->].
-have [m' <-] := mask_sort_in leT_total leT_tr m (allss _); exact: mask_subseq.
+have [m' <-] := mask_sort_in leT_total leT_tr m (allss _).
+exact: mask_subseq.
 Qed.
 
 Lemma sorted_subseq_sort_in (t s : seq T) :
@@ -1387,21 +1393,23 @@ End StableSortTheory_Part2.
 
 End StableSortTheory.
 
-Arguments all_sort                sort {T} P leT s.
-Arguments size_sort               sort {T} leT s.
-Arguments sort_nil                sort {T} leT.
-Arguments pairwise_sort           sort {T leT s} _.
-Arguments sorted_sort             sort {T leT} leT_tr {s} _.
+Arguments sort_ind                sort {T leT R} _ _ _ _ s.
 Arguments map_sort                sort {T T' f leT' leT} _ _.
 Arguments sort_map                sort {T T' f leT} s.
+Arguments pairwise_sort           sort {T leT s} _.
+Arguments sorted_sort             sort {T leT} leT_tr {s} _.
 Arguments sorted_sort_in          sort {T P leT} leT_tr {s} _ _.
-Arguments perm_sort               sort {T} leT s _.
-Arguments mem_sort                sort {T} leT s _.
-Arguments sort_uniq               sort {T} leT s.
 Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
 Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
 Arguments sort_stable             sort {T leT leT'} leT_total leT'_tr {s} _.
 Arguments sort_stable_in          sort {T P leT leT'} leT_total leT'_tr {s} _ _.
+Arguments count_sort              sort {T} p leT s.
+Arguments size_sort               sort {T} leT s.
+Arguments sort_nil                sort {T} leT.
+Arguments all_sort                sort {T} p leT s.
+Arguments perm_sort               sort {T} leT s _.
+Arguments mem_sort                sort {T} leT s _.
+Arguments sort_uniq               sort {T} leT s.
 Arguments filter_sort             sort {T leT} leT_total leT_tr p s.
 Arguments filter_sort_in          sort {T P leT} leT_total leT_tr p {s} _.
 Arguments sort_sort               sort {T leT leT'}
@@ -1415,16 +1423,16 @@ Arguments perm_sort_inP           sort {T leT s1 s2} leT_total leT_tr leT_asym.
 Arguments eq_sort                 sort1 sort2 {T leT} leT_total leT_tr _.
 Arguments eq_in_sort              sort1 sort2 {T P leT} leT_total leT_tr {s} _.
 Arguments eq_sort_insert          sort {T leT} leT_total leT_tr _.
-Arguments sort_cat                sort {T leT} leT_total leT_tr s1 s2.
-Arguments mask_sort               sort {T leT} leT_total leT_tr s m.
-Arguments sorted_mask_sort        sort {T leT} leT_total leT_tr {s m} _.
 Arguments eq_in_sort_insert       sort {T P leT} leT_total leT_tr {s} _.
+Arguments sort_cat                sort {T leT} leT_total leT_tr s1 s2.
 Arguments sort_cat_in             sort {T P leT} leT_total leT_tr {s1 s2} _ _.
+Arguments mask_sort               sort {T leT} leT_total leT_tr s m.
 Arguments mask_sort_in            sort {T P leT} leT_total leT_tr {s} m _.
+Arguments sorted_mask_sort        sort {T leT} leT_total leT_tr {s m} _.
 Arguments sorted_mask_sort_in     sort {T P leT} leT_total leT_tr {s m} _ _.
 Arguments subseq_sort             sort {T leT} leT_total leT_tr {x y} _.
-Arguments sorted_subseq_sort      sort {T leT} leT_total leT_tr {t s} _ _.
-Arguments mem2_sort               sort {T leT} leT_total leT_tr {s x y} _ _.
 Arguments subseq_sort_in          sort {T leT t s} leT_total leT_tr _.
+Arguments sorted_subseq_sort      sort {T leT} leT_total leT_tr {t s} _ _.
 Arguments sorted_subseq_sort_in   sort {T leT t s} leT_total leT_tr _ _.
+Arguments mem2_sort               sort {T leT} leT_total leT_tr {s x y} _ _.
 Arguments mem2_sort_in            sort {T leT s} leT_total leT_tr x y _ _.
