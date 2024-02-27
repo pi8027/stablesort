@@ -987,6 +987,10 @@ rewrite (leT_tr _ _ _ lexy leyz); apply/implyP => lezx; move: leyx lezy.
 by rewrite (leT_tr _ _ _ leyz lezx) (leT_tr _ _ _ lezx lexy); exact: leT'_tr.
 Qed.
 
+Local Lemma lexord_irr (T : Type) (leT leT' : rel T) :
+  irreflexive leT' -> irreflexive (lexord leT leT').
+Proof. by move=> irr x /=; rewrite irr implybF andbN. Qed.
+
 Local Lemma lexordA (T : Type) (leT leT' leT'' : rel T) :
   lexord leT (lexord leT' leT'') =2 lexord (lexord leT leT') leT''.
 Proof. by move=> x y /=; case: (leT x y) (leT y x) => [] []. Qed.
@@ -1155,11 +1159,11 @@ move=> leT_total leT_tr p s; case Ds: s => [|x s1]; first by rewrite sort_nil.
 pose lt := lexord (relpre (nth x s) leT) ltn.
 have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
 rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
-have lt_irr : irreflexive lt by move=> ?; rewrite /= ltnn implybF andbN.
-apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=; last 1 first.
-- by move=> ?; rewrite !(mem_filter, mem_sort).
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
+- exact/lexord_irr/ltnn.
 - exact/sorted_filter/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/sorted_filter/iota_ltn_sorted/ltn_trans/ltn_trans.
+- by move=> ?; rewrite !(mem_filter, mem_sort).
 Qed.
 
 Lemma filter_sort_in (T : Type) (P : {pred T}) (leT : rel T) :
@@ -1191,14 +1195,14 @@ Lemma sort_sort (T : Type) (leT leT' : rel T) :
   forall s : seq T, sort _ leT (sort _ leT' s) = sort _ (lexord leT leT') s.
 Proof.
 move=> leT_total leT_tr leT'_total leT'_tr s.
-case s_eq : {-}s => [|x s1]; first by rewrite s_eq !sort_nil.
+case Ds: s => [|x s1]; first by rewrite !sort_nil.
 pose lt' := lexord (relpre (nth x s) leT') ltn.
 pose lt := lexord (relpre (nth x s) leT) lt'.
 have lt'_tr: transitive lt' by apply/lexord_trans/ltn_trans/relpre_trans.
 have lt_tr : transitive lt by apply/lexord_trans/lt'_tr/relpre_trans.
-rewrite -(mkseq_nth x s) !sort_map; congr map.
-apply/(@irr_sorted_eq _ lt) => //; rewrite /lt /lexord //=.
-- by move=> ?; rewrite /= ltnn !(implybF, andbN).
+rewrite -{s1}Ds -(mkseq_nth x s) !sort_map; congr map.
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
+- exact/lexord_irr/lexord_irr/ltnn.
 - exact/sort_stable/sort_stable/iota_ltn_sorted/ltn_trans.
 - under eq_sorted do rewrite lexordA.
   exact/sort_stable/iota_ltn_sorted/ltn_trans/lexord_total.
@@ -1260,7 +1264,7 @@ pose lt := lexord (relpre (nth x s) leT) ltn.
 have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
 rewrite -{s1}Ds -(mkseq_nth x s) !sort_map; congr map.
 apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
-- by move=> ?; rewrite /= ltnn implybF andbN.
+- exact/lexord_irr/ltnn.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
 - exact/sort_stable/iota_ltn_sorted/ltn_trans.
 - by move=> ?; rewrite !mem_sort.
@@ -1294,8 +1298,8 @@ Proof. by rewrite !eq_sort_insert; elim: s1 => //= x s1 ->; rewrite mergeA. Qed.
 Lemma mask_sort (s : seq T) (m : bitseq) :
   {m_s : bitseq | mask m_s (sort _ leT s) = sort _ leT (mask m s)}.
 Proof.
-case Ds: {-}s => [|x s1]; first by exists [::]; rewrite Ds mask0 sort_nil.
-rewrite -(mkseq_nth x s) -map_mask !sort_map.
+case Ds: s => [|x s1]; first by exists [::]; rewrite mask0 sort_nil.
+rewrite -{s1}Ds -(mkseq_nth x s) -map_mask !sort_map.
 exists [seq i \in mask m (iota 0 (size s)) |
             i <- sort _ (xrelpre (nth x s) leT) (iota 0 (size s))].
 rewrite -map_mask -filter_mask [in RHS]mask_filter ?iota_uniq ?filter_sort //.
