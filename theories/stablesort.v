@@ -964,10 +964,10 @@ Canonical CBVAcc.sortN_stable.
 
 Section StableSortTheory.
 
-Let lexord (T : Type) (leT leT' : rel T) :=
+Definition lexord (T : Type) (leT leT' : rel T) :=
   [rel x y | leT x y && (leT y x ==> leT' x y)].
 
-Local Lemma lexord_total (T : Type) (leT leT' : rel T) :
+Lemma lexord_total (T : Type) (leT leT' : rel T) :
   total leT -> total leT' -> total (lexord leT leT').
 Proof.
 move=> leT_total leT'_total x y /=.
@@ -975,7 +975,7 @@ by move: (leT_total x y) (leT'_total x y) => /orP[->|->] /orP[->|->];
   rewrite /= ?implybE ?orbT ?andbT //= (orbAC, orbA) (orNb, orbN).
 Qed.
 
-Local Lemma lexord_trans (T : Type) (leT leT' : rel T) :
+Lemma lexord_trans (T : Type) (leT leT' : rel T) :
   transitive leT -> transitive leT' -> transitive (lexord leT leT').
 Proof.
 move=> leT_tr leT'_tr y x z /= /andP[lexy leyx] /andP[leyz lezy].
@@ -983,11 +983,11 @@ rewrite (leT_tr _ _ _ lexy leyz); apply/implyP => lezx; move: leyx lezy.
 by rewrite (leT_tr _ _ _ leyz lezx) (leT_tr _ _ _ lezx lexy); exact: leT'_tr.
 Qed.
 
-Local Lemma lexord_irr (T : Type) (leT leT' : rel T) :
+Lemma lexord_irr (T : Type) (leT leT' : rel T) :
   irreflexive leT' -> irreflexive (lexord leT leT').
 Proof. by move=> irr x /=; rewrite irr implybF andbN. Qed.
 
-Local Lemma lexordA (T : Type) (leT leT' leT'' : rel T) :
+Lemma lexordA (T : Type) (leT leT' leT'' : rel T) :
   lexord leT (lexord leT' leT'') =2 lexord (lexord leT leT') leT''.
 Proof. by move=> x y /=; case: (leT x y) (leT y x) => [] []. Qed.
 
