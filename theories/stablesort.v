@@ -198,10 +198,8 @@ Definition revmerge (T : Type) (leT : rel T) (xs ys : seq T) : seq T :=
 Lemma revmergeE (T : Type) (leT : rel T) (xs ys : seq T) :
   revmerge leT xs ys = rev (path.merge leT xs ys).
 Proof.
-rewrite /revmerge -[RHS]cats0.
-elim: xs ys [::] => [|x xs IHxs]; elim=> [|y ys IHys] accu //=;
-  try by rewrite catrevE rev_cons cat_rcons.
-by case: ifP => _; rewrite rev_cons cat_rcons.
+rewrite /revmerge /rev; move: xs ys [::].
+by elim=> [|x xs IHxs]; elim=> [|y ys IHys] accu //=; case: ifP => /=.
 Qed.
 
 End Revmerge.
@@ -239,10 +237,8 @@ Definition revmerge (T : Type) (leT : rel T) (xs ys : seq T) : seq T :=
 Lemma revmergeE (T : Type) (leT : rel T) (xs ys : seq T) :
   revmerge leT xs ys = rev (path.merge leT xs ys).
 Proof.
-rewrite /revmerge -[RHS]cats0; move: xs ys [::] (wf_mergeord xs ys).
-elim=> [|x xs IHxs]; elim=> [|y ys IHys] accu [acc] //=;
-  try by rewrite catrevE rev_cons cat_rcons.
-by case: ifP => _; rewrite rev_cons cat_rcons.
+rewrite /revmerge /rev; move: xs ys [::] (wf_mergeord xs ys).
+by elim=> [|x xs IHxs]; elim=> [|y ys IHys] accu [acc] //=; case: ifP => /=.
 Qed.
 
 End RevmergeAcc.
