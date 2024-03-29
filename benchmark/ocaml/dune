@@ -1,0 +1,5 @@
+(executables
+ (names benchmark benchmark_exp)
+ (libraries unix)
+ (flags (:standard -w a))
+ (ocamlopt_flags (:standard -O3)))
