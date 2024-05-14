@@ -1,0 +1,6 @@
+misc/topdown_tailrec.v
+
+-R theories stablesort
+-R misc stablesort.misc
+
+-arg -w -arg -notation-overridden
