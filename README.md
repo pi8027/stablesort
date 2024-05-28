@@ -61,6 +61,8 @@ slices in the input.
 - Additional dependencies:
   - [MathComp](https://math-comp.github.io) 1.13.0 or later
   - [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.3 or later
+  - [Mczify](https://github.com/math-comp/mczify) (required only for the test suite)
+  - [Equations](https://github.com/mattam82/Coq-Equations) (required only for the test suite)
 - Coq namespace: `stablesort`
 - Related publication(s):
   - [A bargain for mergesorts (functional pearl) — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.48550/arXiv.2403.08173](https://doi.org/10.48550/arXiv.2403.08173)

@@ -55,7 +55,6 @@ jobs:
           - 'mathcomp/mathcomp:2.2.0-coq-8.18'
           - 'mathcomp/mathcomp:2.2.0-coq-8.19'
           - 'mathcomp/mathcomp:2.2.0-coq-dev'
-          - 'mathcomp/mathcomp-dev:coq-8.17'
           - 'mathcomp/mathcomp-dev:coq-8.18'
           - 'mathcomp/mathcomp-dev:coq-8.19'
           - 'mathcomp/mathcomp-dev:coq-dev'
@@ -66,7 +65,9 @@ jobs:
         with:
           opam_file: 'coq-stablesort.opam'
           custom_image: ${{ matrix.image }}
-
+          export: 'OPAMWITHTEST'
+        env:
+          OPAMWITHTEST: true
 
 # See also:
 # https://github.com/coq-community/docker-coq-action#readme

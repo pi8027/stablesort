@@ -149,8 +149,6 @@ tested_coq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '2.2.0-coq-dev'
   repo: 'mathcomp/mathcomp'
-- version: 'coq-8.17'
-  repo: 'mathcomp/mathcomp-dev'
 - version: 'coq-8.18'
   repo: 'mathcomp/mathcomp-dev'
 - version: 'coq-8.19'
@@ -169,8 +167,24 @@ dependencies:
     version: '{>= "1.1.3"}'
   description: |-
     [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.3 or later
+- opam:
+    name: coq-mathcomp-zify
+    version: '{with-test}'
+  description: |-
+    [Mczify](https://github.com/math-comp/mczify) (required only for the test suite)
+- opam:
+    name: coq-equations
+    version: '{with-test}'
+  description: |-
+    [Equations](https://github.com/mattam82/Coq-Equations) (required only for the test suite)
 
+test_target: build-misc
 namespace: stablesort
+
+action_appendix: |2-
+            export: 'OPAMWITHTEST'
+          env:
+            OPAMWITHTEST: true
 
 documentation: |-
   ## Credits
