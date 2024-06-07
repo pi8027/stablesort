@@ -1,3 +1,4 @@
+From stablesort Require Import mathcomp_ext.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From stablesort Require Import param stablesort.
 
