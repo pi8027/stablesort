@@ -16,6 +16,7 @@ Parametricity False.
 Parametricity eq.
 Parametricity or.
 Parametricity Acc.
+Parametricity unit.
 Parametricity bool.
 Parametricity option.
 Parametricity prod.
