@@ -12,7 +12,7 @@ Definition eqr {T} (r : rel T) : rel T := [rel x y | r x y && r y x].
 
 Lemma eqr_sym {T} (r : rel T) : symmetric (eqr r).
 Proof. by move=> x y; apply/andP/andP => -[]. Qed.
-Hint Resolve eqr_sym : core.
+#[local] Hint Resolve eqr_sym : core.
 
 Lemma eqrW {T} (r : rel T) : subrel (eqr r) r.
 Proof. by move=> x y /andP[]. Qed.
