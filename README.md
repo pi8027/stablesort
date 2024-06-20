@@ -68,24 +68,14 @@ slices in the input.
   - [A bargain for mergesorts (functional pearl) — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.48550/arXiv.2403.08173](https://doi.org/10.48550/arXiv.2403.08173)
 
 ## Building and installation instructions
-
-The easiest way to install the latest released version of Stable sort algorithms in Coq
+The easiest way to install the development version of Stable sort algorithms in Coq
 is via [OPAM](https://opam.ocaml.org/doc/Install.html):
-
-```shell
-opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq-stablesort
-```
-
-To instead build and install manually, do:
-
 ``` shell
 git clone https://github.com/pi8027/stablesort.git
 cd stablesort
-make   # or make -j <number-of-cores-on-your-machine> 
-make install
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam install ./coq-stablesort.opam
 ```
-
 
 ## Credits
 The mergesort functions and the stability proofs provided in this library are
