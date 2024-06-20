@@ -186,6 +186,17 @@ action_appendix: |2-
           env:
             OPAMWITHTEST: true
 
+build: |-
+  ## Building and installation instructions
+  The easiest way to install the development version of Stable sort algorithms in Coq
+  is via [OPAM](https://opam.ocaml.org/doc/Install.html):
+  ``` shell
+  git clone https://github.com/pi8027/stablesort.git
+  cd stablesort
+  opam repo add coq-released https://coq.inria.fr/opam/released
+  opam install ./coq-stablesort.opam
+  ```
+
 documentation: |-
   ## Credits
   The mergesort functions and the stability proofs provided in this library are
