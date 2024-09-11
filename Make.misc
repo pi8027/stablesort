@@ -1,4 +1,5 @@
 misc/topdown_tailrec.v
+misc/usual_stable.v
 
 -R theories stablesort
 -R misc stablesort.misc
