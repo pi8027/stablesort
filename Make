@@ -1,3 +1,4 @@
+theories/mathcomp_ext.v
 theories/param.v
 theories/stablesort.v
 
