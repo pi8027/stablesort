@@ -1067,7 +1067,7 @@ Qed.
 
 End SortSeq.
 
-Lemma count_sort (T : Type) (p : pred T) (leT : rel T) (s : seq T) :
+Lemma count_sort (T : Type) (leT : rel T) (p : pred T) (s : seq T) :
   count p (sort _ leT s) = count p s.
 Proof.
 by elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys;
@@ -1076,7 +1076,7 @@ Qed.
 
 Lemma size_sort (T : Type) (leT : rel T) (s : seq T) :
   size (sort _ leT s) = size s.
-Proof. exact: (count_sort predT). Qed.
+Proof. exact: (count_sort _ predT). Qed.
 
 Lemma sort_nil (T : Type) (leT : rel T) : sort _ leT [::] = [::].
 Proof. by case: (sort _) (size_sort leT [::]). Qed.
@@ -1418,7 +1418,7 @@ Arguments sort_pairwise_stable    sort {T leT leT'} leT_total {s} _.
 Arguments sort_pairwise_stable_in sort {T P leT leT'} leT_total {s} _ _.
 Arguments sort_stable             sort {T leT leT'} leT_total leT'_tr {s} _.
 Arguments sort_stable_in          sort {T P leT leT'} leT_total leT'_tr {s} _ _.
-Arguments count_sort              sort {T} p leT s.
+Arguments count_sort              sort {T} leT p s.
 Arguments size_sort               sort {T} leT s.
 Arguments sort_nil                sort {T} leT.
 Arguments all_sort                sort {T} p leT s.
