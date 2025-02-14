@@ -132,18 +132,22 @@ Definition lt_unextract P s := leqW_mono_in (@le_unextract P s).
 
 End extract.
 
-Context {T : Type} (sort : seq T -> seq T) (leT : rel T).
-Hypothesis sort_nil : sort [::] = [::].
-Hypothesis sort_sorted : forall s : seq T, sorted leT (sort s).
+Context (sort : forall T, rel T -> seq T -> seq T).
+Hypothesis sort_nil : forall T (leT : rel T), sort leT [::] = [::].
+Hypothesis sort_sorted :
+  forall T (leT : rel T) (s : seq T), total leT -> sorted leT (sort leT s).
 Hypothesis sort_usual_stable :
-  forall s x, filter (eqr leT x) (sort s) = filter (eqr leT x) s.
+  forall T (leT : rel T), total leT -> transitive leT ->
+  forall (s : seq T) (x : T),
+    filter (eqr leT x) (sort leT s) = filter (eqr leT x) s.
 
-Lemma usual_stable_sort_stable leT' : total leT -> transitive leT' ->
-  forall s : seq T, sorted leT' s -> sorted (lexord leT leT') (sort s).
+Lemma usual_stable_sort_pairwise_stable T (leT leT' : rel T) :
+  total leT -> transitive leT ->
+  forall s : seq T, pairwise leT' s -> sorted (lexord leT leT') (sort leT s).
 Proof.
-move=> leT_total leT'_tr s.
+move=> leT_total leT_tr s.
 wlog x0 : / T by case: s => [|x s']; [rewrite sort_nil//|apply].
-move=> s_sorted; apply/(sortedP x0) => i; set s':= sort s => iSlt /=.
+move=> s_sorted; apply/(sortedP x0) => i; set s':= sort leT s => iSlt /=.
 set u := nth x0 _; pose P := eqr leT (u i).
 have lui : leT (u i) (u i.+1) by rewrite (sortedP _ _) ?sort_sorted.
 rewrite lui/=; apply/implyP => gui.
@@ -154,11 +158,45 @@ have iSPs : i.+1 \in extract_codom x0 P s'.
 pose v := nth x0 (filter P s).
 suff: exists j k, [/\ j < k < size (filter P s), u i = v j & u i.+1 = v k].
   move=> [j [k [/andP[jk klt] -> ->]]].
-  apply: pairwiseP => //; last by rewrite inE (ltn_trans _ klt).
-  by rewrite -sorted_pairwise// sorted_filter.
+  apply: pairwiseP => //; first by rewrite pairwise_filter.
+  by rewrite inE (ltn_trans _ klt).
 exists (unextract x0 P s' i), (unextract x0 P s' i.+1).
 rewrite /v -sort_usual_stable// lt_unextract//= ?nth_unextract//.
 by split=> //; rewrite leqnn/= size_filter unextract_lt.
+Qed.
+
+Lemma usual_stable_sort_stable T (leT leT' : rel T) :
+  total leT -> transitive leT -> transitive leT' ->
+  forall s : seq T, sorted leT' s -> sorted (lexord leT leT') (sort leT s).
+Proof.
+move=> leT_total leT_tr leT'_tr s; rewrite sorted_pairwise//.
+exact: usual_stable_sort_pairwise_stable.
+Qed.
+
+Hypothesis mem_sort :
+  forall (T : eqType) (leT : rel T) (s : seq T), sort leT s =i s.
+Hypothesis sort_map :
+  forall (T T' : Type) (f : T' -> T) (leT : rel T) (s : seq T'),
+    sort leT (map f s) = map f (sort (relpre f leT) s).
+
+Lemma usual_stable_filter_sort T (leT : rel T) :
+  total leT -> transitive leT ->
+  forall (p : pred T) (s : seq T),
+    filter p (sort leT s) = sort leT (filter p s).
+Proof.
+move=> leT_total leT_tr p s; case Ds: s => [|x s1]; first by rewrite sort_nil.
+pose lt := lexord (relpre (nth x s) leT) ltn.
+have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
+rewrite -{s1}Ds -(mkseq_nth x s) !(filter_map, sort_map); congr map.
+apply/(@irr_sorted_eq _ lt); rewrite /lt /lexord //=.
+- exact/lexord_irr/ltnn.
+- apply/sorted_filter/usual_stable_sort_stable/iota_ltn_sorted/ltn_trans => //.
+  by move=> ? ? ?; apply/leT_tr.
+- apply/usual_stable_sort_stable/sorted_filter/iota_ltn_sorted => //.
+  + by move=> ? ? ?; apply/leT_tr.
+  + exact/ltn_trans.
+  + exact/ltn_trans.
+- by move=> ?; rewrite !(mem_filter, mem_sort).
 Qed.
 
 End UsualStableSortTheory.
