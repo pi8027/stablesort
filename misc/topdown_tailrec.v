@@ -1,5 +1,5 @@
 (* A verified version of top-down tail-recursive mergesort, presented in      *)
-(* Sections 4.1 and 4.4.1 of the paper                                        *)
+(* Sections 4.1 and 4.3.2 of the paper                                        *)
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import zify.
 From stablesort Require Import param stablesort.
@@ -43,7 +43,7 @@ Section Abstract.
 Context (T R : Type) (leT : rel T).
 Context (merge merge' : R -> R -> R) (singleton : T -> R) (empty : R).
 
-(* The abstract top-down tail-recursive mergesort (Section 4.4.1) *)
+(* The abstract top-down tail-recursive mergesort (Section 4.3.2) *)
 Equations sort_rec (xs : seq T) (b : bool) (n fuel : nat) :
     R * seq T by struct fuel :=
   (* The following three cases ar absurd because [0 < n <= size xs] and       *)

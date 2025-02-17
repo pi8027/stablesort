@@ -76,7 +76,7 @@ time-median-rec N P TS WS TOut WOut :- std.do! [
   gc.quick-stat Minor2 Promoted2 Major2 _ _ _ _ _ _ _,
   % restore the verbosity
   gc.set _ _ _ Verbose _ _ _ _,
-  Words is ((Minor2 + Major2 - Promoted2) - (Minor1 + Major1 - Promoted1)),
+  Words is ((Minor2 + Major2 - Promoted2) r- (Minor1 + Major1 - Promoted1)),
   time-median-rec {calc (N - 1)} P [Time|TS] [Words|WS] TOut WOut
 ].
 
