@@ -16,6 +16,10 @@ EXTRACTED_HS_FILES := \
   $(HSDIR)/MergesortCoqCbv.hs \
   $(HSDIR)/MergesortCoqCbvAcc.hs
 
+HS_FILES := $(EXTRACTED_HS_FILES) \
+  $(HSDIR)/MergesortHaskellNTRCount.hs \
+  $(HSDIR)/MergesortHaskellNTRStack.hs
+
 HS_FLAGS := -with-rtsopts="-T -I0 -A8G -G1 -m1" -O2
 
 EXTRACTED_ML_FILES := \
@@ -29,17 +33,17 @@ EXTRACTED_ML_FILES := \
 ML_FILES := $(EXTRACTED_ML_FILES) $(MLDIR)/mergesort_ocaml.ml
 
 BINARIES := \
-  $(HSDIR)/Benchmark $(HSDIR)/BenchmarkExp \
-  $(MLDIR)/benchmark $(MLDIR)/benchmark_exp \
-  $(MLDIR)/test_stability
+  $(HSDIR)/Benchmark $(HSDIR)/BenchmarkExp $(HSDIR)/TestStability \
+  $(MLDIR)/benchmark $(MLDIR)/benchmark_exp $(MLDIR)/test_stability
 
-$(HSDIR)/Benchmark: $(HSDIR)/Benchmark.hs $(HSDIR)/Benchlib.hs \
-                    $(EXTRACTED_HS_FILES)
+$(HSDIR)/Benchmark: $(HSDIR)/Benchmark.hs $(HSDIR)/Benchlib.hs $(HS_FILES)
 	cd $(HSDIR) && stack ghc Benchmark.hs -- $(HS_FLAGS)
 
-$(HSDIR)/BenchmarkExp: $(HSDIR)/BenchmarkExp.hs $(HSDIR)/Benchlib.hs \
-                       $(EXTRACTED_HS_FILES)
+$(HSDIR)/BenchmarkExp: $(HSDIR)/BenchmarkExp.hs $(HSDIR)/Benchlib.hs $(HS_FILES)
 	cd $(HSDIR) && stack ghc BenchmarkExp.hs -- $(HS_FLAGS)
+
+$(HSDIR)/TestStability: $(HSDIR)/TestStability.hs $(HS_FILES)
+	cd $(HSDIR) && stack ghc TestStability.hs -- $(HS_FLAGS)
 
 $(MLDIR)/benchmark: $(MLDIR)/benchmark.ml $(MLDIR)/benchlib.ml \
                     $(ML_FILES) $(ML_FILES:.ml=.mli)
@@ -81,8 +85,8 @@ post-all:: $(BINARIES)
 
 clean::
 	$(HIDE)rm -f $(EXTRACTED_HS_FILES)
-	$(HIDE)rm -f $(EXTRACTED_HS_FILES:.hs=.hi)
-	$(HIDE)rm -f $(EXTRACTED_HS_FILES:.hs=.o)
+	$(HIDE)rm -f $(HS_FILES:.hs=.hi)
+	$(HIDE)rm -f $(HS_FILES:.hs=.o)
 	$(HIDE)rm -f $(EXTRACTED_ML_FILES)
 	$(HIDE)rm -f $(EXTRACTED_ML_FILES:.ml=.mli)
 	$(HIDE)rm -f $(BINARIES)
