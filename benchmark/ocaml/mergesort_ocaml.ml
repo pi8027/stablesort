@@ -11,9 +11,9 @@ module NTRCount = struct
       else y :: merge cmp xs ys'
 
   let rec push cmp xs k stack =
-    match k mod 2, stack with
+    match k land 1, stack with
     | 0, _ -> xs :: stack
-    | 1, ys :: stack -> push cmp (merge cmp ys xs) (k / 2) stack
+    | 1, ys :: stack -> push cmp (merge cmp ys xs) (k lsr 1) stack
 
   let rec pop cmp xs = function
     | [] -> xs
@@ -164,9 +164,9 @@ module TRMCCount = struct
       else y :: (merge[@tailcall]) cmp xs ys'
 
   let rec push cmp xs k stack =
-    match k mod 2, stack with
+    match k land 1, stack with
     | 0, _ -> xs :: stack
-    | 1, ys :: stack -> push cmp (merge cmp ys xs) (k / 2) stack
+    | 1, ys :: stack -> push cmp (merge cmp ys xs) (k lsr 1) stack
 
   let rec pop cmp xs = function
     | [] -> xs
@@ -326,26 +326,27 @@ module TRCount = struct
       else rev_merge_rev cmp xs ys' (y :: accu)
 
   let rec push cmp xs k stack =
-    match k mod 4, stack with
+    match k land 3, stack with
     | 0, _ | 2, _ -> xs :: stack
     | 1, ys :: stack -> rev_merge cmp ys xs [] :: stack
     | 3, ys :: zs :: stack ->
-      push cmp (rev_merge_rev cmp (rev_merge cmp ys xs []) zs []) (k / 4) stack
+      push cmp (rev_merge_rev cmp (rev_merge cmp ys xs []) zs [])
+        (k lsr 2) stack
 
   let rec pop cmp xs k stack =
-    match k mod 4, stack with
+    match k land 3, stack with
     | _, [] -> xs
-    | 0, _ -> pop cmp xs (k / 4) stack
-    | 2, _ -> pop_rev cmp (List.rev xs) (k / 2) stack
+    | 0, _ -> pop cmp xs (k lsr 2) stack
+    | 2, _ -> pop_rev cmp (List.rev xs) (k lsr 1) stack
     | 1, ys :: stack | 3, ys :: stack ->
-      pop_rev cmp (rev_merge cmp ys xs []) (k / 2) stack
+      pop_rev cmp (rev_merge cmp ys xs []) (k lsr 1) stack
   and pop_rev cmp xs k stack =
-    match k mod 4, stack with
+    match k land 3, stack with
     | _, [] -> List.rev xs
-    | 0, _ -> pop_rev cmp xs (k / 4) stack
-    | 2, _ -> pop cmp (List.rev xs) (k / 2) stack
+    | 0, _ -> pop_rev cmp xs (k lsr 2) stack
+    | 2, _ -> pop cmp (List.rev xs) (k lsr 1) stack
     | 1, ys :: stack | 3, ys :: stack ->
-      pop cmp (rev_merge_rev cmp xs ys []) (k / 2) stack
+      pop cmp (rev_merge_rev cmp xs ys []) (k lsr 1) stack
 
   let rec sortN_rec cmp k stack s =
     let rec ascending accu x s =
