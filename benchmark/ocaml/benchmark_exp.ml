@@ -5,16 +5,22 @@ Gc.set { (Gc.get()) with Gc.minor_heap_size = 2 * 1024 * 1024 * 1024 };;
 
 Benchlib.benchmark "ocaml-random" (List.init 15 (fun i -> Int.shift_left 128 i)) (fun xs -> xs)
   [("List.stable_sort",   List.stable_sort               (compare : int -> int -> int));
+   ("NTRCount.sort3",     NTRCount.sort3                 (compare : int -> int -> int));
    ("NTRCount.sortN",     NTRCount.sortN                 (compare : int -> int -> int));
    ("NTRCount.sort3N",    NTRCount.sort3N                (compare : int -> int -> int));
+   ("NTRStack.sort3",     NTRStack.sort3                 (compare : int -> int -> int));
    ("NTRStack.sortN",     NTRStack.sortN                 (compare : int -> int -> int));
    ("NTRStack.sort3N",    NTRStack.sort3N                (compare : int -> int -> int));
+   ("TRMCCount.sort3",    TRMCCount.sort3                (compare : int -> int -> int));
    ("TRMCCount.sortN",    TRMCCount.sortN                (compare : int -> int -> int));
    ("TRMCCount.sort3N",   TRMCCount.sort3N               (compare : int -> int -> int));
+   ("TRMCStack.sort3",    TRMCStack.sort3                (compare : int -> int -> int));
    ("TRMCStack.sortN",    TRMCStack.sortN                (compare : int -> int -> int));
    ("TRMCStack.sort3N",   TRMCStack.sort3N               (compare : int -> int -> int));
+   ("TRCount.sort3",      TRCount.sort3                  (compare : int -> int -> int));
    ("TRCount.sortN",      TRCount.sortN                  (compare : int -> int -> int));
    ("TRCount.sort3N",     TRCount.sort3N                 (compare : int -> int -> int));
+   ("TRStack.sort3",      TRStack.sort3                  (compare : int -> int -> int));
    ("TRStack.sortN",      TRStack.sortN                  (compare : int -> int -> int));
    ("TRStack.sort3N",     TRStack.sort3N                 (compare : int -> int -> int));
    ("CBNAcc.sort2",       Mergesort_coq_cbnacc.sort2     ((<=) : int -> int -> bool));
@@ -30,16 +36,22 @@ Benchlib.benchmark "ocaml-random" (List.init 15 (fun i -> Int.shift_left 128 i))
 
 Benchlib.benchmark "ocaml-smooth" (List.init 15 (fun i -> Int.shift_left 128 i)) (Benchlib.sort_blocks 50)
   [("List.stable_sort",   List.stable_sort               (compare : int -> int -> int));
+   ("NTRCount.sort3",     NTRCount.sort3                 (compare : int -> int -> int));
    ("NTRCount.sortN",     NTRCount.sortN                 (compare : int -> int -> int));
    ("NTRCount.sort3N",    NTRCount.sort3N                (compare : int -> int -> int));
+   ("NTRStack.sort3",     NTRStack.sort3                 (compare : int -> int -> int));
    ("NTRStack.sortN",     NTRStack.sortN                 (compare : int -> int -> int));
    ("NTRStack.sort3N",    NTRStack.sort3N                (compare : int -> int -> int));
+   ("TRMCCount.sort3",    TRMCCount.sort3                (compare : int -> int -> int));
    ("TRMCCount.sortN",    TRMCCount.sortN                (compare : int -> int -> int));
    ("TRMCCount.sort3N",   TRMCCount.sort3N               (compare : int -> int -> int));
+   ("TRMCStack.sort3",    TRMCStack.sort3                (compare : int -> int -> int));
    ("TRMCStack.sortN",    TRMCStack.sortN                (compare : int -> int -> int));
    ("TRMCStack.sort3N",   TRMCStack.sort3N               (compare : int -> int -> int));
+   ("TRCount.sort3",      TRCount.sort3                  (compare : int -> int -> int));
    ("TRCount.sortN",      TRCount.sortN                  (compare : int -> int -> int));
    ("TRCount.sort3N",     TRCount.sort3N                 (compare : int -> int -> int));
+   ("TRStack.sort3",      TRStack.sort3                  (compare : int -> int -> int));
    ("TRStack.sortN",      TRStack.sortN                  (compare : int -> int -> int));
    ("TRStack.sort3N",     TRStack.sort3N                 (compare : int -> int -> int));
    ("CBNAcc.sort2",       Mergesort_coq_cbnacc.sort2     ((<=) : int -> int -> bool));

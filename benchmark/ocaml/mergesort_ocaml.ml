@@ -19,42 +19,58 @@ module NTRCount = struct
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
 
-  let rec sortN_rec cmp k stack s =
+  let rec sort3rec cmp k stack = function
+    | x :: y :: z :: s ->
+      let xyz =
+        if cmp x y <= 0 then
+          if cmp y z <= 0 then [x; y; z]
+          else if cmp x z <= 0 then [x; z; y] else [z; x; y]
+        else
+          if cmp x z <= 0 then [y; x; z]
+          else if cmp y z <= 0 then [y; z; x] else [z; y; x]
+      in
+      sort3rec cmp (k + 1) (push cmp xyz k stack) s
+    | [x; y] as s -> pop cmp (if cmp x y <= 0 then s else [y; x]) stack
+    | s -> pop cmp s stack
+
+  let sort3 cmp s = sort3rec cmp 0 [] s
+
+  let rec sortNrec cmp k stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sortN_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+      | _ -> sortNrec cmp (k + 1) (push cmp (List.rev accu) k stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sortN_rec cmp (k + 1) (push cmp accu k stack) s
+      | _ -> sortNrec cmp (k + 1) (push cmp accu k stack) s
     in
     match s with
     | x :: y :: s ->
       if cmp x y <= 0 then ascending [x] y s else descending [x] y s
     | _ -> pop cmp s stack
 
-  let sortN cmp s = sortN_rec cmp 0 [] s
+  let sortN cmp s = sortNrec cmp 0 [] s
 
-  let rec sort3N_rec cmp k stack s =
+  let rec sort3Nrec cmp k stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sort3N_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+      | _ -> sort3Nrec cmp (k + 1) (push cmp (List.rev accu) k stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sort3N_rec cmp (k + 1) (push cmp accu k stack) s
+      | _ -> sort3Nrec cmp (k + 1) (push cmp accu k stack) s
     in
     match s with
     | x :: y :: z :: s ->
@@ -63,15 +79,15 @@ module NTRCount = struct
       | false, false -> descending [y; x] z s
       | true,  false ->
         let xyz = if cmp x z <= 0 then [x; z; y] else [z; x; y] in
-        sort3N_rec cmp (k + 1) (push cmp xyz k stack) s
+        sort3Nrec cmp (k + 1) (push cmp xyz k stack) s
       | false, true  ->
         let xyz = if cmp x z <= 0 then [y; x; z] else [y; z; x] in
-        sort3N_rec cmp (k + 1) (push cmp xyz k stack) s
+        sort3Nrec cmp (k + 1) (push cmp xyz k stack) s
       end
     | [x; y] -> pop cmp (if cmp x y <= 0 then [x; y] else [y; x]) stack
     | _ -> pop cmp s stack
 
-  let sort3N cmp s = sort3N_rec cmp 0 [] s
+  let sort3N cmp s = sort3Nrec cmp 0 [] s
 
 end;;
 
@@ -95,42 +111,58 @@ module NTRStack = struct
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
 
-  let rec sortN_rec cmp stack s =
+  let rec sort3rec cmp stack = function
+    | x :: y :: z :: s ->
+      let xyz =
+        if cmp x y <= 0 then
+          if cmp y z <= 0 then [x; y; z]
+          else if cmp x z <= 0 then [x; z; y] else [z; x; y]
+        else
+          if cmp x z <= 0 then [y; x; z]
+          else if cmp y z <= 0 then [y; z; x] else [z; y; x]
+      in
+      sort3rec cmp (push cmp xyz stack) s
+    | [x; y] as s -> pop cmp (if cmp x y <= 0 then s else [y; x]) stack
+    | s -> pop cmp s stack
+
+  let sort3 cmp s = sort3rec cmp [] s
+
+  let rec sortNrec cmp stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sortN_rec cmp (push cmp (List.rev accu) stack) s
+      | _ -> sortNrec cmp (push cmp (List.rev accu) stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sortN_rec cmp (push cmp accu stack) s
+      | _ -> sortNrec cmp (push cmp accu stack) s
     in
     match s with
     | x :: y :: s ->
       if cmp x y <= 0 then ascending [x] y s else descending [x] y s
     | _ -> pop cmp s stack
 
-  let sortN cmp s = sortN_rec cmp [] s
+  let sortN cmp s = sortNrec cmp [] s
 
-  let rec sort3N_rec cmp stack s =
+  let rec sort3Nrec cmp stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sort3N_rec cmp (push cmp (List.rev accu) stack) s
+      | _ -> sort3Nrec cmp (push cmp (List.rev accu) stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sort3N_rec cmp (push cmp accu stack) s
+      | _ -> sort3Nrec cmp (push cmp accu stack) s
     in
     match s with
     | x :: y :: z :: s ->
@@ -139,15 +171,15 @@ module NTRStack = struct
       | false, false -> descending [y; x] z s
       | true,  false ->
         let xyz = if cmp x z <= 0 then [x; z; y] else [z; x; y] in
-        sort3N_rec cmp (push cmp xyz stack) s
+        sort3Nrec cmp (push cmp xyz stack) s
       | false, true  ->
         let xyz = if cmp x z <= 0 then [y; x; z] else [y; z; x] in
-        sort3N_rec cmp (push cmp xyz stack) s
+        sort3Nrec cmp (push cmp xyz stack) s
       end
     | [x; y] -> pop cmp (if cmp x y <= 0 then [x; y] else [y; x]) stack
     | _ -> pop cmp s stack
 
-  let sort3N cmp s = sort3N_rec cmp [] s
+  let sort3N cmp s = sort3Nrec cmp [] s
 
 end;;
 
@@ -172,42 +204,58 @@ module TRMCCount = struct
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
 
-  let rec sortN_rec cmp k stack s =
+  let rec sort3rec cmp k stack = function
+    | x :: y :: z :: s ->
+      let xyz =
+        if cmp x y <= 0 then
+          if cmp y z <= 0 then [x; y; z]
+          else if cmp x z <= 0 then [x; z; y] else [z; x; y]
+        else
+          if cmp x z <= 0 then [y; x; z]
+          else if cmp y z <= 0 then [y; z; x] else [z; y; x]
+      in
+      sort3rec cmp (k + 1) (push cmp xyz k stack) s
+    | [x; y] as s -> pop cmp (if cmp x y <= 0 then s else [y; x]) stack
+    | s -> pop cmp s stack
+
+  let sort3 cmp s = sort3rec cmp 0 [] s
+
+  let rec sortNrec cmp k stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sortN_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+      | _ -> sortNrec cmp (k + 1) (push cmp (List.rev accu) k stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sortN_rec cmp (k + 1) (push cmp accu k stack) s
+      | _ -> sortNrec cmp (k + 1) (push cmp accu k stack) s
     in
     match s with
     | x :: y :: s ->
       if cmp x y <= 0 then ascending [x] y s else descending [x] y s
     | _ -> pop cmp s stack
 
-  let sortN cmp s = sortN_rec cmp 0 [] s
+  let sortN cmp s = sortNrec cmp 0 [] s
 
-  let rec sort3N_rec cmp k stack s =
+  let rec sort3Nrec cmp k stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sort3N_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+      | _ -> sort3Nrec cmp (k + 1) (push cmp (List.rev accu) k stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sort3N_rec cmp (k + 1) (push cmp accu k stack) s
+      | _ -> sort3Nrec cmp (k + 1) (push cmp accu k stack) s
     in
     match s with
     | x :: y :: z :: s ->
@@ -216,15 +264,15 @@ module TRMCCount = struct
       | false, false -> descending [y; x] z s
       | true,  false ->
         let xyz = if cmp x z <= 0 then [x; z; y] else [z; x; y] in
-        sort3N_rec cmp (k + 1) (push cmp xyz k stack) s
+        sort3Nrec cmp (k + 1) (push cmp xyz k stack) s
       | false, true  ->
         let xyz = if cmp x z <= 0 then [y; x; z] else [y; z; x] in
-        sort3N_rec cmp (k + 1) (push cmp xyz k stack) s
+        sort3Nrec cmp (k + 1) (push cmp xyz k stack) s
       end
     | [x; y] -> pop cmp (if cmp x y <= 0 then [x; y] else [y; x]) stack
     | _ -> pop cmp s stack
 
-  let sort3N cmp s = sort3N_rec cmp 0 [] s
+  let sort3N cmp s = sort3Nrec cmp 0 [] s
 
 end;;
 
@@ -248,42 +296,58 @@ module TRMCStack = struct
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
 
-  let rec sortN_rec cmp stack s =
+  let rec sort3rec cmp stack = function
+    | x :: y :: z :: s ->
+      let xyz =
+        if cmp x y <= 0 then
+          if cmp y z <= 0 then [x; y; z]
+          else if cmp x z <= 0 then [x; z; y] else [z; x; y]
+        else
+          if cmp x z <= 0 then [y; x; z]
+          else if cmp y z <= 0 then [y; z; x] else [z; y; x]
+      in
+      sort3rec cmp (push cmp xyz stack) s
+    | [x; y] as s -> pop cmp (if cmp x y <= 0 then s else [y; x]) stack
+    | s -> pop cmp s stack
+
+  let sort3 cmp s = sort3rec cmp [] s
+
+  let rec sortNrec cmp stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sortN_rec cmp (push cmp (List.rev accu) stack) s
+      | _ -> sortNrec cmp (push cmp (List.rev accu) stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sortN_rec cmp (push cmp accu stack) s
+      | _ -> sortNrec cmp (push cmp accu stack) s
     in
     match s with
     | x :: y :: s ->
       if cmp x y <= 0 then ascending [x] y s else descending [x] y s
     | _ -> pop cmp s stack
 
-  let sortN cmp s = sortN_rec cmp [] s
+  let sortN cmp s = sortNrec cmp [] s
 
-  let rec sort3N_rec cmp stack s =
+  let rec sort3Nrec cmp stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sort3N_rec cmp (push cmp (List.rev accu) stack) s
+      | _ -> sort3Nrec cmp (push cmp (List.rev accu) stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sort3N_rec cmp (push cmp accu stack) s
+      | _ -> sort3Nrec cmp (push cmp accu stack) s
     in
     match s with
     | x :: y :: z :: s ->
@@ -292,15 +356,15 @@ module TRMCStack = struct
       | false, false -> descending [y; x] z s
       | true,  false ->
         let xyz = if cmp x z <= 0 then [x; z; y] else [z; x; y] in
-        sort3N_rec cmp (push cmp xyz stack) s
+        sort3Nrec cmp (push cmp xyz stack) s
       | false, true  ->
         let xyz = if cmp x z <= 0 then [y; x; z] else [y; z; x] in
-        sort3N_rec cmp (push cmp xyz stack) s
+        sort3Nrec cmp (push cmp xyz stack) s
       end
     | [x; y] -> pop cmp (if cmp x y <= 0 then [x; y] else [y; x]) stack
     | _ -> pop cmp s stack
 
-  let sort3N cmp s = sort3N_rec cmp [] s
+  let sort3N cmp s = sort3Nrec cmp [] s
 
 end;;
 
@@ -348,42 +412,58 @@ module TRCount = struct
     | 1, ys :: stack | 3, ys :: stack ->
       pop cmp (rev_merge_rev cmp xs ys []) (k lsr 1) stack
 
-  let rec sortN_rec cmp k stack s =
+  let rec sort3rec cmp k stack = function
+    | x :: y :: z :: s ->
+      let xyz =
+        if cmp x y <= 0 then
+          if cmp y z <= 0 then [x; y; z]
+          else if cmp x z <= 0 then [x; z; y] else [z; x; y]
+        else
+          if cmp x z <= 0 then [y; x; z]
+          else if cmp y z <= 0 then [y; z; x] else [z; y; x]
+      in
+      sort3rec cmp (k + 1) (push cmp xyz k stack) s
+    | [x; y] as s -> pop cmp (if cmp x y <= 0 then s else [y; x]) k stack
+    | s -> pop cmp s k stack
+
+  let sort3 cmp s = sort3rec cmp 0 [] s
+
+  let rec sortNrec cmp k stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) k stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sortN_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+      | _ -> sortNrec cmp (k + 1) (push cmp (List.rev accu) k stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu k stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sortN_rec cmp (k + 1) (push cmp accu k stack) s
+      | _ -> sortNrec cmp (k + 1) (push cmp accu k stack) s
     in
     match s with
     | x :: y :: s ->
       if cmp x y <= 0 then ascending [x] y s else descending [x] y s
     | _ -> pop cmp s k stack
 
-  let sortN cmp s = sortN_rec cmp 0 [] s
+  let sortN cmp s = sortNrec cmp 0 [] s
 
-  let rec sort3N_rec cmp k stack s =
+  let rec sort3Nrec cmp k stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) k stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sort3N_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+      | _ -> sort3Nrec cmp (k + 1) (push cmp (List.rev accu) k stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu k stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sort3N_rec cmp (k + 1) (push cmp accu k stack) s
+      | _ -> sort3Nrec cmp (k + 1) (push cmp accu k stack) s
     in
     match s with
     | x :: y :: z :: s ->
@@ -392,15 +472,15 @@ module TRCount = struct
       | false, false -> descending [y; x] z s
       | true,  false ->
         let xyz = if cmp x z <= 0 then [x; z; y] else [z; x; y] in
-        sort3N_rec cmp (k + 1) (push cmp xyz k stack) s
+        sort3Nrec cmp (k + 1) (push cmp xyz k stack) s
       | false, true ->
         let xyz = if cmp x z <= 0 then [y; x; z] else [y; z; x] in
-        sort3N_rec cmp (k + 1) (push cmp xyz k stack) s
+        sort3Nrec cmp (k + 1) (push cmp xyz k stack) s
       end
     | [x; y] -> pop cmp (if cmp x y <= 0 then [x; y] else [y; x]) k stack
     | _ -> pop cmp s k stack
 
-  let sort3N cmp s = sort3N_rec cmp 0 [] s
+  let sort3N cmp s = sort3Nrec cmp 0 [] s
 
 end;;
 
@@ -444,42 +524,58 @@ module TRStack = struct
     | [] :: stack -> pop cmp (List.rev xs) stack
     | ys :: stack -> pop cmp (rev_merge_rev cmp xs ys []) stack
 
-  let rec sortN_rec cmp stack s =
+  let rec sort3rec cmp stack = function
+    | x :: y :: z :: s ->
+      let xyz =
+        if cmp x y <= 0 then
+          if cmp y z <= 0 then [x; y; z]
+          else if cmp x z <= 0 then [x; z; y] else [z; x; y]
+        else
+          if cmp x z <= 0 then [y; x; z]
+          else if cmp y z <= 0 then [y; z; x] else [z; y; x]
+      in
+      sort3rec cmp (push cmp xyz stack) s
+    | [x; y] as s -> pop cmp (if cmp x y <= 0 then s else [y; x]) stack
+    | s -> pop cmp s stack
+
+  let sort3 cmp s = sort3rec cmp [] s
+
+  let rec sortNrec cmp stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sortN_rec cmp (push cmp (List.rev accu) stack) s
+      | _ -> sortNrec cmp (push cmp (List.rev accu) stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sortN_rec cmp (push cmp accu stack) s
+      | _ -> sortNrec cmp (push cmp accu stack) s
     in
     match s with
     | x :: y :: s ->
       if cmp x y <= 0 then ascending [x] y s else descending [x] y s
     | _ -> pop cmp s stack
 
-  let sortN cmp s = sortN_rec cmp [] s
+  let sortN cmp s = sortNrec cmp [] s
 
-  let rec sort3N_rec cmp stack s =
+  let rec sort3Nrec cmp stack s =
     let rec ascending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp (List.rev accu) stack
       | y :: s when cmp x y <= 0 -> ascending accu y s
-      | _ -> sort3N_rec cmp (push cmp (List.rev accu) stack) s
+      | _ -> sort3Nrec cmp (push cmp (List.rev accu) stack) s
     in
     let rec descending accu x s =
       let accu = x :: accu in
       match s with
       | [] -> pop cmp accu stack
       | y :: s when cmp x y > 0 -> descending accu y s
-      | _ -> sort3N_rec cmp (push cmp accu stack) s
+      | _ -> sort3Nrec cmp (push cmp accu stack) s
     in
     match s with
     | x :: y :: z :: s ->
@@ -488,14 +584,14 @@ module TRStack = struct
       | false, false -> descending [y; x] z s
       | true,  false ->
         let xyz = if cmp x z <= 0 then [x; z; y] else [z; x; y] in
-        sort3N_rec cmp (push cmp xyz stack) s
+        sort3Nrec cmp (push cmp xyz stack) s
       | false, true ->
         let xyz = if cmp x z <= 0 then [y; x; z] else [y; z; x] in
-        sort3N_rec cmp (push cmp xyz stack) s
+        sort3Nrec cmp (push cmp xyz stack) s
       end
     | [x; y] -> pop cmp (if cmp x y <= 0 then [x; y] else [y; x]) stack
     | _ -> pop cmp s stack
 
-  let sort3N cmp s = sort3N_rec cmp [] s
+  let sort3N cmp s = sort3Nrec cmp [] s
 
 end;;

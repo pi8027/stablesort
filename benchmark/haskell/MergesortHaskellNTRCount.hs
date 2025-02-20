@@ -4,6 +4,37 @@ module MergesortHaskellNTRCount where
 
 import Data.Bits
 
+sort3 :: (a -> a -> Ordering) -> [a] -> [a]
+sort3 cmp = sortRec (0 :: Int) [] where
+  merge [] ys = ys
+  merge xs [] = xs
+  merge xs@(x : xs') ys@(y : ys')
+    | cmp x y == GT = y : merge xs ys'
+    | otherwise     = x : merge xs' ys
+
+  push xs k stack | testBit k 0 =
+    let ys : stack' = stack in
+    let !xys = merge ys xs in
+    let !k' = shift k (- 1) in push xys k' stack'
+  push xs k stack = xs : stack
+
+  pop xs [] = xs
+  pop xs (ys : stack) = let !xys = merge ys xs in pop xys stack
+
+  sortRec k stack (x : y : z : s) =
+    let xyz = if cmp x y /= GT then
+                if cmp y z /= GT then [x, y, z]
+                else if cmp x z /= GT then [x, z, y] else [z, x, y]
+              else
+                if cmp x z /= GT then [y, x, z]
+                else if cmp y z /= GT then [y, z, x] else [z, y, x]
+    in
+    let !k' = k + 1 in
+    let !stack' = push xyz k stack in sortRec k' stack' s
+  sortRec k stack s@[x, y] =
+    let !xy = if cmp x y /= GT then s else [y, x] in pop xy stack
+  sortRec k stack s = pop s stack
+
 sortN :: (a -> a -> Ordering) -> [a] -> [a]
 sortN cmp = sortRec (0 :: Int) [] where
   merge [] ys = ys

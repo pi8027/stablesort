@@ -8,6 +8,50 @@ import Data.Bits
 catrev [] ys = ys
 catrev (x : xs) ys = catrev xs (x : ys)
 
+sort3 :: (a -> a -> Ordering) -> [a] -> [a]
+sort3 cmp = sortRec [] where
+  revmerge [] ys accu = catrev ys accu
+  revmerge xs [] accu = catrev xs accu
+  revmerge xs@(x : xs') ys@(y : ys') accu
+    | cmp x y == GT = revmerge xs ys' (y : accu)
+    | otherwise     = revmerge xs' ys (x : accu)
+
+  revmergeRev [] ys accu = catrev ys accu
+  revmergeRev xs [] accu = catrev xs accu
+  revmergeRev xs@(x : xs') ys@(y : ys') accu
+    | cmp y x == GT = revmergeRev xs ys' (y : accu)
+    | otherwise     = revmergeRev xs' ys (x : accu)
+
+  push xs [] = [xs]
+  push xs ([] : stack) = xs : stack
+  push xs [ys] = let !xys = revmerge ys xs [] in [[], xys]
+  push xs (ys : [] : stack) = let !xys = revmerge ys xs [] in [] : xys : stack
+  push xs (ys : zs : stack) =
+    let !xys = revmerge ys xs [] in
+    let !xyzs = revmergeRev xys zs [] in [] : [] : push xyzs stack
+
+  pop xs [] = xs
+  pop xs ([] : [] : stack) = pop xs stack
+  pop xs ([] : stack) = popRev (reverse xs) stack
+  pop xs (ys : stack) = let !xys = revmerge ys xs [] in popRev xys stack
+  popRev xs [] = reverse xs
+  popRev xs ([] : [] : stack) = popRev xs stack
+  popRev xs ([] : stack) = pop (reverse xs) stack
+  popRev xs (ys : stack) = let !xys = revmergeRev xs ys [] in pop xys stack
+
+  sortRec stack (x : y : z : s) =
+    let xyz = if cmp x y /= GT then
+                if cmp y z /= GT then [x, y, z]
+                else if cmp x z /= GT then [x, z, y] else [z, x, y]
+              else
+                if cmp x z /= GT then [y, x, z]
+                else if cmp y z /= GT then [y, z, x] else [z, y, x]
+    in
+    let !stack' = push xyz stack in sortRec stack' s
+  sortRec stack s@[x, y] =
+    let !xy = if cmp x y /= GT then s else [y, x] in pop xy stack
+  sortRec stack s = pop s stack
+
 sortN :: (a -> a -> Ordering) -> [a] -> [a]
 sortN cmp = sortRec [] where
   revmerge [] ys accu = catrev ys accu
