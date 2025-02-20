@@ -1,5 +1,5 @@
 (* Counting-based bottom-up non-tail-recursive mergesorts *)
-module NTR1 = struct
+module NTRCount = struct
 
   let rec merge cmp xs ys =
     match xs, ys with
@@ -18,6 +18,28 @@ module NTR1 = struct
   let rec pop cmp xs = function
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
+
+  let rec sortN_rec cmp k stack s =
+    let rec ascending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp (List.rev accu) stack
+      | y :: s when cmp x y <= 0 -> ascending accu y s
+      | _ -> sortN_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+    in
+    let rec descending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp accu stack
+      | y :: s when cmp x y > 0 -> descending accu y s
+      | _ -> sortN_rec cmp (k + 1) (push cmp accu k stack) s
+    in
+    match s with
+    | x :: y :: s ->
+      if cmp x y <= 0 then ascending [x] y s else descending [x] y s
+    | _ -> pop cmp s stack
+
+  let sortN cmp s = sortN_rec cmp 0 [] s
 
   let rec sort3N_rec cmp k stack s =
     let rec ascending accu x s =
@@ -54,7 +76,7 @@ module NTR1 = struct
 end;;
 
 (* Stack-based bottom-up non-tail-recursive mergesorts *)
-module NTR2 = struct
+module NTRStack = struct
 
   let rec merge cmp xs ys =
     match xs, ys with
@@ -72,6 +94,28 @@ module NTR2 = struct
   let rec pop cmp xs = function
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
+
+  let rec sortN_rec cmp stack s =
+    let rec ascending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp (List.rev accu) stack
+      | y :: s when cmp x y <= 0 -> ascending accu y s
+      | _ -> sortN_rec cmp (push cmp (List.rev accu) stack) s
+    in
+    let rec descending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp accu stack
+      | y :: s when cmp x y > 0 -> descending accu y s
+      | _ -> sortN_rec cmp (push cmp accu stack) s
+    in
+    match s with
+    | x :: y :: s ->
+      if cmp x y <= 0 then ascending [x] y s else descending [x] y s
+    | _ -> pop cmp s stack
+
+  let sortN cmp s = sortN_rec cmp [] s
 
   let rec sort3N_rec cmp stack s =
     let rec ascending accu x s =
@@ -108,7 +152,7 @@ module NTR2 = struct
 end;;
 
 (* Counting-based bottom-up tail-recursive-modulo-cons mergesorts *)
-module TRMC1 = struct
+module TRMCCount = struct
 
   let[@tail_mod_cons] rec merge cmp xs ys =
     match xs, ys with
@@ -127,6 +171,28 @@ module TRMC1 = struct
   let rec pop cmp xs = function
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
+
+  let rec sortN_rec cmp k stack s =
+    let rec ascending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp (List.rev accu) stack
+      | y :: s when cmp x y <= 0 -> ascending accu y s
+      | _ -> sortN_rec cmp (k + 1) (push cmp (List.rev accu) k stack) s
+    in
+    let rec descending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp accu stack
+      | y :: s when cmp x y > 0 -> descending accu y s
+      | _ -> sortN_rec cmp (k + 1) (push cmp accu k stack) s
+    in
+    match s with
+    | x :: y :: s ->
+      if cmp x y <= 0 then ascending [x] y s else descending [x] y s
+    | _ -> pop cmp s stack
+
+  let sortN cmp s = sortN_rec cmp 0 [] s
 
   let rec sort3N_rec cmp k stack s =
     let rec ascending accu x s =
@@ -163,7 +229,7 @@ module TRMC1 = struct
 end;;
 
 (* Stack-based bottom-up tail-recursive-modulo-cons mergesorts *)
-module TRMC2 = struct
+module TRMCStack = struct
 
   let[@tail_mod_cons] rec merge cmp xs ys =
     match xs, ys with
@@ -181,6 +247,28 @@ module TRMC2 = struct
   let rec pop cmp xs = function
     | [] -> xs
     | ys :: stack -> pop cmp (merge cmp ys xs) stack
+
+  let rec sortN_rec cmp stack s =
+    let rec ascending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp (List.rev accu) stack
+      | y :: s when cmp x y <= 0 -> ascending accu y s
+      | _ -> sortN_rec cmp (push cmp (List.rev accu) stack) s
+    in
+    let rec descending accu x s =
+      let accu = x :: accu in
+      match s with
+      | [] -> pop cmp accu stack
+      | y :: s when cmp x y > 0 -> descending accu y s
+      | _ -> sortN_rec cmp (push cmp accu stack) s
+    in
+    match s with
+    | x :: y :: s ->
+      if cmp x y <= 0 then ascending [x] y s else descending [x] y s
+    | _ -> pop cmp s stack
+
+  let sortN cmp s = sortN_rec cmp [] s
 
   let rec sort3N_rec cmp stack s =
     let rec ascending accu x s =
@@ -217,7 +305,7 @@ module TRMC2 = struct
 end;;
 
 (* Counting-based bottom-up tail-recursive mergesorts *)
-module TR1 = struct
+module TRCount = struct
 
   let rec rev_merge cmp xs ys accu =
     match xs, ys with
@@ -316,7 +404,7 @@ module TR1 = struct
 end;;
 
 (* Stack-based bottom-up tail-recursive mergesorts *)
-module TR2 = struct
+module TRStack = struct
 
   let rec rev_merge cmp xs ys accu =
     match xs, ys with
