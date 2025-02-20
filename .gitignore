@@ -12,11 +12,15 @@ Make*.coq.conf
 
 # OCaml
 _build
-benchmark/ocaml/benchmark.native
-benchmark/ocaml/benchmark_exp.native
+benchmark/ocaml/mergesort_coq*
+benchmark/ocaml/benchmark
+benchmark/ocaml/benchmark_exp
+benchmark/ocaml/test_stability
 
 # Haskell
 *.hi
 *.o
+benchmark/haskell/MergesortCoq*.hs
 benchmark/haskell/Benchmark
 benchmark/haskell/BenchmarkExp
+benchmark/haskell/TestStability
