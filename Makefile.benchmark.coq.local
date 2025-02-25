@@ -17,8 +17,11 @@ EXTRACTED_HS_FILES := \
   $(HSDIR)/MergesortCoqCbvAcc.hs
 
 HS_FILES := $(EXTRACTED_HS_FILES) \
-  $(HSDIR)/MergesortHaskellNTRCount.hs \
-  $(HSDIR)/MergesortHaskellNTRStack.hs
+  $(HSDIR)/MergesortHaskellNTRStack.hs \
+  $(HSDIR)/MergesortHaskellNTRStack_.hs \
+  $(HSDIR)/MergesortHaskellTRStack.hs \
+  $(HSDIR)/MergesortHaskellTRStack_.hs \
+  $(HSDIR)/MergesortHaskellStdlib.hs
 
 HS_FLAGS := -with-rtsopts="-T -I0 -A8G -G1 -m1" -O2
 

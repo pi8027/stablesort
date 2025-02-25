@@ -1,35 +1,55 @@
-module NTRCount : sig
-  val sort3 : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sortN : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sort3N : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
+module NaiveTopDown : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
+module NaiveBottomUp : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
+module TopDown : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
+module BottomUp : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
 
 module NTRStack : sig
-  val sort3 : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sortN : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sort3N : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
+  val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sort3N : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
 
-module TRMCCount : sig
-  val sort3 : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sortN : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sort3N : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
+module NTRStack_ : sig
+  val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sort3N : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
 
 module TRMCStack : sig
-  val sort3 : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sortN : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sort3N : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
+  val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sort3N : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
 
-module TRCount : sig
-  val sort3 : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sortN : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sort3N : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
+module TRMCStack_ : sig
+  val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sort3N : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
 
 module TRStack : sig
-  val sort3 : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sortN : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
-  val sort3N : ('a1 -> 'a1 -> int) -> 'a1 list -> 'a1 list
+  val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sort3N : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
+module TRStack_ : sig
+  val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+  val sort3N : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
+module StdlibSort : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
