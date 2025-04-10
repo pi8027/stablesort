@@ -10,6 +10,11 @@ From mathcomp Require Import zify.
 From stablesort Require Import param stablesort.
 From Equations Require Import Equations.
 
+Elpi derive.param2 fst.
+Elpi derive.param2 size.
+Elpi derive.param2 Nat.sub.
+Elpi derive.param2 subn.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -71,7 +76,8 @@ Definition sort (xs : seq T) : R :=
 
 End Abstract.
 
-Parametricity sort.
+Elpi derive.param2 sort_rec.
+Elpi derive.param2 sort.
 
 End Abstract.
 

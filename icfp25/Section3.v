@@ -14,35 +14,12 @@
 
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import zify.
-From Param Require Export Param.
+From stablesort Require Import param.
 From Equations Require Import Equations.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-Global Ltac destruct_reflexivity :=
-  intros; repeat match goal with
-  | [ x : _ |- _ = _ ] => destruct x; reflexivity; fail
-  end.
-
-Global Parametricity Tactic := destruct_reflexivity.
-
-Parametricity bool.
-Parametricity nat.
-Parametricity list.
-Parametricity merge.
-
-Local Lemma bool_R_refl b1 b2 : b1 = b2 -> bool_R b1 b2.
-Proof. by case: b1 => <-; constructor. Qed.
-
-Local Lemma map_rel_map A B (f : A -> B) (l : seq A) :
-  list_R (fun x y => f x = y) l (map f l).
-Proof. by elim: l; constructor. Qed.
-
-Local Lemma rel_map_map A B (f : A -> B) (l : seq A) (fl : seq B) :
-  list_R (fun x y => f x = y) l fl -> fl = map f l.
-Proof. by elim/list_R_ind: l fl / => //= ? ? <- ? ? _ ->. Qed.
 
 (******************************************************************************)
 (* Section 3.2: Characterization of stable non-tail-recursive mergesort       *)
@@ -73,8 +50,8 @@ Definition asort_ty :=
     seq T ->                            (* input                              *)
     R.                                  (* output                             *)
 
-Parametricity sort_ty.
-Parametricity asort_ty.
+Elpi derive.param2 sort_ty.
+Elpi derive.param2 asort_ty.
 
 Structure function := Pack {
   (* the sort function                                                        *)
@@ -132,7 +109,7 @@ Definition sort T R (merge : R -> R -> R) (singleton : T -> R) (empty : R) :=
   foldr (fun x => merge (singleton x)) empty.
 
 (* Its parametricity *)
-Parametricity sort.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -179,7 +156,8 @@ Definition sort (xs : seq T) : R := sort_rec xs (size xs).
 End Abstract.
 
 (* Its parametricity *)
-Parametricity sort.
+Elpi derive.param2 sort_rec.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -207,7 +185,8 @@ Lemma asort_catE : Abstract.sort cat (fun x : T => [:: x]) [::] =1 id.
 Proof.
 rewrite /Abstract.sort => xs; move: {-1}(size xs) (leqnn (size xs)) => n.
 elim: n xs => [|n IHn] [|x [|y xs]] //= Hxs; simp sort_rec; cbn zeta.
-rewrite !IHn ?cat_take_drop //= (size_drop, size_take) /=; last case: ifP; lia.
+by rewrite !IHn ?cat_take_drop //= (size_drop, size_take) /=;
+  last case: ifP; lia.
 Qed.
 
 End TopDown.
@@ -246,7 +225,9 @@ Proof. by apply_funelim (merge_pairs xs) => //= ? ? ? ->. Qed.
 End Abstract.
 
 (* Its parametricity *)
-Parametricity sort.
+Elpi derive.param2 merge_pairs.
+Elpi derive.param2 merge_all.
+Elpi derive.param2 sort.
 
 End Abstract.
 
