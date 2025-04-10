@@ -13,6 +13,20 @@ Lemma if_nilp (T S : Type) (s : seq T) (x y : S) :
   (if nilp s then x else y) = if s is [::] then x else y.
 Proof. by case: s. Qed.
 
+(* We define a non-mutual-fixpoint alternative of ssrnat.half, so that        *)
+(* derive.param2 accepts it.                                                  *)
+Fixpoint half' (n : nat) : nat :=
+  match n with
+  | n.+2 => (half' n).+1
+  | _ => 0
+  end.
+
+Lemma half'E : half' =1 half.
+Proof.
+move=> n; have [m ltnm] := ubnP n.
+by elim: m n ltnm => // m IHm [|[|n]] //= /ltnW /IHm ->.
+Qed.
+
 Section Revmerge.
 
 Context (T : Type) (leT : rel T).
@@ -55,7 +69,7 @@ Equations sort_rec (xs : seq T) (b : bool) (n fuel : nat) :
   (* end absurd cases *)
   sort_rec (x :: xs) _ 1 _ => (singleton x, xs);
   sort_rec xs b n fuel.+1 =>
-    let n1 := n./2 in
+    let n1 := half' n in
     let (s1, xs') := sort_rec xs (~~ b) n1 fuel in
     let (s2, xs'') := sort_rec xs' (~~ b) (n - n1) fuel in
     ((if b then merge' s1 s2 else merge s1 s2), xs'').
@@ -66,7 +80,13 @@ Definition sort (xs : seq T) : R :=
 
 End Abstract.
 
-Parametricity sort.
+Elpi derive.param2 fst.
+Elpi derive.param2 size.
+Elpi derive.param2 half'.
+Elpi derive.param2 Nat.sub.
+Elpi derive.param2 subn.
+Elpi derive.param2 sort_rec.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -109,7 +129,7 @@ rewrite {}/rhs; move: {2 4}(size xs) => fuel.
 apply_funelim (sort_rec xs true (size xs) fuel);
   try by move=> *; case: (b in condrev b).
 move=> x {}xs b n {}fuel IHl IHr.
-rewrite Abstract.sort_rec_equation_5 /= {}IHl /= {IHr}(IHr [::]) /=.
+rewrite Abstract.sort_rec_equation_5 /= !half'E {}IHl /= {IHr}(IHr [::]) /=.
 case: (sort_rec (x :: xs)) => s1 xs' /=; case: sort_rec => s2 xs'' /=.
 by rewrite !revmergeE /condrev; case: b; rewrite /= !revK.
 Qed.
@@ -129,7 +149,7 @@ apply_funelim
 - by [].
 - by move=> x {}xs; rewrite /= take0 drop0.
 move=> x {}xs b n {}fuel IHl IHr; rewrite ltnS => n_lt_fuel.
-rewrite [LHS]/= {}IHl 1?{}(IHr [::]) 1?if_same; try lia.
+rewrite [LHS]/= {}IHl 1?{}(IHr [::]) 1?if_same half'E; try lia.
 rewrite -takeD drop_drop; congr (take _ _, drop _ _); lia.
 Qed.
 

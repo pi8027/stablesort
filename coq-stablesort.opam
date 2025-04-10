@@ -58,8 +58,8 @@ run-test: [ [make "-j%{jobs}%" "build-misc" ] { "1.15~" <= coq-mathcomp-ssreflec
 install: [make "install"]
 depends: [
   "coq" {>= "8.13"}
+  "coq-elpi" 
   "coq-mathcomp-ssreflect" {>= "1.13.0"}
-  "coq-paramcoq" {>= "1.1.3"}
   "coq-mathcomp-zify" {with-test}
   "coq-equations" {with-test}
 ]
