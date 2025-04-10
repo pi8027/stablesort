@@ -79,15 +79,14 @@ tested_coq_opam_versions:
 
 dependencies:
 - opam:
+    name: coq-elpi
+  description: |-
+    [Coq-Elpi](https://github.com/LPCIC/coq-elpi)
+- opam:
     name: coq-mathcomp-ssreflect
     version: '{>= "2.3.0"}'
   description: |-
     [MathComp](https://math-comp.github.io) ssreflect 2.3.0 or later
-- opam:
-    name: coq-paramcoq
-    version: '{>= "1.1.3"}'
-  description: |-
-    [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.3 or later
 - opam:
     name: coq-mathcomp-zify
     version: '{with-test}'
