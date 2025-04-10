@@ -14,6 +14,14 @@ module BottomUp : sig
   val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
 end
 
+module Smooth : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
+module TailRec : sig
+  val sort : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
+end
+
 module NTRStack : sig
   val sort3 : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list
   val sortN : ('a1 -> 'a1 -> bool) -> 'a1 list -> 'a1 list

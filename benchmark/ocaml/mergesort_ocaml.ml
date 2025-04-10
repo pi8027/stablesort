@@ -104,9 +104,8 @@ let rec sort_rec (<=) n xs =
     let s2, xs2 = sort_rec (<=) n2 xs1 in
     (merge (<=) s1 s2, xs2)
 
-let sort (<=) = function
-  | [] -> []
-  | xs -> fst (sort_rec (<=) (length xs) xs)
+let sort (<=) xs =
+  if xs = [] then [] else fst (sort_rec (<=) (length xs) xs)
 
 end;;
 
@@ -126,6 +125,66 @@ let rec pop (<=) xs = function
 let rec sort_rec (<=) k stack = function
   | x :: s -> sort_rec (<=) (k + 1) (push (<=) [x] k stack) s
   | [] -> pop (<=) [] stack
+
+let sort (<=) s = sort_rec (<=) 0 [] s
+
+end;;
+
+module Smooth = struct
+
+open NTRMerge
+
+let rec push (<=) xs k stack =
+  match k mod 2, stack with
+  | 0, _ -> xs :: stack
+  | 1, ys :: stack -> push (<=) (merge (<=) ys xs) (k / 2) stack
+
+let rec pop (<=) xs = function
+  | [] -> xs
+  | ys :: stack -> pop (<=) (merge (<=) ys xs) stack
+
+let rec sort_rec (<=) k stack s =
+  let rec sort_rec' mode accu x s =
+    let accu = x :: accu in
+    match s with
+    | y :: s when (x <= y) = mode -> sort_rec' mode accu y s
+    | _ -> sort_rec (<=) (k + 1)
+             (push (<=) (if mode then rev accu else accu) k stack) s
+  in
+  match s with
+  | x :: y :: s -> sort_rec' (x <= y) [x] y s
+  | _ -> pop (<=) s stack
+
+let sort (<=) s = sort_rec (<=) 0 [] s
+
+end;;
+
+module TailRec = struct
+
+open TRMerge
+
+let rec push (<=) mode xs k stack =
+  let (>=) x y = (<=) y x in
+  match k mod 2, stack with
+  | 0, _ -> xs :: stack
+  | 1, ys :: stack ->
+    push (<=) (not mode)
+      (if mode then rev_merge (>=) xs ys [] else rev_merge (<=) ys xs [])
+      (k / 2) stack
+
+let rec pop (<=) mode xs k stack =
+  match k mod 2, stack with
+  | _, [] -> if mode then rev xs else xs
+  | 0, _ -> pop (<=) (not mode) (rev xs) (k / 2) stack
+  | 1, ys :: stack ->
+    pop (<=) (not mode)
+      (if mode then rev_merge (>=) xs ys [] else rev_merge (<=) ys xs [])
+      (k / 2) stack
+
+let rec sort_rec (<=) k stack =
+  function
+  | x :: s -> sort_rec (<=) (k + 1) (push (<=) false [x] k stack) s
+  | [] -> pop (<=) false [] k stack
 
 let sort (<=) s = sort_rec (<=) 0 [] s
 

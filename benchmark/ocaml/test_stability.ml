@@ -12,6 +12,8 @@ QCheck.Test.check_exn (test_stability NaiveTopDown.sort);;
 QCheck.Test.check_exn (test_stability NaiveBottomUp.sort);;
 QCheck.Test.check_exn (test_stability TopDown.sort);;
 QCheck.Test.check_exn (test_stability BottomUp.sort);;
+QCheck.Test.check_exn (test_stability Smooth.sort);;
+QCheck.Test.check_exn (test_stability TailRec.sort);;
 QCheck.Test.check_exn (test_stability NTRStack.sort3);;
 QCheck.Test.check_exn (test_stability NTRStack.sortN);;
 QCheck.Test.check_exn (test_stability NTRStack.sort3N);;
