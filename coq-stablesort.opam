@@ -37,7 +37,9 @@ In addition, each of the above two kinds of mergesort functions has a smooth
 slices in the input."""
 
 build: [make "-j%{jobs}%"]
-run-test: [make "-j%{jobs}%" "build-icfp25"]
+# The filter below has been added by hand to avoid running the test suite with
+# MathComp <= 2.2.
+run-test: [ [make "-j%{jobs}%" "build-icfp25" ] { "2.3~" <= coq-mathcomp-ssreflect:version } ]
 install: [make "install"]
 depends: [
   "coq" {>= "8.19"}
