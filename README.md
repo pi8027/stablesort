@@ -59,8 +59,8 @@ slices in the input.
 - License: [CeCILL-B Free Software License Agreement](CeCILL-B)
 - Compatible Coq versions: 8.13 or later
 - Additional dependencies:
+  - [Coq-Elpi](https://github.com/LPCIC/coq-elpi)
   - [MathComp](https://math-comp.github.io) 1.13.0 or later
-  - [Paramcoq](https://github.com/coq-community/paramcoq) 1.1.3 or later
   - [Mczify](https://github.com/math-comp/mczify) (required only for the test suite)
   - [Equations](https://github.com/mattam82/Coq-Equations) (required only for the test suite)
 - Coq namespace: `stablesort`
