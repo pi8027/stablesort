@@ -1,46 +1,88 @@
-From stablesort Require Import mathcomp_ext.
+(******************************************************************************)
+(* Appendix C                                                                 *)
+(******************************************************************************)
+
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
-From stablesort Require Import param stablesort.
+From stablesort Require Import stablesort.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Lemma total_refl {T} (r : rel T) : total r -> reflexive r.
+Implicit Types (sort : stableSort) (T R S : Type).
+
+Local Lemma relpre_trans {T' T} {leT : rel T} {f : T' -> T} :
+  transitive leT -> transitive (relpre f leT).
+Proof. by move=> + y x z; apply. Qed.
+
+Definition lexord T (leT leT' : rel T) :=
+  [rel x y | leT x y && (leT y x ==> leT' x y)].
+
+Local Lemma lexord_trans T (leT leT' : rel T) :
+  transitive leT -> transitive leT' -> transitive (lexord leT leT').
+Proof. exact: stablesort.lexord_trans. Qed.
+
+Local Lemma lexord_irr T (leT leT' : rel T) :
+  irreflexive leT' -> irreflexive (lexord leT leT').
+Proof. exact: stablesort.lexord_irr. Qed.
+
+Local Lemma total_refl {T} (r : rel T) : total r -> reflexive r.
 Proof. by move=> rt x; have /orP[] := rt x x. Qed.
 
 Definition eqr {T} (r : rel T) : rel T := [rel x y | r x y && r y x].
 
-Lemma eqr_sym {T} (r : rel T) : symmetric (eqr r).
+Local Lemma eqr_sym {T} (r : rel T) : symmetric (eqr r).
 Proof. by move=> x y; apply/andP/andP => -[]. Qed.
 #[local] Hint Resolve eqr_sym : core.
 
-Lemma eqrW {T} (r : rel T) : subrel (eqr r) r.
+Local Lemma eqrW {T} (r : rel T) : subrel (eqr r) r.
 Proof. by move=> x y /andP[]. Qed.
 
-Lemma eqr_trans {T} (r : rel T) : transitive r -> transitive (eqr r).
+Local Lemma eqr_trans {T} (r : rel T) : transitive r -> transitive (eqr r).
 Proof.
 by move=> tr y x z /andP[? ?] /andP[? ?]; apply/andP; split; apply: (tr y).
 Qed.
 Arguments eqr_trans {T r}.
 
-Lemma eqr_refl {T} (r : rel T) : reflexive r -> reflexive (eqr r).
+Local Lemma eqr_refl {T} (r : rel T) : reflexive r -> reflexive (eqr r).
 Proof. by move=> rr x; rewrite /eqr/= rr. Qed.
 
-Fact sort_usual_stable (sort : stableSort) (T : Type) (leT : rel T) :
+(* Lemma C.1 [Leroy [n. d.]] *)
+Lemma sort_usual_stable sort T (leT : rel T) :
   total leT -> transitive leT ->
-  forall s x, filter (eqr leT x) (sort _ leT s) = filter (eqr leT x) s.
+  forall (x : T) (s : list T),
+    [seq y <- sort T leT s | eqr leT x y] = [seq y <- s | eqr leT x y].
 Proof.
-move=> leT_total leT_tr s x; rewrite sorted_filter_sort// sorted_pairwise//.
-apply/(pairwiseP x) => i j ilt jlt _; rewrite eqrW//.
-by rewrite (eqr_trans _ x)// ?[eqr _ _ x]eqr_sym (all_nthP _ _)// filter_all.
+move=> leT_total leT_trans x s.
+apply/sorted_filter_sort/(@path_sorted _ _ x) => //.
+move: (filter _ _) (filter_all (fun y => leT x y && leT y x) s) => {}s.
+elim: s x => //= x s IHs y /andP[/andP[yx xy] alls] /=.
+rewrite yx IHs //; apply: sub_all alls => z /andP[yz zy].
+by rewrite (leT_trans _ _ _ xy yz) (leT_trans _ _ _ zy yx).
 Qed.
+
+(* Lemma C.2 [Leino and Lucio 2015; Sternagel 2013] *)
+From mathcomp Require Import order.
+Import Order.TTheory.
+
+Lemma sort_stable_sternagel
+    sort T d (T' : orderType d) (key : T -> T') (x : T) (s : list T) :
+  [seq y <- sort T (relpre key <=%O) s | key x == key y] =
+    [seq y <- s | key x == key y].
+Proof.
+have key_total: total (relpre key <=%O) by move=> ? ?; apply: le_total.
+have key_trans: transitive (relpre key <=%O) by move=> ? ? ?; apply: le_trans.
+by congr eq: (sort_usual_stable sort key_total key_trans x s);
+  apply: eq_filter => ?; rewrite eq_le.
+Qed.
+
+(* The converse implication *)
 
 Section UsualStableSortTheory.
 
 Section extract.
 Context {T : Type} (x0 : T).
-Implicit Types (P : {pred T}) (s : seq T).
+Implicit Types (P : {pred T}) (s : list T).
 
 Local Definition egraph P s := filter (preim (nth x0 s) P) (iota 0 (size s)).
 Arguments egraph : simpl never.
@@ -132,18 +174,19 @@ Definition lt_unextract P s := leqW_mono_in (@le_unextract P s).
 
 End extract.
 
-Context (sort : forall T, rel T -> seq T -> seq T).
+Context (sort : forall T, rel T -> list T -> list T).
 Hypothesis sort_nil : forall T (leT : rel T), sort leT [::] = [::].
 Hypothesis sort_sorted :
-  forall T (leT : rel T) (s : seq T), total leT -> sorted leT (sort leT s).
+  forall T (leT : rel T) (s : list T), total leT -> sorted leT (sort leT s).
 Hypothesis sort_usual_stable :
   forall T (leT : rel T), total leT -> transitive leT ->
-  forall (s : seq T) (x : T),
+  forall (s : list T) (x : T),
     filter (eqr leT x) (sort leT s) = filter (eqr leT x) s.
 
+(* Lemma C.3 *)
 Lemma usual_stable_sort_pairwise_stable T (leT leT' : rel T) :
   total leT -> transitive leT ->
-  forall s : seq T, pairwise leT' s -> sorted (lexord leT leT') (sort leT s).
+  forall s : list T, pairwise leT' s -> sorted (lexord leT leT') (sort leT s).
 Proof.
 move=> leT_total leT_tr s.
 wlog x0 : / T by case: s => [|x s']; [rewrite sort_nil//|apply].
@@ -165,6 +208,7 @@ rewrite /v -sort_usual_stable// lt_unextract//= ?nth_unextract//.
 by split=> //; rewrite leqnn/= size_filter unextract_lt.
 Qed.
 
+(* Lemma C.4 *)
 Lemma usual_stable_sort_stable T (leT leT' : rel T) :
   total leT -> transitive leT -> transitive leT' ->
   forall s : seq T, sorted leT' s -> sorted (lexord leT leT') (sort leT s).
@@ -179,6 +223,7 @@ Hypothesis sort_map :
   forall (T T' : Type) (f : T' -> T) (leT : rel T) (s : seq T'),
     sort leT (map f s) = map f (sort (relpre f leT) s).
 
+(* Lemma C.5 *)
 Lemma usual_stable_filter_sort T (leT : rel T) :
   total leT -> transitive leT ->
   forall (p : pred T) (s : seq T),
