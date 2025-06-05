@@ -53,8 +53,8 @@ slices in the input."""
 
 build: [make "-j%{jobs}%"]
 # The filter below has been added by hand to avoid running the test suite with
-# Coq 8.17.
-run-test: [ [make "-j%{jobs}%" "build-misc" ] { coq:version < "8.17~" | "8.18~" <= coq:version } ]
+# Coq 8.17 or MathComp < 1.15.
+run-test: [ [make "-j%{jobs}%" "build-misc" ] { "1.15~" <= coq-mathcomp-ssreflect:version & (coq:version < "8.17~" | "8.18~" <= coq:version) } ]
 install: [make "install"]
 depends: [
   "coq" {>= "8.13"}
