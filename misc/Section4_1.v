@@ -1,5 +1,10 @@
-(* A verified version of top-down tail-recursive mergesort, presented in      *)
-(* Sections 4.1 and 4.3.2 of the paper                                        *)
+(******************************************************************************)
+(* Section 4.1: Tail-recursive mergesort                                      *)
+(* This file provides a Rocq implementation of top-down tail-recursive        *)
+(* mergesort (Section 4.1) and the proof that it satisfies the characteristic *)
+(* property provided by `stablesort.v` (Section 4.3.2).                       *)
+(******************************************************************************)
+
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import zify.
 From stablesort Require Import param stablesort.
@@ -46,8 +51,8 @@ Context (merge merge' : R -> R -> R) (singleton : T -> R) (empty : R).
 (* The abstract top-down tail-recursive mergesort (Section 4.3.2) *)
 Equations sort_rec (xs : seq T) (b : bool) (n fuel : nat) :
     R * seq T by struct fuel :=
-  (* The following three cases ar absurd because [0 < n <= size xs] and       *)
-  (* [n <= fuel] should hold. Nevertheless, we add them to make [sort_rec]    *)
+  (* The following three cases ar absurd because `0 < n <= size xs` and       *)
+  (* `n <= fuel` should hold. Nevertheless, we add them to make `sort_rec`    *)
   (* total and to make its correctness proof easier.                          *)
   sort_rec xs _ _ 0 => (empty, xs);
   sort_rec xs _ 0 _ => (empty, xs);
@@ -97,7 +102,7 @@ Notation merge := (path.merge leT) (only parsing).
 Notation merge' :=
   (fun xs ys => rev (path.merge geT (rev ys) (rev xs))) (only parsing).
 
-(* The proof of Equation (5) *)
+(* The proof of Equation (6) *)
 Lemma asort_mergeE :
   Abstract.sort leT merge merge' (fun x => [:: x]) [::] =1 sort.
 Proof.
@@ -114,7 +119,7 @@ case: (sort_rec (x :: xs)) => s1 xs' /=; case: sort_rec => s2 xs'' /=.
 by rewrite !revmergeE /condrev; case: b; rewrite /= !revK.
 Qed.
 
-(* The proof of Equation (6) *)
+(* The proof of Equation (7) *)
 Lemma asort_catE : Abstract.sort leT cat cat (fun x => [:: x]) [::] =1 id.
 Proof.
 rewrite /Abstract.sort => xs.

@@ -10,7 +10,7 @@ dev-repo: "git+https://github.com/pi8027/stablesort.git"
 bug-reports: "https://github.com/pi8027/stablesort/issues"
 license: "CECILL-B"
 
-synopsis: "Stable sort algorithms and their stability proofs in Coq"
+synopsis: "Stable sort algorithms and their stability proofs in Rocq"
 description: """
 This library provides a generic and modular way to prove the correctness,
 including stability, of several mergesort functions. The correctness lemmas in
@@ -54,7 +54,7 @@ slices in the input."""
 build: [make "-j%{jobs}%"]
 # The filter below has been added by hand to avoid running the test suite with
 # Coq 8.17 or MathComp < 1.15.
-run-test: [ [make "-j%{jobs}%" "build-misc" ] { "1.15~" <= coq-mathcomp-ssreflect:version & (coq:version < "8.17~" | "8.18~" <= coq:version) } ]
+run-test: [ [make "-j%{jobs}%" "build-misc" ] { "1.16~" <= coq-mathcomp-ssreflect:version & (coq:version < "8.17~" | "8.18~" <= coq:version) } ]
 install: [make "install"]
 depends: [
   "coq" {>= "8.13"}

@@ -1,12 +1,12 @@
 ---
-fullname: Stable sort algorithms in Coq
+fullname: Stable sort algorithms in Rocq
 shortname: stablesort
 organization: pi8027
 action: true
 dune: false
 
 synopsis: >-
-  Stable sort algorithms and their stability proofs in Coq
+  Stable sort algorithms and their stability proofs in Rocq
 
 description: |-
   This library provides a generic and modular way to prove the correctness,
@@ -50,7 +50,7 @@ description: |-
 
 publications:
 - pub_url: https://arxiv.org/abs/2403.08173
-  pub_title: A bargain for mergesorts (functional pearl) — How to prove your mergesort correct and stable, almost for free
+  pub_title: A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free
   pub_doi: 10.48550/arXiv.2403.08173
 
 authors:
@@ -202,12 +202,12 @@ action_appendix: |2-
 
 build: |-
   ## Building and installation instructions
-  The easiest way to install the development version of Stable sort algorithms in Coq
+  The easiest way to install the development version of Stable sort algorithms in Rocq
   is via [OPAM](https://opam.ocaml.org/doc/Install.html):
   ``` shell
   git clone https://github.com/pi8027/stablesort.git
   cd stablesort
-  opam repo add coq-released https://coq.inria.fr/opam/released
+  opam repo add rocq-released https://rocq-prover.org/opam/released
   opam install ./coq-stablesort.opam
   ```
 

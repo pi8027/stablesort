@@ -2,7 +2,7 @@
 This file was generated from `meta.yml`, please do not edit manually.
 Follow the instructions on https://github.com/coq-community/templates to regenerate.
 --->
-# Stable sort algorithms in Coq
+# Stable sort algorithms in Rocq
 
 [![Docker CI][docker-action-shield]][docker-action-link]
 
@@ -65,15 +65,15 @@ slices in the input.
   - [Equations](https://github.com/mattam82/Coq-Equations) (required only for the test suite)
 - Coq namespace: `stablesort`
 - Related publication(s):
-  - [A bargain for mergesorts (functional pearl) — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.48550/arXiv.2403.08173](https://doi.org/10.48550/arXiv.2403.08173)
+  - [A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.48550/arXiv.2403.08173](https://doi.org/10.48550/arXiv.2403.08173)
 
 ## Building and installation instructions
-The easiest way to install the development version of Stable sort algorithms in Coq
+The easiest way to install the development version of Stable sort algorithms in Rocq
 is via [OPAM](https://opam.ocaml.org/doc/Install.html):
 ``` shell
 git clone https://github.com/pi8027/stablesort.git
 cd stablesort
-opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add rocq-released https://rocq-prover.org/opam/released
 opam install ./coq-stablesort.opam
 ```
 
