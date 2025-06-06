@@ -1,5 +1,0 @@
-(executables
- (names benchmark benchmark_exp test_stability)
- (libraries unix qcheck)
- (flags (:standard -w a))
- (ocamlopt_flags (:standard -O3)))
