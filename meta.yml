@@ -1,56 +1,41 @@
 ---
-fullname: Stable sort algorithms in Coq
+fullname: Stable sort algorithms in Rocq
 shortname: stablesort
 organization: pi8027
 action: true
 dune: false
 
 synopsis: >-
-  Stable sort algorithms and their stability proofs in Coq
+  Stable sort algorithms and their stability proofs in Rocq
 
 description: |-
-  This library provides a generic and modular way to prove the correctness,
-  including stability, of several mergesort functions. The correctness lemmas in
-  this library are overloaded using a canonical structure
-  (`StableSort.function`). This structure characterizes stable mergesort
-  functions, say `sort`, by its abstract version `asort` parameterized over the
-  type of sorted lists and its operators such as merge, the relational
-  parametricity of `asort`, and two equational properties that `asort`
-  instantiated with merge and concatenation are `sort` and the identity
-  function, respectively, which intuitively mean that replacing merge with
-  concatenation turns `sort` into the identity function.
-  From this characterization, we derive an induction principle over
-  traces—binary trees reflecting the underlying divide-and-conquer structure of
-  mergesort—to reason about the relation between the input and output of
-  `sort`, and the naturality of `sort`. These two properties are sufficient to
-  deduce several correctness results of mergesort, including stability. Thus,
-  one may prove the stability of a new sorting function by defining its abstract
-  version, proving the relational parametricity of the latter using the
-  parametricity translation (the Paramcoq plugin), and manually providing the
-  equational properties.
+  This library provides a characterization of stable mergesort functions using
+  relational parametricity, and deduces several functional correctness results,
+  including stability, solely from the characteristic property. This library
+  allows the users to prove their mergesort correct just by proving that the
+  mergesort in question satisfies the characteristic property. The functional
+  correctness lemmas are overloaded using a canonical structure
+  (`StableSort.function`) that bundles the characteristic property, and
+  automatically apply to any declared instance of this structure.
 
-  As an application of the above proof methodology, this library provides two
-  kinds of optimized mergesorts.
+  As instances of the characteristic property, this library provides two kinds
+  of optimized mergesorts.
   The first kind is non-tail-recursive mergesort. In call-by-need evaluation,
-  they allow us to compute the first k smallest elements of a list of length n
-  in the optimal O(n + k log k) time complexity of the partial and incremental
-  sorting problems. However, the non-tail-recursive merge function linearly
-  consumes the call stack and triggers a stack overflow in call-by-value
-  evaluation.
+  they compute the first k smallest elements of a list of length n in
+  O(n + k log k) time, which is known to be the optimal time complexity of the
+  partial and incremental sorting problems. However, the non-tail-recursive
+  merge function linearly consumes the call stack and triggers a stack overflow
+  in call-by-value evaluation.
   The second kind is tail-recursive mergesorts and thus solves the above issue
   in call-by-value evaluation. However, it does not allow us to compute the
   output incrementally regardless of the evaluation strategy.
-  Therefore, there is a performance trade-off between non-tail-recursive and
-  tail-recursive mergesorts, and the best mergesort function for lists depends
-  on the situation, in particular, the evaluation strategy and whether it should
-  be incremental or not.
   In addition, each of the above two kinds of mergesort functions has a smooth
   (also called natural) variant of mergesort, which takes advantage of sorted
   slices in the input.
 
 publications:
 - pub_url: https://arxiv.org/abs/2403.08173
-  pub_title: A bargain for mergesorts (functional pearl) — How to prove your mergesort correct and stable, almost for free
+  pub_title: A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free
   pub_doi: 10.48550/arXiv.2403.08173
 
 authors:
@@ -155,8 +140,6 @@ tested_coq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '2.3.0-coq-8.20'
   repo: 'mathcomp/mathcomp'
-- version: '2.4.0-coq-8.19'
-  repo: 'mathcomp/mathcomp'
 - version: '2.4.0-coq-8.20'
   repo: 'mathcomp/mathcomp'
 - version: '2.4.0-rocq-prover-9.0'
@@ -202,12 +185,12 @@ action_appendix: |2-
 
 build: |-
   ## Building and installation instructions
-  The easiest way to install the development version of Stable sort algorithms in Coq
+  The easiest way to install the development version of Stable sort algorithms in Rocq
   is via [OPAM](https://opam.ocaml.org/doc/Install.html):
   ``` shell
   git clone https://github.com/pi8027/stablesort.git
   cd stablesort
-  opam repo add coq-released https://coq.inria.fr/opam/released
+  opam repo add rocq-released https://rocq-prover.org/opam/released
   opam install ./coq-stablesort.opam
   ```
 

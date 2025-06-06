@@ -1,5 +1,13 @@
 (******************************************************************************)
-(* Appendix C                                                                 *)
+(* Appendix C: Comparison of formulations of the stability                    *)
+(* This file is the Rocq formalization of Section 3.4.3 and Appendix C, that  *)
+(* provides:                                                                  *)
+(* - The proofs of the stability results in literature (Lemmas C.1 and C.2),  *)
+(*   showing that they are easy consequences of our stability result (mainly  *)
+(*   Theorem 3.16), and                                                       *)
+(* - The converse proof that Lemma C.1 implies Theorems 3.11 and 3.16 under   *)
+(*   some assumptions on `sort`. (NB: Theorem 3.11 derived from Lemma C.1     *)
+(*   requires `leT` to be transitive.)                                        *)
 (******************************************************************************)
 
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
@@ -47,8 +55,8 @@ Arguments eqr_trans {T r}.
 Local Lemma eqr_refl {T} (r : rel T) : reflexive r -> reflexive (eqr r).
 Proof. by move=> rr x; rewrite /eqr/= rr. Qed.
 
-(* Lemma C.1 [Leroy [n. d.]] *)
-Lemma sort_usual_stable sort T (leT : rel T) :
+(* Lemma C.1 (3.17) [Leroy [n. d.]] *)
+Lemma sort_stable_leroy sort T (leT : rel T) :
   total leT -> transitive leT ->
   forall (x : T) (s : list T),
     [seq y <- sort T leT s | eqr leT x y] = [seq y <- s | eqr leT x y].
@@ -72,7 +80,7 @@ Lemma sort_stable_sternagel
 Proof.
 have key_total: total (relpre key <=%O) by move=> ? ?; apply: le_total.
 have key_trans: transitive (relpre key <=%O) by move=> ? ? ?; apply: le_trans.
-by congr eq: (sort_usual_stable sort key_total key_trans x s);
+by congr eq: (sort_stable_leroy sort key_total key_trans x s);
   apply: eq_filter => ?; rewrite eq_le.
 Qed.
 

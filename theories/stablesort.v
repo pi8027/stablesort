@@ -37,7 +37,7 @@ Module StableSort.
 (* the type of polymorphic sort functions                                     *)
 Definition sort_ty :=
   forall T : Type,                      (* the type of elements               *)
-    rel T ->                            (* the comparison function [leT]      *)
+    rel T ->                            (* the comparison function `leT`      *)
     seq T ->                            (* input                              *)
     seq T.                              (* output                             *)
 
@@ -46,9 +46,9 @@ Definition sort_ty :=
 Definition asort_ty :=
   forall T : Type,                      (* the type of elements               *)
   forall R : Type,                      (* the type of sorted lists           *)
-    rel T ->                            (* the comparison function [leT]      *)
-    (R -> R -> R) ->                    (* merge by [leT]                     *)
-    (R -> R -> R) ->                    (* merge by the converse of [leT]     *)
+    rel T ->                            (* the comparison function `leT`      *)
+    (R -> R -> R) ->                    (* merge by `leT`                     *)
+    (R -> R -> R) ->                    (* merge by the converse of `leT`     *)
     (T -> R) ->                         (* singleton sorted list              *)
     R ->                                (* empty sorted list                  *)
     seq T ->                            (* input                              *)
@@ -62,15 +62,15 @@ Structure function := Pack {
   apply : forall T : Type, rel T -> seq T -> seq T;
   (* the *abstract* sort function                                             *)
   asort : asort_ty;
-  (* the binary parametricity of [asort]                                      *)
+  (* the binary parametricity of `asort`                                      *)
   _ : asort_ty_R asort asort;
-  (* [asort] instantiated with merge is extensionally equal to [apply]        *)
+  (* `asort` instantiated with merge is extensionally equal to `apply`        *)
   _ : forall T (leT : rel T),
     let geT x y := leT y x in
     asort leT (merge leT) (fun xs ys => rev (merge geT (rev ys) (rev xs)))
       (fun x => [:: x]) [::]
     =1 apply leT;
-  (* [asort] instantiated with concatenation is the identity function         *)
+  (* `asort` instantiated with concatenation is the identity function         *)
   _ : forall T (leT : rel T), asort leT cat cat (fun x => [:: x]) [::] =1 id;
 }.
 
@@ -88,7 +88,7 @@ Export StableSort.Exports.
 (* Merge functions                                                            *)
 (******************************************************************************)
 
-(* The [MergeSig] and [RevmergeSig] module types are interfaces for           *)
+(* The `MergeSig` and `RevmergeSig` module types below are interfaces for     *)
 (* non-tail-recursive and tail-recursive merge functions, respectively.       *)
 Module Type MergeSig.
 Parameter merge : forall (T : Type) (leT : rel T), seq T -> seq T -> seq T.
@@ -101,8 +101,9 @@ Parameter revmergeE : forall (T : Type) (leT : rel T) (xs ys : seq T),
     revmerge leT xs ys = rev (path.merge leT xs ys).
 End RevmergeSig.
 
-(* The [Merge] module implements a non-tail-recursive merge function using    *)
-(* nested recursion. This implementation is suited for computation inside Coq.*)
+(* The `Merge` module below implements a non-tail-recursive merge function    *)
+(* using nested recursion. This implementation is suited for computation      *)
+(* inside Rocq.                                                               *)
 Module Merge <: MergeSig.
 
 Fixpoint merge (T : Type) (leT : rel T) (xs ys : seq T) : seq T :=
@@ -118,8 +119,9 @@ Proof. by elim=> // x xs IHxs; elim=> //= y ys IHys; rewrite IHxs IHys. Qed.
 
 End Merge.
 
-(* The [MergeAcc] module implements a non-tail-recursive merge function using *)
-(* well-founded recursion. This implementation is suited for code extraction. *)
+(* The `MergeAcc` module below implements a non-tail-recursive merge function *)
+(* using well-founded recursion. This implementation is suited for code       *)
+(* extraction.                                                                *)
 Module MergeAcc <: MergeSig.
 
 Definition mergeord {T : Type} (p1 p2 : seq T * seq T) : Prop :=
@@ -178,8 +180,9 @@ Qed.
 
 End MergeAcc.
 
-(* The [Revmerge] module implements a tail-recursive merge function using     *)
-(* nested recursion. This implementation is suited for computation inside Coq.*)
+(* The `Revmerge` module below implements a tail-recursive merge function     *)
+(* using nested recursion. This implementation is suited for computation      *)
+(* inside Rocq.                                                               *)
 Module Revmerge <: RevmergeSig.
 
 Fixpoint merge_rec (T : Type) (leT : rel T) (xs ys accu : seq T) : seq T :=
@@ -204,8 +207,9 @@ Qed.
 
 End Revmerge.
 
-(* The [RevmergeAcc] module implements a tail-recursive merge function using  *)
-(* well-founded recursion. This implementation is suited for code extraction. *)
+(* The `RevmergeAcc` module below implements a tail-recursive merge function  *)
+(* using well-founded recursion. This implementation is suited for code       *)
+(* extraction.                                                                *)
 Module RevmergeAcc <: RevmergeSig.
 
 Import MergeAcc.
@@ -274,18 +278,19 @@ End Insertion.
 Canonical Insertion.sort_stable.
 
 (******************************************************************************)
-(* The [CBN_] functor module takes a module [M] of type [MergeSig] and        *)
-(* provides a family of mergesort functions [sort1], [sort2], [sort3], and    *)
-(* [sortN]. These functions are bottom-up and structurally recursive and use  *)
-(* [M.merge] internally for merging sorted lists.                             *)
-(* The numbers [1], [2], and [3] in their names stand for the fact that they  *)
+(* The `CBN_` functor module below takes a module `M` of type `MergeSig` and  *)
+(* provides a family of mergesort functions `sort1`, `sort2`, `sort3`, and    *)
+(* `sortN`. These functions are bottom-up and structurally recursive and use  *)
+(* `M.merge` internally for merging sorted lists.                             *)
+(* The numbers `1`, `2`, and `3` in their names stand for the fact that they  *)
 (* repeat to take a fixed-size prefix from the input, put it into the given   *)
 (* order, and push it to a stack that manages the sorting process. Among      *)
-(* those, [sort2] is exactly the same as [path.sort] of MathComp except that  *)
-(* it is parameterized by the merge function. On the other hand, [sortN]      *)
-(* takes the longest sorted prefix (in ascending or descending order) instead *)
-(* of a fixed-size prefix, as in GHC's [Data.List.sort].                      *)
-(* Since [M.merge] is expected to be a non-tail-recursive merge function,     *)
+(* those, `sort2` is exactly the same as `path.sort` of MathComp except that  *)
+(* it is parameterized by the merge function. On the other hand, `sortN`      *)
+(* is a "smooth" mergesort that takes the longest sorted prefix (in ascending *)
+(* or descending order) instead of a fixed-size prefix, as in GHC's           *)
+(* `Data.List.sort`.                                                          *)
+(* Since `M.merge` is expected to be a non-tail-recursive merge function,     *)
 (* these sorting functions should allow us to compute the output              *)
 (* incrementally in the call-by-need evaluation. In fact, computing the first *)
 (* k smallest elements of a list of length n using one of these sort          *)
@@ -600,22 +605,22 @@ Canonical CBNAcc.sort3_stable.
 Canonical CBNAcc.sortN_stable.
 
 (******************************************************************************)
-(* The [CBV_] functor module takes a module [M] of type [RevmergeSig] and     *)
-(* provides a family of mergesort functions [sort1], [sort2], [sort3], and    *)
-(* [sortN]. These functions are bottom-up and structurally recursive and use  *)
-(* [M.revmerge] internally for merging sorted lists. Their naming convention  *)
-(* is the same as in the above [CBN_] functor module.                         *)
-(* As opposed to the [M.merge] function of a [M : MergeSig], the [M.revmerge] *)
-(* function puts its result in the reverse order, and is expected to be a     *)
-(* tail-recursive merge function, so that it does not consume the stack       *)
-(* linearly in the call-by-value evaluation. Merging with the converse        *)
-(* relation of the given order [leT] allows us to merge two lists sorted in   *)
-(* the reverse order without taking their reversals (see, e.g., the last case *)
-(* of [merge_sort_push]). Also, the push/pop trick of [path.sort] allows us   *)
-(* to implement bottom-up mergesort functions with only O(log n) stack        *)
-(* consumption. However, this algorithm does not allow us to compute the      *)
-(* output incrementally in the optimal O(n + k log k) time regardless of the  *)
-(* evaluation strategy.                                                       *)
+(* The `CBV_` functor module below takes a module `M` of type `RevmergeSig`   *)
+(* and provides a family of mergesort functions `sort1`, `sort2`, `sort3`,    *)
+(* and `sortN`. These functions are bottom-up and structurally recursive and  *)
+(* use `M.revmerge` internally for merging sorted lists. Their naming         *)
+(* convention is the same as in the `CBN_` functor module above.              *)
+(* In contrast to the `M.merge` function of a `M : MergeSig`, the             *)
+(* `M.revmerge` function puts its result in the reverse order, and is         *)
+(* expected to be a tail-recursive merge function, so that it does not        *)
+(* consume the stack linearly in the call-by-value evaluation. Merging with   *)
+(* the converse relation of the given order `leT` allows us to merge two      *)
+(* lists sorted in the reverse order without taking their reversals (see,     *)
+(* e.g., the last case of `push`). Also, the push/pop trick of `path.sort`    *)
+(* allows us to implement bottom-up mergesort functions with only O(log n)    *)
+(* stack consumption. However, this algorithm does not allow us to compute    *)
+(* the output incrementally in the optimal O(n + k log k) time regardless of  *)
+(* the evaluation strategy.                                                   *)
 (******************************************************************************)
 
 Module CBV_ (M : RevmergeSig).
