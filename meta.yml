@@ -168,12 +168,12 @@ dependencies:
     name: coq-mathcomp-zify
     version: '{with-test}'
   description: |-
-    [Mczify](https://github.com/math-comp/mczify) (required only for the test suite)
+    [Mczify](https://github.com/math-comp/mczify) (required only for `misc/`)
 - opam:
     name: coq-equations
     version: '{with-test}'
   description: |-
-    [Equations](https://github.com/mattam82/Coq-Equations) (required only for the test suite)
+    [Equations](https://github.com/mattam82/Coq-Equations) (required only for `misc/`)
 
 test_target: build-misc
 namespace: stablesort
@@ -195,6 +195,11 @@ build: |-
   ```
 
 documentation: |-
+  ## Files
+  The [`theories/`](theories/) directory is the main part of the library. The
+  [`misc/`](misc/) directory, which has a dedicated README file, contains Rocq
+  files corresponding more closely to the paper.
+
   ## Credits
   The mergesort functions and the stability proofs provided in this library are
   mostly based on ones in the `path` library of Mathematical Components.
