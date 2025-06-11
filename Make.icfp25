@@ -10,3 +10,4 @@ icfp25/Section4_1.v
 -arg -async-proofs-cache -arg force
 -arg -w -arg -undo-batch-mode
 -arg -w -arg -notation-overridden
+-arg -w -arg -deprecated-coq-env-var

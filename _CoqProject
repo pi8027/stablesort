@@ -1,3 +1,4 @@
 -R theories stablesort
 
 -arg -w -arg -notation-overridden
+-arg -w -arg -deprecated-coq-env-var
