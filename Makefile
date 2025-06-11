@@ -1,47 +1,47 @@
 # KNOWNTARGETS will not be passed along to CoqMakefile
-KNOWNTARGETS := Makefile.coq Makefile.misc.coq build-misc \
+KNOWNTARGETS := Makefile.coq Makefile.icfp25.coq build-icfp25 \
 				clean cleanall distclean
 # KNOWNFILES will not get implicit targets from the final rule, and so
 # depending on them won't invoke the submake
 # Warning: These files get declared as PHONY, so any targets depending
 # on them always get rebuilt
-KNOWNFILES   := Makefile Make Make.misc
+KNOWNFILES   := Makefile Make Make.icfp25
 
 .DEFAULT_GOAL := invoke-coqmakefile
 
 COQMAKEFILE       = $(COQBIN)coq_makefile
 COQMAKE           = $(MAKE) --no-print-directory -f Makefile.coq
-COQMAKE_MISC      = $(MAKE) --no-print-directory -f Makefile.misc.coq
+COQMAKE_ICFP25    = $(MAKE) --no-print-directory -f Makefile.icfp25.coq
 
 Makefile.coq: Makefile Make
 	$(COQMAKEFILE) -f Make -o Makefile.coq
 
-Makefile.misc.coq: Makefile Make.misc
-	$(COQMAKEFILE) -f Make.misc -o Makefile.misc.coq
+Makefile.icfp25.coq: Makefile Make.icfp25
+	$(COQMAKEFILE) -f Make.icfp25 -o Makefile.icfp25.coq
 
 invoke-coqmakefile: Makefile.coq
 	$(COQMAKE) $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
 
-build-misc: Makefile.misc.coq invoke-coqmakefile
-	$(COQMAKE_MISC)
+build-icfp25: Makefile.icfp25.coq invoke-coqmakefile
+	$(COQMAKE_ICFP25)
 
 theories/%.vo: Makefile.coq
 	$(COQMAKE) $@
 
-misc/%.vo: Makefile.misc.coq
-	$(COQMAKE_MISC) $@
+icfp25/%.vo: Makefile.icfp25.coq
+	$(COQMAKE_ICFP25) $@
 
 clean::
 	@if [ -f Makefile.coq ]; then $(COQMAKE) clean; fi
-	@if [ -f Makefile.misc.coq ]; then $(COQMAKE_MISC) clean; fi
+	@if [ -f Makefile.icfp25.coq ]; then $(COQMAKE_ICFP25) clean; fi
 
 cleanall::
 	@if [ -f Makefile.coq ]; then $(COQMAKE) cleanall; fi
-	@if [ -f Makefile.misc.coq ]; then $(COQMAKE_MISC) cleanall; fi
+	@if [ -f Makefile.icfp25.coq ]; then $(COQMAKE_ICFP25) cleanall; fi
 
 distclean:: cleanall
 	rm -f Makefile.coq Makefile.coq.conf
-	rm -f Makefile.misc.coq Makefile.misc.coq.conf
+	rm -f Makefile.icfp25.coq Makefile.icfp25.coq.conf
 
 .PHONY: invoke-coqmakefile $(KNOWNFILES)
 
