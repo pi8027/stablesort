@@ -5,5 +5,5 @@ mkCoqDerivation {
   pname = "stablesort";
   defaultVersion = "null";
   inherit version;
-  propagatedBuildInputs = [ mathcomp paramcoq mathcomp-zify equations ];
+  propagatedBuildInputs = [ mathcomp.ssreflect paramcoq mathcomp-zify equations ];
 }
