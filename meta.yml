@@ -168,14 +168,14 @@ dependencies:
     name: coq-mathcomp-zify
     version: '{with-test}'
   description: |-
-    [Mczify](https://github.com/math-comp/mczify) (required only for `misc/`)
+    [Mczify](https://github.com/math-comp/mczify) (required only for `icfp25/`)
 - opam:
     name: coq-equations
     version: '{with-test}'
   description: |-
-    [Equations](https://github.com/mattam82/Coq-Equations) (required only for `misc/`)
+    [Equations](https://github.com/mattam82/Coq-Equations) (required only for `icfp25/`)
 
-test_target: build-misc
+test_target: build-icfp25
 namespace: stablesort
 
 action_appendix: |2-
@@ -197,8 +197,8 @@ build: |-
 documentation: |-
   ## Files
   The [`theories/`](theories/) directory is the main part of the library. The
-  [`misc/`](misc/) directory, which has a dedicated README file, contains Rocq
-  files corresponding more closely to the paper.
+  [`icfp25/`](icfp25/) directory, which has a dedicated README file, contains
+  Rocq files corresponding more closely to the paper.
 
   ## Credits
   The mergesort functions and the stability proofs provided in this library are
