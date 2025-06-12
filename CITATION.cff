@@ -1,4 +1,6 @@
 cff-version: 1.2.0
+title: "Stable sort algorithms and their stability proofs in Rocq"
+license: "CeCILL-B"
 authors:
   - family-names: Cohen
     given-names: Cyril
@@ -6,4 +8,3 @@ authors:
   - family-names: Sakaguchi
     given-names: Kazuhiko
     orcid: https://orcid.org/0000-0003-1855-5189
-title: "stablesort"
