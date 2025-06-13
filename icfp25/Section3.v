@@ -438,12 +438,11 @@ Context (T : eqType) (leT : rel T) (s : seq T).
 (* Lemma 3.7 (B.11) *)
 Lemma perm_sort : perm_eql (sort _ leT s) s.
 Proof.
-(* The proof shown in the paper *)
+(* A simpler proof using `permP` and `count_sort`, shown in Lemma B.11 *)
+Succeed by apply/permPl/permP => ?; rewrite count_sort.
+(* The proof shown in Lemma 3.7 in Section 3.4.1 *)
 apply/permPl; elim/sort_ind: (sort _ leT s) => // xs xs' + ys ys'.
 by rewrite perm_merge; apply: perm_cat.
-Restart.
-(* A simpler proof using `permP` and `count_sort`, shown in Lemma B.11 *)
-by apply/permPl/permP => ?; rewrite count_sort.
 Qed.
 
 (* Corollary 3.8 (B.12) *)

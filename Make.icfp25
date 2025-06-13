@@ -7,7 +7,5 @@ icfp25/Section4_1.v
 -R theories stablesort
 -R icfp25 stablesort.icfp25
 
--arg -async-proofs-cache -arg force
--arg -w -arg -undo-batch-mode
 -arg -w -arg -notation-overridden
 -arg -w -arg -deprecated-coq-env-var
