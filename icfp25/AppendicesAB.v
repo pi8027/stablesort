@@ -497,6 +497,9 @@ Proof. exact: seq.all_sigP. Qed.
 
 (******************************************************************************)
 (* Appendix B: The theory of stable sort functions                            *)
+(* Most proofs come with the first line `Succeed exact: ...` to ensure that   *)
+(* the statement matches exactly with the one in `stablesort.v`, followed by  *)
+(* the copy of the proof.                                                     *)
 (******************************************************************************)
 
 Lemma sort_ind sort T (leT : rel T) (R : list T -> list T -> Prop) :
@@ -521,8 +524,7 @@ Proof. exact: stablesort.sort_map. Qed.
 Lemma pairwise_sort sort T (leT : rel T) (s : list T) :
   pairwise leT s -> sort T leT s = s.
 Proof.
-exact: stablesort.pairwise_sort.
-Restart.
+Succeed exact: stablesort.pairwise_sort.
 elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys.
   by rewrite pairwise_cat => /and3P[/allrel_merge <- /IHxs -> /IHys ->].
 rewrite pairwise_cat allrelC -allrel_rev2 => /and3P[hlr /IHxs -> /IHys ->].
@@ -532,8 +534,7 @@ Qed.
 Lemma sorted_sort sort T (leT : rel T) :
   transitive leT -> forall s : list T, sorted leT s -> sort T leT s = s.
 Proof.
-exact: stablesort.sorted_sort.
-Restart.
+Succeed exact: stablesort.sorted_sort.
 by move=> leT_tr s; rewrite sorted_pairwise //; apply/pairwise_sort.
 Qed.
 
@@ -541,8 +542,7 @@ Lemma sorted_sort_in sort T (P : pred T) (leT : rel T) :
   {in P & &, transitive leT} ->
   forall s : list T, all P s -> sorted leT s -> sort T leT s = s.
 Proof.
-exact: stablesort.sorted_sort_in.
-Restart.
+Succeed exact: stablesort.sorted_sort_in.
 move=> /in3_sig ? _ /all_sigP[s ->].
 by rewrite sort_map sorted_map => /sorted_sort->.
 Qed.
@@ -550,8 +550,7 @@ Qed.
 Lemma sort_pairwise_stable sort T (leT leT' : rel T) : total leT ->
   forall s : list T, pairwise leT' s -> sorted (lexord leT leT') (sort T leT s).
 Proof.
-exact: stablesort.sort_pairwise_stable.
-Restart.
+Succeed exact: stablesort.sort_pairwise_stable.
 move=> leT_total s.
 suff: (forall P, all P s -> all P (sort T leT s)) /\
         (pairwise leT' s -> sorted (lexord leT leT') (sort T leT s)).
@@ -571,8 +570,7 @@ Lemma sort_pairwise_stable_in sort T (P : pred T) (leT leT' : rel T) :
   {in P &, total leT} -> forall s : list T, all P s -> pairwise leT' s ->
   sorted (lexord leT leT') (sort T leT s).
 Proof.
-exact: stablesort.sort_pairwise_stable_in.
-Restart.
+Succeed exact: stablesort.sort_pairwise_stable_in.
 move=> /in2_sig leT_total _ /all_sigP[s ->].
 by rewrite sort_map pairwise_map sorted_map; apply: sort_pairwise_stable.
 Qed.
@@ -580,8 +578,7 @@ Qed.
 Lemma sort_stable sort T (leT leT' : rel T) : total leT -> transitive leT' ->
   forall s : list T, sorted leT' s -> sorted (lexord leT leT') (sort T leT s).
 Proof.
-exact: stablesort.sort_stable.
-Restart.
+Succeed exact: stablesort.sort_stable.
 by move=> ? ? s; rewrite sorted_pairwise//; apply: sort_pairwise_stable.
 Qed.
 
@@ -590,8 +587,7 @@ Lemma sort_stable_in sort T (P : pred T) (leT leT' : rel T) :
   forall s : list T, all P s -> sorted leT' s ->
   sorted (lexord leT leT') (sort T leT s).
 Proof.
-exact: stablesort.sort_stable_in.
-Restart.
+Succeed exact: stablesort.sort_stable_in.
 move=> /in2_sig leT_total /in3_sig leT_tr _ /all_sigP[s ->].
 by rewrite sort_map !sorted_map; apply: sort_stable.
 Qed.
@@ -599,8 +595,7 @@ Qed.
 Lemma count_sort sort T (leT : rel T) (p : pred T) (s : list T) :
   count p (sort T leT s) = count p s.
 Proof.
-exact: stablesort.count_sort.
-Restart.
+Succeed exact: stablesort.count_sort.
 by elim/sort_ind: (sort _ leT s) => // xs xs' IHxs ys ys' IHys;
   rewrite ?count_rev count_merge !count_cat ?count_rev IHxs IHys // addnC.
 Qed.
@@ -608,46 +603,40 @@ Qed.
 Lemma size_sort sort T (leT : rel T) (s : list T) :
   size (sort T leT s) = size s.
 Proof.
-exact: stablesort.size_sort.
-Restart.
+Succeed exact: stablesort.size_sort.
 exact: (count_sort sort leT predT).
 Qed.
 
 Lemma sort_nil sort T (leT : rel T) : sort T leT [::] = [::].
 Proof.
-exact: stablesort.sort_nil.
-Restart.
+Succeed exact: stablesort.sort_nil.
 by case: (sort _) (size_sort sort leT [::]).
 Qed.
 
 Lemma all_sort sort T (p : pred T) (leT : rel T) (s : list T) :
   all p (sort T leT s) = all p s.
 Proof.
-exact: stablesort.all_sort.
-Restart.
+Succeed exact: stablesort.all_sort.
 by rewrite !all_count count_sort size_sort.
 Qed.
 
 Lemma perm_sort sort (T : eqType) (leT : rel T) (s : list T) :
   perm_eql (sort T leT s) s.
 Proof.
-exact: stablesort.perm_sort.
-Restart.
+Succeed exact: stablesort.perm_sort.
 by apply/permPl/permP => ?; rewrite count_sort.
 Qed.
 
 Lemma mem_sort sort (T : eqType) (leT : rel T) (s : list T) : sort T leT s =i s.
 Proof.
-exact: stablesort.mem_sort.
-Restart.
+Succeed exact: stablesort.mem_sort.
 exact/perm_mem/permPl/perm_sort.
 Qed.
 
 Lemma sort_uniq sort (T : eqType) (leT : rel T) (s : list T) :
   uniq (sort T leT s) = uniq s.
 Proof.
-exact: stablesort.sort_uniq.
-Restart.
+Succeed exact: stablesort.sort_uniq.
 exact/perm_uniq/permPl/perm_sort.
 Qed.
 
@@ -655,8 +644,7 @@ Lemma filter_sort sort T (leT : rel T) : total leT -> transitive leT ->
   forall (p : pred T) (s : list T),
   filter p (sort T leT s) = sort T leT (filter p s).
 Proof.
-exact: stablesort.filter_sort.
-Restart.
+Succeed exact: stablesort.filter_sort.
 move=> leT_total leT_tr p s; case Ds: s => [|x s1]; first by rewrite sort_nil.
 pose lt := lexord (relpre (nth x s) leT) ltn.
 have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
@@ -673,8 +661,7 @@ Lemma filter_sort_in sort T (P : pred T) (leT : rel T) :
   forall (p : pred T) (s : list T),
   all P s -> filter p (sort T leT s) = sort T leT (filter p s).
 Proof.
-exact: stablesort.filter_sort_in.
-Restart.
+Succeed exact: stablesort.filter_sort_in.
 move=> /in2_sig leT_total /in3_sig leT_tr p _ /all_sigP[s ->].
 by rewrite !(sort_map, filter_map) filter_sort.
 Qed.
@@ -684,8 +671,7 @@ Lemma sorted_filter_sort sort T (leT : rel T) :
   forall (p : pred T) (s : list T),
   sorted leT (filter p s) -> filter p (sort _ leT s) = filter p s.
 Proof.
-exact: stablesort.sorted_filter_sort.
-Restart.
+Succeed exact: stablesort.sorted_filter_sort.
 by move=> *; rewrite filter_sort// sorted_sort.
 Qed.
 
@@ -694,8 +680,7 @@ Lemma sorted_filter_sort_in sort T (P : {pred T}) (leT : rel T) :
   forall (p : pred T) (s : list T),
   all P s -> sorted leT (filter p s) -> filter p (sort _ leT s) = filter p s.
 Proof.
-exact: stablesort.sorted_filter_sort_in.
-Restart.
+Succeed exact: stablesort.sorted_filter_sort_in.
 move=> /in2_sig leT_total /in3_sig leT_tr p _ /all_sigP[s ->].
 by rewrite sort_map !filter_map sorted_map /= => /sorted_filter_sort ->.
 Qed.
@@ -704,8 +689,7 @@ Lemma sort_sort sort T (leT leT' : rel T) :
   total leT -> transitive leT -> total leT' -> transitive leT' ->
   forall s : list T, sort T leT (sort T leT' s) = sort T (lexord leT leT') s.
 Proof.
-exact: stablesort.sort_sort.
-Restart.
+Succeed exact: stablesort.sort_sort.
 move=> leT_total leT_tr leT'_total leT'_tr s.
 case Ds: s => [|x s1]; first by rewrite !sort_nil.
 pose lt' := lexord (relpre (nth x s) leT') ltn.
@@ -727,8 +711,7 @@ Lemma sort_sort_in sort T (P : pred T) (leT leT' : rel T) :
   forall s : list T,
   all P s -> sort T leT (sort T leT' s) = sort T (lexord leT leT') s.
 Proof.
-exact: stablesort.sort_sort_in.
-Restart.
+Succeed exact: stablesort.sort_sort_in.
 move=> /in2_sig leT_total /in3_sig leT_tr /in2_sig leT'_total /in3_sig leT'_tr.
 by move=> _ /all_sigP[s ->]; rewrite !sort_map sort_sort.
 Qed.
@@ -736,8 +719,7 @@ Qed.
 Lemma sort_sorted sort T (leT : rel T) :
   total leT -> forall s : list T, sorted leT (sort T leT s).
 Proof.
-exact: stablesort.sort_sorted.
-Restart.
+Succeed exact: stablesort.sort_sorted.
 move=> leT_total s; apply/sub_sorted/sort_stable => //= [? ? /andP[] //|].
 by case: s => // x s; elim: s x => /=.
 Qed.
@@ -746,8 +728,7 @@ Lemma sort_sorted_in sort T (P : pred T) (leT : rel T) :
   {in P &, total leT} ->
   forall s : list T, all P s -> sorted leT (sort T leT s).
 Proof.
-exact: stablesort.sort_sorted_in.
-Restart.
+Succeed exact: stablesort.sort_sorted_in.
 by move=> /in2_sig ? _ /all_sigP[s ->]; rewrite sort_map sorted_map sort_sorted.
 Qed.
 
@@ -756,8 +737,7 @@ Lemma perm_sortP sort (T : eqType) (leT : rel T) :
   forall s1 s2 : list T,
   reflect (sort T leT s1 = sort T leT s2) (perm_eq s1 s2).
 Proof.
-exact: stablesort.perm_sortP.
-Restart.
+Succeed exact: stablesort.perm_sortP.
 move=> leT_total leT_tr leT_asym s1 s2.
 apply: (iffP idP) => eq12; last by rewrite -(perm_sort sort leT) eq12 perm_sort.
 apply: (sorted_eq leT_tr leT_asym); rewrite ?sort_sorted //.
@@ -769,8 +749,7 @@ Lemma perm_sort_inP sort (T : eqType) (leT : rel T) (s1 s2 : list T) :
   {in s1 &, antisymmetric leT} ->
   reflect (sort T leT s1 = sort T leT s2) (perm_eq s1 s2).
 Proof.
-exact: stablesort.perm_sort_inP.
-Restart.
+Succeed exact: stablesort.perm_sort_inP.
 move=> /in2_sig leT_total /in3_sig leT_tr /in2_sig/(_ _ _ _)/val_inj leT_asym.
 apply: (iffP idP) => s1s2; last by rewrite -(perm_sort sort leT) s1s2 perm_sort.
 move: (s1s2); have /all_sigP[s1' ->] := allss s1.
@@ -782,8 +761,7 @@ Qed.
 Lemma eq_sort sort1 sort2 T (leT : rel T) :
   total leT -> transitive leT -> sort1 T leT =1 sort2 T leT.
 Proof.
-exact: stablesort.eq_sort.
-Restart.
+Succeed exact: stablesort.eq_sort.
 move=> leT_total leT_tr s; case Ds: s => [|x s1]; first by rewrite !sort_nil.
 pose lt := lexord (relpre (nth x s) leT) ltn.
 have lt_tr: transitive lt by apply/lexord_trans/ltn_trans/relpre_trans.
@@ -799,8 +777,7 @@ Lemma eq_in_sort sort1 sort2 T (P : pred T) (leT : rel T) :
   {in P &, total leT} -> {in P & &, transitive leT} ->
   forall s : list T, all P s -> sort1 T leT s = sort2 T leT s.
 Proof.
-exact: stablesort.eq_in_sort.
-Restart.
+Succeed exact: stablesort.eq_in_sort.
 move=> /in2_sig ? /in3_sig ? _ /all_sigP[s ->].
 by rewrite !sort_map; congr map; exact: eq_sort.
 Qed.
@@ -823,8 +800,7 @@ Lemma sort_cat sort T (leT : rel T) : total leT -> transitive leT ->
   forall s1 s2 : list T,
   sort T leT (s1 ++ s2) = merge leT (sort T leT s1) (sort T leT s2).
 Proof.
-exact: stablesort.sort_cat.
-Restart.
+Succeed exact: stablesort.sort_cat.
 move=> leT_total leT_tr s1 s2.
 by rewrite !eq_sort_insert; elim: s1 => //= x s1 ->; rewrite mergeA.
 Qed.
@@ -834,8 +810,7 @@ Lemma sort_cat_in sort T (P : pred T) (leT : rel T) :
   forall s1 s2 : list T, all P s1 -> all P s2 ->
   sort T leT (s1 ++ s2) = merge leT (sort T leT s1) (sort T leT s2).
 Proof.
-exact: stablesort.sort_cat_in.
-Restart.
+Succeed exact: stablesort.sort_cat_in.
 move=> leT_total leT_tr s1 s2 /all_sigP [{}s1 ->] /all_sigP [{}s2 ->].
 rewrite -map_cat !sort_map merge_map; congr map; apply: sort_cat.
   exact: in2_sig leT_total.
@@ -846,8 +821,7 @@ Lemma mask_sort sort T (leT : rel T) : total leT -> transitive leT ->
   forall (s : list T) (m : list bool),
   {m_s : list bool | mask m_s (sort T leT s) = sort T leT (mask m s)}.
 Proof.
-exact: stablesort.mask_sort.
-Restart.
+Succeed exact: stablesort.mask_sort.
 move=> leT_total leT_tr s m.
 case Ds: {-}s => [|x s1]; first by exists [::]; rewrite Ds mask0 sort_nil.
 rewrite -(mkseq_nth x s) -map_mask !sort_map.
@@ -862,8 +836,7 @@ Lemma mask_sort_in sort T (P : pred T) (leT : rel T) :
   forall (s : list T) (m : list bool), all P s ->
   {m_s : list bool | mask m_s (sort T leT s) = sort T leT (mask m s)}.
 Proof.
-exact: stablesort.mask_sort_in.
-Restart.
+Succeed exact: stablesort.mask_sort_in.
 move=> leT_total leT_tr s m.
 pose le_sT := relpre (val : sig P -> _) leT.
 pose le_sT_total : total le_sT := in2_sig leT_total.
@@ -877,8 +850,7 @@ Lemma sorted_mask_sort sort T (leT : rel T) : total leT -> transitive leT ->
   forall (s : list T) (m : list bool), sorted leT (mask m s) ->
   {m_s : list bool | mask m_s (sort T leT s) = mask m s}.
 Proof.
-exact: stablesort.sorted_mask_sort.
-Restart.
+Succeed exact: stablesort.sorted_mask_sort.
 move=> leT_total leT_tr s m.
 by move/(sorted_sort sort leT_tr) <-; exact: mask_sort.
 Qed.
@@ -888,8 +860,7 @@ Lemma sorted_mask_sort_in sort T (P : pred T) (leT : rel T) :
   forall (s : list T) (m : list bool), all P s -> sorted leT (mask m s) ->
   {m_s : list bool | mask m_s (sort T leT s) = mask m s}.
 Proof.
-exact: stablesort.sorted_mask_sort_in.
-Restart.
+Succeed exact: stablesort.sorted_mask_sort_in.
 move=> leT_total leT_tr s m allPs /(sorted_sort_in sort leT_tr _) <-.
   exact/mask_sort_in/allPs.
 exact: all_mask.
@@ -899,8 +870,7 @@ Lemma subseq_sort sort (T : eqType) (leT : rel T) :
   total leT -> transitive leT ->
   forall t s : list T, subseq t s -> subseq (sort T leT t) (sort T leT s).
 Proof.
-exact: stablesort.subseq_sort.
-Restart.
+Succeed exact: stablesort.subseq_sort.
 move=> leT_total leT_tr _ s /subseqP [m _ ->].
 by have [m' <-] := mask_sort sort leT_total leT_tr s m; exact: mask_subseq.
 Qed.
@@ -909,8 +879,7 @@ Lemma subseq_sort_in sort (T : eqType) (leT : rel T) (t s : list T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
   subseq t s -> subseq (sort T leT t) (sort T leT s).
 Proof.
-exact: stablesort.subseq_sort_in.
-Restart.
+Succeed exact: stablesort.subseq_sort_in.
 move=> leT_total leT_tr /subseqP [m _ ->].
 have [m' <-] := mask_sort_in sort leT_total leT_tr m (allss _).
 exact: mask_subseq.
@@ -920,8 +889,7 @@ Lemma sorted_subseq_sort sort (T : eqType) (leT : rel T) :
   total leT -> transitive leT ->
   forall t s : list T, subseq t s -> sorted leT t -> subseq t (sort T leT s).
 Proof.
-exact: stablesort.sorted_subseq_sort.
-Restart.
+Succeed exact: stablesort.sorted_subseq_sort.
 move=> ? leT_tr t s subseq_ts /(sorted_sort sort leT_tr) <-.
 exact: subseq_sort.
 Qed.
@@ -930,8 +898,7 @@ Lemma sorted_subseq_sort_in sort (T : eqType) (leT : rel T) (t s : list T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
   subseq t s -> sorted leT t -> subseq t (sort T leT s).
 Proof.
-exact: stablesort.sorted_subseq_sort_in.
-Restart.
+Succeed exact: stablesort.sorted_subseq_sort_in.
 move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact/allP/mem_subseq.
 exact: subseq_sort_in.
 Qed.
@@ -941,8 +908,7 @@ Lemma mem2_sort sort (T : eqType) (leT : rel T) :
   forall (s : list T) (x y : T),
   leT x y -> mem2 s x y -> mem2 (sort T leT s) x y.
 Proof.
-exact: stablesort.mem2_sort.
-Restart.
+Succeed exact: stablesort.mem2_sort.
 move=> leT_total leT_tr s x y lexy; rewrite !mem2E => ?.
 by apply: sorted_subseq_sort => //; case: (_ == _); rewrite //= lexy.
 Qed.
@@ -951,8 +917,7 @@ Lemma mem2_sort_in sort (T : eqType) (leT : rel T) (s : list T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
   forall x y : T, leT x y -> mem2 s x y -> mem2 (sort T leT s) x y.
 Proof.
-exact: stablesort.mem2_sort_in.
-Restart.
+Succeed exact: stablesort.mem2_sort_in.
 move=> leT_total leT_tr x y lexy; rewrite !mem2E.
 move=> /[dup] /mem_subseq /allP ? /(subseq_sort_in sort leT_total leT_tr).
 rewrite !(eq_in_sort_insert sort leT_total leT_tr) ?allss //.
