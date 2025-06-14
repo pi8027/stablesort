@@ -12,26 +12,26 @@
 (* 3.4.3.                                                                     *)
 (******************************************************************************)
 
+From elpi Require Export derive.param2.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import zify.
-From Param Require Export Param.
 From Equations Require Import Equations.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Global Ltac destruct_reflexivity :=
-  intros; repeat match goal with
-  | [ x : _ |- _ = _ ] => destruct x; reflexivity; fail
-  end.
-
-Global Parametricity Tactic := destruct_reflexivity.
-
-Parametricity bool.
-Parametricity nat.
-Parametricity list.
-Parametricity merge.
+Elpi derive.param2 bool.
+Elpi derive.param2 nat.
+Elpi derive.param2 list.
+Elpi derive.param2 pred.
+Elpi derive.param2 rel.
+Elpi derive.param2 merge.
+Elpi derive.param2 size.
+Elpi derive.param2 take.
+Elpi derive.param2 drop.
+Elpi derive.param2 foldr.
+Elpi derive.param2 map.
 
 Local Lemma bool_R_refl b1 b2 : b1 = b2 -> bool_R b1 b2.
 Proof. by case: b1 => <-; constructor. Qed.
@@ -55,6 +55,22 @@ rewrite count_cat; elim: s1 s2 => // x s1 IH1.
 elim=> //= [|y s2 IH2]; first by rewrite addn0.
 by case: (leT x); rewrite /= ?IH1 ?IH2 ?[p y + _]addnCA addnA.
 Qed.
+
+(* We define a non-mutual-fixpoint alternative of ssrnat.half, so that        *)
+(* derive.param2 accepts it.                                                  *)
+Fixpoint half' (n : nat) : nat :=
+  match n with
+  | n.+2 => (half' n).+1
+  | _ => 0
+  end.
+
+Lemma half'E : half' =1 half.
+Proof.
+move=> n; have [m ltnm] := ubnP n.
+by elim: m n ltnm => // m IHm [|[|n]] //= /ltnW /IHm ->.
+Qed.
+
+Elpi derive.param2 half'.
 
 (******************************************************************************)
 (* Section 3.2: Characterization of stable non-tail-recursive mergesort       *)
@@ -85,8 +101,8 @@ Definition asort_ty :=
     seq T ->                            (* input                              *)
     R.                                  (* output                             *)
 
-Parametricity sort_ty.
-Parametricity asort_ty.
+Elpi derive.param2 sort_ty.
+Elpi derive.param2 asort_ty.
 
 Structure function := Pack {
   (* the sort function                                                        *)
@@ -144,7 +160,7 @@ Definition sort T R (merge : R -> R -> R) (singleton : T -> R) (empty : R) :=
   foldr (fun x => merge (singleton x)) empty.
 
 (* Its parametricity *)
-Parametricity sort.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -184,14 +200,16 @@ Equations sort_rec (xs : seq T) (fuel : nat) : R by struct fuel :=
   sort_rec [:: x] _   => singleton x;
   sort_rec xs fuel.+1 =>
     let k := size xs in
-    merge (sort_rec (take k./2 xs) fuel) (sort_rec (drop k./2 xs) fuel).
+    merge (sort_rec (take (half' k) xs) fuel)
+      (sort_rec (drop (half' k) xs) fuel).
 
 Definition sort (xs : seq T) : R := sort_rec xs (size xs).
 
 End Abstract.
 
 (* Its parametricity *)
-Parametricity sort.
+Elpi derive.param2 sort_rec.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -212,14 +230,19 @@ Definition sort (xs : seq T) : seq T := sort_rec xs (size xs).
 
 (* Equation (1) holds by definition. *)
 Lemma asort_mergeE : Abstract.sort (merge leT) (fun x => [:: x]) [::] =1 sort.
-Proof. by []. Qed.
+Proof.
+rewrite /sort /Abstract.sort => xs; move: (size xs) => n.
+elim: n xs => [|n IHn] [|x [|y xs]] //.
+by simp sort_rec; rewrite /= !half'E !IHn.
+Qed.
 
 (* The proof of Equation (2) in Lemma 3.3 *)
 Lemma asort_catE : Abstract.sort cat (fun x : T => [:: x]) [::] =1 id.
 Proof.
 rewrite /Abstract.sort => xs; move: {-1}(size xs) (leqnn (size xs)) => n.
 elim: n xs => [|n IHn] [|x [|y xs]] //= Hxs; simp sort_rec; cbn zeta.
-rewrite !IHn ?cat_take_drop //= (size_drop, size_take) /=; last case: ifP; lia.
+rewrite !half'E !IHn ?cat_take_drop //= (size_drop, size_take) /=;
+  last case: ifP; lia.
 Qed.
 
 End TopDown.
@@ -258,7 +281,9 @@ Proof. by apply_funelim (merge_pairs xs) => //= ? ? ? ->. Qed.
 End Abstract.
 
 (* Its parametricity *)
-Parametricity sort.
+Elpi derive.param2 merge_pairs.
+Elpi derive.param2 merge_all.
+Elpi derive.param2 sort.
 
 End Abstract.
 
