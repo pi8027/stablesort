@@ -12,22 +12,6 @@ Local Lemma condrev_nilp (T : Type) (r : bool) (xs : seq T) :
   nilp (condrev r xs) = nilp xs.
 Proof. by case: r; rewrite /= ?rev_nilp. Qed.
 
-Local Lemma relpre_trans {T' T} {leT : rel T} {f : T' -> T} :
-  transitive leT -> transitive (relpre f leT).
-Proof. by move=> + y x z; apply. Qed.
-
-Local Lemma allrel_rev2 {T S} (r : T -> S -> bool) (s1 : seq T) (s2 : seq S) :
-  allrel r (rev s1) (rev s2) = allrel r s1 s2.
-Proof. by rewrite [LHS]all_rev [LHS]allrelC [RHS]allrelC [LHS]all_rev. Qed.
-
-Local Lemma count_merge (T : Type) (leT : rel T) (p : pred T) (s1 s2 : seq T) :
-  count p (merge leT s1 s2) = count p (s1 ++ s2).
-Proof.
-rewrite count_cat; elim: s1 s2 => // x s1 IH1.
-elim=> //= [|y s2 IH2]; first by rewrite addn0.
-by case: (leT x); rewrite /= ?IH1 ?IH2 ?[p y + _]addnCA addnA.
-Qed.
-
 (******************************************************************************)
 (* The abstract interface for stable (merge)sort algorithms                   *)
 (******************************************************************************)
