@@ -1,5 +1,5 @@
 # KNOWNTARGETS will not be passed along to CoqMakefile
-KNOWNTARGETS := Makefile.coq Makefile.icfp25.coq build-icfp25 \
+KNOWNTARGETS := Makefile.coq Makefile.icfp25.coq build-icfp25 validate-icfp25 \
 				clean cleanall distclean
 # KNOWNFILES will not get implicit targets from the final rule, and so
 # depending on them won't invoke the submake
@@ -24,6 +24,9 @@ invoke-coqmakefile: Makefile.coq
 
 build-icfp25: Makefile.icfp25.coq invoke-coqmakefile
 	$(COQMAKE_ICFP25)
+
+validate-icfp25: build-icfp25
+	$(COQMAKE_ICFP25) validate
 
 theories/%.vo: Makefile.coq
 	$(COQMAKE) $@
