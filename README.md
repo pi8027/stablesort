@@ -72,11 +72,11 @@ opam repo add rocq-released https://rocq-prover.org/opam/released
 ```
 To build and install the `theories/` files:
 ```shell
-opam install ./coq-stablesort.opam
+opam install ./rocq-stablesort.opam
 ```
 Alternatively, to build and install only the dependencies:
 ```shell
-opam install . --deps-only --with-test
+opam install ./rocq-stablesort.opam --deps-only --with-test
 ```
 Given that the dependencies are installed, you can use one of the following
 `make` targets to manually build the Rocq files:
