@@ -5,12 +5,15 @@ Follow the instructions on https://github.com/coq-community/templates to regener
 # Stable sort algorithms in Rocq
 
 [![Docker CI][docker-action-shield]][docker-action-link]
+[![DOI][doi-shield]][doi-link]
 
 [docker-action-shield]: https://github.com/pi8027/stablesort/actions/workflows/docker-action.yml/badge.svg?branch=master
 [docker-action-link]: https://github.com/pi8027/stablesort/actions/workflows/docker-action.yml
 
 
 
+[doi-shield]: https://zenodo.org/badge/DOI/10.5281/zenodo.15649813.svg
+[doi-link]: https://doi.org/10.5281/zenodo.15649813
 
 This library provides a characterization of stable mergesort functions using
 relational parametricity, and deduces several functional correctness results,
@@ -52,20 +55,41 @@ slices in the input.
 - Related publication(s):
   - [A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.48550/arXiv.2403.08173](https://doi.org/10.48550/arXiv.2403.08173)
 
-## Building and installation instructions
-The easiest way to install the development version of Stable sort algorithms in Rocq
-is via [OPAM](https://opam.ocaml.org/doc/Install.html):
-``` shell
-git clone https://github.com/pi8027/stablesort.git
-cd stablesort
-opam repo add rocq-released https://rocq-prover.org/opam/released
-opam install ./coq-stablesort.opam
-```
 
 ## Files
 The [`theories/`](theories/) directory is the main part of the library. The
-[`icfp25/`](icfp25/) directory, which has a dedicated README file, contains
-Rocq files corresponding more closely to the paper.
+[`icfp25/`](icfp25/) directory contains Rocq files corresponding more closely
+to the paper. The latter files are not a part of the installation (see below),
+and explained further in the [dedicated README file](icfp25/README.md).
+
+## Building and installation instructions
+The easiest way to install the development version of Stable sort algorithms in Rocq
+and its dependencies is via [OPAM](https://opam.ocaml.org/doc/Install.html):
+```shell
+git clone https://github.com/pi8027/stablesort.git
+cd stablesort
+opam repo add rocq-released https://rocq-prover.org/opam/released
+```
+To build and install the `theories/` files:
+```shell
+opam install ./rocq-stablesort.opam
+```
+Alternatively, to build and install only the dependencies:
+```shell
+opam install ./rocq-stablesort.opam --deps-only --with-test
+```
+Given that the dependencies are installed, you can use one of the following
+`make` targets to manually build the Rocq files:
+- The default target: builds the `theories/` files.
+- `build-icfp25`: builds the `icfp25/` files.
+- `validate`: checks the compiled `theories/` files and their dependencies
+  and prints a summary about their context (such as axioms), which should show
+  that the `theories/` files are axiom-free.
+- `validate-icfp25`: checks the compiled `icfp25/` files and their
+  dependencies and prints a summary about their context, which should print
+  the axiom of dependent functional extensionality
+  (`functional_extensionality_dep`) on which the Equation plugin relies.
+
 
 ## Credits
 The mergesort functions and the stability proofs provided in this library are

@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: coq-community/docker-coq-action@v1
         with:
-          opam_file: 'coq-stablesort.opam'
+          opam_file: 'rocq-stablesort.opam'
           custom_image: ${{ matrix.image }}
           export: 'OPAMWITHTEST'
         env:
