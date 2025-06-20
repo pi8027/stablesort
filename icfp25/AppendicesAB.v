@@ -44,10 +44,6 @@ Definition reflexive T (R : rel T) : Prop := forall x : T, R x x.
 
 Definition irreflexive T (R : rel T) : Prop := forall x : T, R x x = false.
 
-Lemma relpre_trans (T' T : Type) (leT : rel T) (f : T' -> T) :
-  transitive leT -> transitive (relpre f leT).
-Proof. by move=> + y x z; apply. Qed.
-
 Definition lexord T (leT leT' : rel T) :=
   [rel x y | leT x y && (leT y x ==> leT' x y)].
 
@@ -187,7 +183,7 @@ Proof. exact: seq.allrelC. Qed.
 
 Lemma allrel_rev2 T S (r : T -> S -> bool) (s1 : list T) (s2 : list S) :
   allrel r (rev s1) (rev s2) = allrel r s1 s2.
-Proof. exact: stablesort.allrel_rev2. Qed.
+Proof. exact: seq.allrel_rev2. Qed.
 
 Definition uniq (T : eqType) : list T -> bool :=
   fix uniq (s : list T) {struct s} : bool :=
@@ -446,7 +442,7 @@ Arguments merge T leT !s1 !s2.
 
 Lemma count_merge T (leT : rel T) (p : pred T) (s1 s2 : list T) :
   count p (merge leT s1 s2) = count p (s1 ++ s2).
-Proof. exact: stablesort.count_merge. Qed.
+Proof. exact: path.count_merge. Qed.
 
 Lemma all_merge T (p : pred T) (leT : rel T) (s1 s2 : list T) :
   all p (merge leT s1 s2) = all p s1 && all p s2.

@@ -19,10 +19,6 @@ Unset Printing Implicit Defensive.
 
 Implicit Types (sort : stableSort) (T R S : Type).
 
-Local Lemma relpre_trans {T' T} {leT : rel T} {f : T' -> T} :
-  transitive leT -> transitive (relpre f leT).
-Proof. by move=> + y x z; apply. Qed.
-
 Definition lexord T (leT leT' : rel T) :=
   [rel x y | leT x y && (leT y x ==> leT' x y)].
 
