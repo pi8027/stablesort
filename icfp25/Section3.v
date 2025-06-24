@@ -44,18 +44,6 @@ Local Lemma rel_map_map A B (f : A -> B) (l : seq A) (fl : seq B) :
   list_R (fun x y => f x = y) l fl -> fl = map f l.
 Proof. by elim/list_R_ind: l fl / => //= ? ? <- ? ? _ ->. Qed.
 
-Local Lemma relpre_trans {T' T : Type} {leT : rel T} {f : T' -> T} :
-  transitive leT -> transitive (relpre f leT).
-Proof. by move=> + y x z; apply. Qed.
-
-Local Lemma count_merge (T : Type) (leT : rel T) (p : pred T) (s1 s2 : seq T) :
-  count p (merge leT s1 s2) = count p (s1 ++ s2).
-Proof.
-rewrite count_cat; elim: s1 s2 => // x s1 IH1.
-elim=> //= [|y s2 IH2]; first by rewrite addn0.
-by case: (leT x); rewrite /= ?IH1 ?IH2 ?[p y + _]addnCA addnA.
-Qed.
-
 (******************************************************************************)
 (* Section 3.2: Characterization of stable non-tail-recursive mergesort       *)
 (* functions                                                                  *)
