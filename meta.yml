@@ -146,6 +146,19 @@ build: |-
 documentation: |-
 
   ## Credits
-  The mergesort functions and the stability proofs provided in this library are
-  mostly based on ones in the `path` library of Mathematical Components.
+  The technique to make mergesort functions structurally-recursive and the
+  functional correctness proofs of mergesort, except for the use of
+  parametricity, are largely based on the `path` library of Mathematical
+  Components, to which the authors made significant contributions (in pull
+  requests [#328](https://github.com/math-comp/math-comp/pull/328),
+  [#358](https://github.com/math-comp/math-comp/pull/358),
+  [#601](https://github.com/math-comp/math-comp/pull/601),
+  [#650](https://github.com/math-comp/math-comp/pull/650),
+  [#680](https://github.com/math-comp/math-comp/pull/680),
+  [#727](https://github.com/math-comp/math-comp/pull/727),
+  [#1174](https://github.com/math-comp/math-comp/pull/1174), and
+  [#1186](https://github.com/math-comp/math-comp/pull/1186)).
+  The authors would like to thank other MathComp developers and contributors who
+  contributed to the discussion: Yves Bertot, Christian Doczkal, Georges
+  Gonthier, Assia Mahboubi, and Anton Trunov.
 ---
