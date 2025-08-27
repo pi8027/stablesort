@@ -53,7 +53,7 @@ slices in the input.
   - [Equations](https://github.com/mattam82/Coq-Equations) (required only for `icfp25/`)
 - Rocq/Coq namespace: `stablesort`
 - Related publication(s):
-  - [A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.48550/arXiv.2403.08173](https://doi.org/10.48550/arXiv.2403.08173)
+  - [A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.1145/3747505](https://doi.org/10.1145/3747505)
 
 
 ## Files

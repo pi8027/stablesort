@@ -38,7 +38,7 @@ description: |-
 publications:
 - pub_url: https://arxiv.org/abs/2403.08173
   pub_title: A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free
-  pub_doi: 10.48550/arXiv.2403.08173
+  pub_doi: 10.1145/3747505
 
 authors:
 - name: Kazuhiko Sakaguchi
