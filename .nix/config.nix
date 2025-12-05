@@ -1,3 +1,4 @@
+with builtins; with (import <nixpkgs> {}).lib;
 {
   ## DO NOT CHANGE THIS
   format = "1.0.0";
@@ -32,31 +33,48 @@
 
   ## select an entry to build in the following `bundles` set
   ## defaults to "default"
-  default-bundle = "9.0";
+  default-bundle = "9.1-2.5.0";
 
   ## write one `bundles.name` attribute set per
   ## alternative configuration
   ## When generating GitHub Action CI, one workflow file
   ## will be created per bundle
-  bundles."9.0" = {
-    ## You can override Coq and other Coq coqPackages
-    ## through the following attribute
-    coqPackages.coq.override.version = "9.0";
-    coqPackages.paramcoq.override.version =
-      "6c984918c16ff8f1ca7b0247ee38f45d29a86bff";
-  };
-
-  bundles."8.20" = {
-    ## You can override Coq and other Coq coqPackages
-    ## through the following attribute
-    coqPackages.coq.override.version = "8.20";
-  };
-
-  bundles."8.19" = {
-    ## You can override Coq and other Coq coqPackages
-    ## through the following attribute
-    coqPackages.coq.override.version = "8.19";
-  };
+  bundles = let
+    ## The combinations of MathComp and Rocq versions we test
+    matrix = {
+      "2.3.0" = ["8.19" "8.20"];
+      "2.4.0" = ["8.19" "8.20" "9.0" "9.1"];
+      "2.5.0" = ["8.20" "9.0" "9.1"];
+      "master" = ["9.0" "9.1" "master"];
+    };
+    ## The fragments of bundles for each version of Rocq
+    rocq-bundles = {
+      "9.0".coqPackages.paramcoq.override.version = "v1.1.3+coq9.0";
+      "9.1".coqPackages.paramcoq.override.version =
+          "937537d416bc5f7b81937d4223d7783d0e687239";
+    };
+    ## The fragments of bundles for each version of MathComp
+    mc-bundles = {
+      "master".coqPackages.mathcomp-zify.override.version = "master";
+    }; in
+    attrsets.concatMapAttrs (mc: lists.foldr (rocq: bs:
+      let rocqAtLeast = v: rocq == "master" || versionAtLeast rocq v;
+          mcAtLeast = v: mc == "master" || versionAtLeast mc v; in
+      bs // {
+      ${rocq + "-" + mc} = {
+        rocqPackages =
+          (if rocqAtLeast "8.21" then
+             { rocq-core.override.version = rocq; } else { })
+          // rocq-bundles.${rocq}.rocqPackages or { }
+          // mc-bundles.${mc}.rocqPackages or { };
+        coqPackages =
+          { coq.override.version = rocq;
+            mathcomp-ssreflect.override.version = mc;
+            paramcoq.job = true;
+            mathcomp-zify.job = true; }
+          // rocq-bundles.${rocq}.coqPackages or { }
+          // mc-bundles.${mc}.coqPackages or { }; };
+    }) { }) matrix;
 
   ## Cachix caches to use in CI
   ## Below we list some standard ones
