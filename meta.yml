@@ -54,49 +54,57 @@ license:
   file: CeCILL-B
 
 supported_coq_versions:
-  text: 8.19 or later
-  opam: '{>= "8.19"}'
+  text: 9.0 or later
+  opam: '{>= "9.0"}'
 
 tested_coq_nix_versions:
 
 tested_coq_opam_versions:
-- version: '2.3.0-coq-8.19'
-  repo: 'mathcomp/mathcomp'
-- version: '2.3.0-coq-8.20'
-  repo: 'mathcomp/mathcomp'
-- version: '2.4.0-coq-8.20'
-  repo: 'mathcomp/mathcomp'
 - version: '2.4.0-rocq-prover-9.0'
   repo: 'mathcomp/mathcomp'
-- version: '2.4.0-rocq-prover-dev'
+- version: '2.4.0-rocq-prover-9.1'
   repo: 'mathcomp/mathcomp'
-- version: 'coq-8.20'
+- version: '2.5.0-rocq-prover-9.0'
+  repo: 'mathcomp/mathcomp'
+- version: '2.5.0-rocq-prover-9.1'
+  repo: 'mathcomp/mathcomp'
+- version: '2.6.0-rocq-prover-9.0'
+  repo: 'mathcomp/mathcomp'
+- version: '2.6.0-rocq-prover-9.1'
+  repo: 'mathcomp/mathcomp'
+- version: '2.6.0-rocq-prover-9.2'
+  repo: 'mathcomp/mathcomp'
+- version: '2.6.0-rocq-prover-9.3'
+  repo: 'mathcomp/mathcomp'
+- version: 'rocq-prover-9.1'
   repo: 'mathcomp/mathcomp-dev'
-- version: 'rocq-prover-9.0'
+- version: 'rocq-prover-9.2'
+  repo: 'mathcomp/mathcomp-dev'
+- version: 'rocq-prover-9.3'
   repo: 'mathcomp/mathcomp-dev'
 - version: 'rocq-prover-dev'
   repo: 'mathcomp/mathcomp-dev'
 
 dependencies:
 - opam:
-    name: coq-elpi
+    name: rocq-elpi
   description: |-
-    [Coq-Elpi](https://github.com/LPCIC/coq-elpi)
+    [Rocq-Elpi](https://github.com/LPCIC/coq-elpi)
 - opam:
-    name: coq-mathcomp-ssreflect
-    version: '{>= "2.3.0"}'
+    name: rocq-mathcomp-ssreflect
+    version: '{>= "2.4.0"}'
   description: |-
-    [MathComp](https://math-comp.github.io) ssreflect 2.3.0 or later
+    [MathComp](https://math-comp.github.io) ssreflect 2.4.0 or later
 - opam:
     name: coq-mathcomp-zify
     version: '{with-test}'
   description: |-
     [Mczify](https://github.com/math-comp/mczify) (required only for `icfp25/`)
 - opam:
-    name: coq-equations
+    name: rocq-equations
     version: '{with-test}'
   description: |-
-    [Equations](https://github.com/mattam82/Coq-Equations) (required only for `icfp25/`)
+    [Equations](https://github.com/rocq-prover/equations) (required only for `icfp25/`)
 
 test_target: build-icfp25
 namespace: stablesort
