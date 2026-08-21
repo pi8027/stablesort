@@ -17,6 +17,8 @@ From mathcomp Require Import zify.
 From stablesort Require Import param.
 From Equations Require Import Equations.
 
+Unset SsrOldRewriteGoalsOrder.  (* remove the line when requiring MathComp >= 2.6 *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -186,7 +188,7 @@ Proof.
 rewrite /Abstract.sort => xs; move: {-1}(size xs) (leqnn (size xs)) => n.
 elim: n xs => [|n IHn] [|x [|y xs]] //= Hxs; simp sort_rec; cbn zeta.
 by rewrite !IHn ?cat_take_drop //= (size_drop, size_take) /=;
-  last case: ifP; lia.
+  first case: ifP; lia.
 Qed.
 
 End TopDown.
@@ -688,7 +690,7 @@ Lemma sorted_mask_sort_in (s : seq T) (m : bitseq) :
   all P s -> sorted leT (mask m s) ->
   {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
 Proof.
-move=> ? /(sorted_sort_in sort leT_tr _) <-; last exact: all_mask.
+move=> ? /(sorted_sort_in sort leT_tr _) <-; first exact: all_mask.
 exact: mask_sort_in.
 Qed.
 
@@ -740,7 +742,7 @@ Lemma sorted_subseq_sort_in (t s : seq T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
   subseq t s -> sorted leT t -> subseq t (sort _ leT s).
 Proof.
-move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact/allP/mem_subseq.
+move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; first exact/allP/mem_subseq.
 exact: subseq_sort_in.
 Qed.
 
