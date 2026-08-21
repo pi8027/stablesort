@@ -45,12 +45,12 @@ slices in the input.
   - Kazuhiko Sakaguchi (initial)
   - Cyril Cohen
 - License: [CeCILL-B Free Software License Agreement](CeCILL-B)
-- Compatible Rocq/Coq versions: 8.19 or later
+- Compatible Rocq/Coq versions: 9.0 or later
 - Additional dependencies:
-  - [Coq-Elpi](https://github.com/LPCIC/coq-elpi)
-  - [MathComp](https://math-comp.github.io) ssreflect 2.3.0 or later
+  - [Rocq-Elpi](https://github.com/LPCIC/coq-elpi)
+  - [MathComp](https://math-comp.github.io) ssreflect 2.4.0 or later
   - [Mczify](https://github.com/math-comp/mczify) (required only for `icfp25/`)
-  - [Equations](https://github.com/mattam82/Coq-Equations) (required only for `icfp25/`)
+  - [Equations](https://github.com/rocq-prover/equations) (required only for `icfp25/`)
 - Rocq/Coq namespace: `stablesort`
 - Related publication(s):
   - [A bargain for mergesorts — How to prove your mergesort correct and stable, almost for free](https://arxiv.org/abs/2403.08173) doi:[10.1145/3747505](https://doi.org/10.1145/3747505)
