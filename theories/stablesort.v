@@ -1,6 +1,8 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From stablesort Require Import param.
 
+Unset SsrOldRewriteGoalsOrder.  (* remove the line when requiring MathComp >= 2.6 *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -482,7 +484,7 @@ move=> xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sort2 /sort2 -[Nil (option _)]/(astack_of_stack [::]).
 elim: n (Nil (seq _)) xs => // n IHn stack [|x [|x' xs /= /ltnW /IHn <-]] /=;
   try by rewrite apop_mergeE.
-by rewrite apush_mergeE; last case: ifP.
+by rewrite apush_mergeE; first case: ifP.
 Qed.
 
 Lemma asort3_mergeE :
@@ -493,7 +495,7 @@ rewrite /Abstract.sort3 /sort3 -[Nil (option _)]/(astack_of_stack [::]).
 move: n (Nil (seq _)) xs.
 elim=> // n IHn stack [|x [|x' [|x'' xs /= /ltnW /ltnW /IHn <-]]] /=;
   try by rewrite apop_mergeE.
-rewrite apush_mergeE; last by rewrite /nilp !(size_rev, size_merge).
+rewrite apush_mergeE; first by rewrite /nilp !(size_rev, size_merge).
 by rewrite !(fun_if rev, fun_if (path.merge _ _), fun_if (cons _)).
 Qed.
 
@@ -835,7 +837,7 @@ move=> xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sort2 /sort2 -/(astack_of_stack false [::]).
 elim: n (Nil (seq _)) xs => // n IHn stack [|x [|x' xs /= /ltnW /IHn <-]] /=;
   try by rewrite apop_mergeE.
-by rewrite apush_mergeE; last case: ifP.
+by rewrite apush_mergeE; first case: ifP.
 Qed.
 
 Lemma asort3_mergeE :
@@ -846,7 +848,7 @@ rewrite /Abstract.sort3 /sort3 -/(astack_of_stack false [::]).
 move: n (Nil (seq _)) xs.
 elim=> // n IHn stack [|x [|x' [|x'' xs /= /ltnW /ltnW /IHn <-]]] /=;
   try by rewrite apop_mergeE.
-rewrite apush_mergeE; last by rewrite /nilp !(size_rev, size_merge).
+rewrite apush_mergeE; first by rewrite /nilp !(size_rev, size_merge).
 by rewrite !(fun_if rev, fun_if (path.merge _ _), fun_if (cons _)).
 Qed.
 
@@ -1330,7 +1332,7 @@ Lemma sorted_mask_sort_in (s : seq T) (m : bitseq) :
   all P s -> sorted leT (mask m s) ->
   {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
 Proof.
-move=> ? /(sorted_sort_in sort leT_tr _) <-; last exact: all_mask.
+move=> ? /(sorted_sort_in sort leT_tr _) <-; first exact: all_mask.
 exact: mask_sort_in.
 Qed.
 
@@ -1379,7 +1381,7 @@ Lemma sorted_subseq_sort_in (t s : seq T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
   subseq t s -> sorted leT t -> subseq t (sort _ leT s).
 Proof.
-move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact/allP/mem_subseq.
+move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; first exact/allP/mem_subseq.
 exact: subseq_sort_in.
 Qed.
 
