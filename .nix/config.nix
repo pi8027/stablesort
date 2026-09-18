@@ -1,3 +1,4 @@
+with builtins; with (import <nixpkgs> {}).lib;
 {
   ## DO NOT CHANGE THIS
   format = "1.0.0";
@@ -13,11 +14,6 @@
   ## when calling `nix-shell` and `nix-build` without the `--argstr job` argument
   # shell-attribute = "{{nix_name}}";
 
-  ## Maybe the shortname of the library is different from
-  ## the name of the nixpkgs attribute, if so, set it here:
-  # pname = "{{shortname}}";
-  no-rocq-yet = true;
-
   ## Lists the dependencies, phrased in terms of nix attributes.
   ## No need to list Coq, it is already included.
   ## These dependencies will systematically be added to the currently
@@ -32,31 +28,51 @@
 
   ## select an entry to build in the following `bundles` set
   ## defaults to "default"
-  default-bundle = "9.0";
+  default-bundle = "9.3-2.6.0";
 
   ## write one `bundles.name` attribute set per
   ## alternative configuration
   ## When generating GitHub Action CI, one workflow file
   ## will be created per bundle
-  bundles."9.0" = {
-    ## You can override Coq and other Coq coqPackages
-    ## through the following attribute
-    coqPackages.coq.override.version = "9.0";
-    coqPackages.paramcoq.override.version =
-      "6c984918c16ff8f1ca7b0247ee38f45d29a86bff";
-  };
-
-  bundles."8.20" = {
-    ## You can override Coq and other Coq coqPackages
-    ## through the following attribute
-    coqPackages.coq.override.version = "8.20";
-  };
-
-  bundles."8.19" = {
-    ## You can override Coq and other Coq coqPackages
-    ## through the following attribute
-    coqPackages.coq.override.version = "8.19";
-  };
+  bundles = let
+    ## The combinations of MathComp and Rocq versions we test
+    matrix = {
+      "2.5.0" = ["9.0" "9.1"];
+      "2.6.0" = ["9.0" "9.1" "9.2" "9.3"];
+      "master" = ["9.1" "9.2" "9.3" "master"];
+    };
+    ## The fragments of bundles for each version of Rocq
+    rocq-bundles = {
+      "master".rocqPackages.stdlib.override.version = "master";
+      "master".rocqPackages.equations.override.version = "master";
+      "master".rocqPackages.rocq-elpi.override.version = "master";
+      "master".rocqPackages.rocq-elpi.job = false;
+      "master".rocqPackages.hierarchy-builder.override.version = "master";
+      "master".rocqPackages.micromega-plugin.override.version = "master";
+      "master".rocqPackages.micromega-plugin.job = false;
+    };
+    ## The fragments of bundles for each version of MathComp
+    mc-bundles = {
+      "master".rocqPackages.mathcomp-zify.override.version = "master";
+    }; in
+    attrsets.concatMapAttrs (mc: lists.foldr (rocq: bs:
+      bs // {
+      ${rocq + "-" + mc} = {
+        rocqPackages =
+          { rocq-core.override.version = rocq;
+            stdlib.job = true;
+            coq.override.version = rocq;
+            equations.job = true;
+            hierarchy-builder.job = true;
+            mathcomp.override.version = mc;
+            mathcomp.job = false;
+            mathcomp-boot.job = true;
+            mathcomp-order.job = true;
+            mathcomp-algebra.job = true;
+            mathcomp-zify.job = true; }
+          // rocq-bundles.${rocq}.rocqPackages or { }
+          // mc-bundles.${mc}.rocqPackages or { }; };
+    }) { }) matrix;
 
   ## Cachix caches to use in CI
   ## Below we list some standard ones
