@@ -10,6 +10,13 @@ From mathcomp Require Import zify.
 From stablesort Require Import param stablesort.
 From Equations Require Import Equations.
 
+Unset SsrOldRewriteGoalsOrder.  (* remove the line when requiring MathComp >= 2.6 *)
+
+Elpi derive.param2 fst.
+Elpi derive.param2 size.
+Elpi derive.param2 Nat.sub.
+Elpi derive.param2 subn.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -71,7 +78,8 @@ Definition sort (xs : seq T) : R :=
 
 End Abstract.
 
-Parametricity sort.
+Elpi derive.param2 sort_rec.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -124,7 +132,7 @@ Lemma asort_catE : Abstract.sort leT cat cat (fun x => [:: x]) [::] =1 id.
 Proof.
 rewrite /Abstract.sort => xs.
 rewrite (_ : Abstract.sort_rec _ _ _ _ _ _ _ _ =
-               (take (size xs) xs, drop (size xs) xs)).
+               (take (size xs) xs, drop (size xs) xs)); last first.
   by rewrite take_size; case: xs.
 move: {2 4}(size xs) (leqnn (size xs)) => fuel.
 apply_funelim

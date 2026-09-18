@@ -7,6 +7,8 @@ From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 From mathcomp Require seq path order.
 From stablesort Require stablesort.
 
+Unset SsrOldRewriteGoalsOrder.  (* remove the line when requiring MathComp >= 2.6 *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -858,8 +860,8 @@ Lemma sorted_mask_sort_in sort T (P : pred T) (leT : rel T) :
 Proof.
 Succeed exact: stablesort.sorted_mask_sort_in.
 move=> leT_total leT_tr s m allPs /(sorted_sort_in sort leT_tr _) <-.
-  exact/mask_sort_in/allPs.
-exact: all_mask.
+  exact: all_mask.
+exact/mask_sort_in/allPs.
 Qed.
 
 Lemma subseq_sort sort (T : eqType) (leT : rel T) :
@@ -895,8 +897,8 @@ Lemma sorted_subseq_sort_in sort (T : eqType) (leT : rel T) (t s : list T) :
   subseq t s -> sorted leT t -> subseq t (sort T leT s).
 Proof.
 Succeed exact: stablesort.sorted_subseq_sort_in.
-move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact/allP/mem_subseq.
-exact: subseq_sort_in.
+move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact: subseq_sort_in.
+exact/allP/mem_subseq.
 Qed.
 
 Lemma mem2_sort sort (T : eqType) (leT : rel T) :
