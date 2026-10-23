@@ -9,7 +9,7 @@ KNOWNFILES   := Makefile Make Make.icfp25
 
 .DEFAULT_GOAL := invoke-coqmakefile
 
-COQMAKEFILE       = $(COQBIN)coq_makefile
+COQMAKEFILE       = $(COQBIN)rocq makefile
 COQMAKE           = $(MAKE) --no-print-directory -f Makefile.coq
 COQMAKE_ICFP25    = $(MAKE) --no-print-directory -f Makefile.icfp25.coq
 

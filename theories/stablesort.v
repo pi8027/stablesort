@@ -1,6 +1,8 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From stablesort Require Import param.
 
+Unset SsrOldRewriteGoalsOrder.  (* remove the line when requiring MathComp >= 2.6 *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -38,8 +40,8 @@ Definition asort_ty :=
     seq T ->                            (* input                              *)
     R.                                  (* output                             *)
 
-Parametricity sort_ty.
-Parametricity asort_ty.
+Elpi derive.param2 sort_ty.
+Elpi derive.param2 asort_ty.
 
 Structure function := Pack {
   (* the sort function                                                        *)
@@ -243,7 +245,7 @@ Definition sort (T R : Type) (leT : rel T)
   (merge merge' : R -> R -> R) (singleton : T -> R) (empty : R) :=
   foldr (fun x => merge (singleton x)) empty.
 
-Parametricity sort.
+Elpi derive.param2 sort.
 
 End Abstract.
 
@@ -339,16 +341,17 @@ Fixpoint sort3rec (stack : seq (option R)) (xs : seq T) : R :=
 Definition sort3 : seq T -> R := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (option R)) (x : T) (xs : seq T) : R :=
-  if xs is y :: xs then
-    sortNrec' (leT x y) stack y xs (singleton x) else pop (singleton x) stack
-with sortNrec' (incr : bool) (stack : seq (option R))
-       (x : T) (xs : seq T) (accu : R) : R :=
+  let fix sortNrec' (incr : bool) (stack : seq (option R))
+        (x : T) (xs : seq T) (accu : R) : R :=
   let accu' := (if incr then merge' else merge) accu (singleton x) in
   if xs is y :: xs then
     if eqb incr (leT x y) then
       sortNrec' incr stack y xs accu' else sortNrec (push accu' stack) y xs
   else
-    pop accu' stack.
+    pop accu' stack
+  in
+  if xs is y :: xs then
+    sortNrec' (leT x y) stack y xs (singleton x) else pop (singleton x) stack.
 
 #[using="All"]
 Definition sortN (xs : seq T) : R :=
@@ -356,10 +359,16 @@ Definition sortN (xs : seq T) : R :=
 
 End Abstract.
 
-Parametricity sort1.
-Parametricity sort2.
-Parametricity sort3.
-Parametricity sortN.
+Elpi derive.param2 push.
+Elpi derive.param2 pop.
+Elpi derive.param2 sort1rec.
+Elpi derive.param2 sort1.
+Elpi derive.param2 sort2rec.
+Elpi derive.param2 sort2.
+Elpi derive.param2 sort3rec.
+Elpi derive.param2 sort3.
+Elpi derive.param2 sortNrec.
+Elpi derive.param2 sortN.
 
 End Abstract.
 
@@ -475,7 +484,7 @@ move=> xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sort2 /sort2 -[Nil (option _)]/(astack_of_stack [::]).
 elim: n (Nil (seq _)) xs => // n IHn stack [|x [|x' xs /= /ltnW /IHn <-]] /=;
   try by rewrite apop_mergeE.
-by rewrite apush_mergeE; last case: ifP.
+by rewrite apush_mergeE; first case: ifP.
 Qed.
 
 Lemma asort3_mergeE :
@@ -486,7 +495,7 @@ rewrite /Abstract.sort3 /sort3 -[Nil (option _)]/(astack_of_stack [::]).
 move: n (Nil (seq _)) xs.
 elim=> // n IHn stack [|x [|x' [|x'' xs /= /ltnW /ltnW /IHn <-]]] /=;
   try by rewrite apop_mergeE.
-rewrite apush_mergeE; last by rewrite /nilp !(size_rev, size_merge).
+rewrite apush_mergeE; first by rewrite /nilp !(size_rev, size_merge).
 by rewrite !(fun_if rev, fun_if (path.merge _ _), fun_if (cons _)).
 Qed.
 
@@ -504,7 +513,7 @@ elim: n (Nil (seq _)) x xs => // n IHn stack x [|y xs /= /ltnSE Hxs].
 have {1}->: [:: x] = condrev (leT x y) [:: x] by rewrite [RHS]if_same.
 move: xs Hxs x y (RS in x :: RS) {-2}(leT x y) (erefl (leT x y)).
 elim=> [_|z xs IHxs /= /ltnW Hxs] x y rs incr incrE.
-  by rewrite /Abstract.sortNrec' apop_mergeE /= incrE mergeEcons; case: ifP.
+  by rewrite apop_mergeE /= incrE mergeEcons; case: ifP.
 rewrite eqbE incrE mergeEcons apush_mergeE ?condrev_nilp // IHn //.
 by have [/[dup] /IHxs -> // ->|] := eqVneq; do 2?case: ifP.
 Qed.
@@ -661,18 +670,19 @@ Fixpoint sort3rec (stack : seq (option R)) (xs : seq T) : R :=
 Definition sort3 : seq T -> R := sort3rec [::].
 
 Fixpoint sortNrec (stack : seq (option R)) (x : T) (xs : seq T) : R :=
-  if xs is y :: xs then
-    sortNrec' (leT x y) stack y xs (singleton x)
-  else
-    pop false (singleton x) stack
-with sortNrec' (incr : bool) (stack : seq (option R))
-       (x : T) (xs : seq T) (accu : R) : R :=
+  let fix sortNrec' (incr : bool) (stack : seq (option R))
+        (x : T) (xs : seq T) (accu : R) : R :=
   let accu' := (if incr then merge' else merge) accu (singleton x) in
   if xs is y :: xs then
     if eqb incr (leT x y) then
       sortNrec' incr stack y xs accu' else sortNrec (push accu' stack) y xs
   else
-    pop false accu' stack.
+    pop false accu' stack
+  in
+  if xs is y :: xs then
+    sortNrec' (leT x y) stack y xs (singleton x)
+  else
+    pop false (singleton x) stack.
 
 #[using="All"]
 Definition sortN (xs : seq T) : R :=
@@ -680,10 +690,16 @@ Definition sortN (xs : seq T) : R :=
 
 End Abstract.
 
-Parametricity sort1.
-Parametricity sort2.
-Parametricity sort3.
-Parametricity sortN.
+Elpi derive.param2 push.
+Elpi derive.param2 pop.
+Elpi derive.param2 sort1rec.
+Elpi derive.param2 sort1.
+Elpi derive.param2 sort2rec.
+Elpi derive.param2 sort2.
+Elpi derive.param2 sort3rec.
+Elpi derive.param2 sort3.
+Elpi derive.param2 sortNrec.
+Elpi derive.param2 sortN.
 
 End Abstract.
 
@@ -821,7 +837,7 @@ move=> xs; have [n] := ubnP (size xs).
 rewrite /Abstract.sort2 /sort2 -/(astack_of_stack false [::]).
 elim: n (Nil (seq _)) xs => // n IHn stack [|x [|x' xs /= /ltnW /IHn <-]] /=;
   try by rewrite apop_mergeE.
-by rewrite apush_mergeE; last case: ifP.
+by rewrite apush_mergeE; first case: ifP.
 Qed.
 
 Lemma asort3_mergeE :
@@ -832,7 +848,7 @@ rewrite /Abstract.sort3 /sort3 -/(astack_of_stack false [::]).
 move: n (Nil (seq _)) xs.
 elim=> // n IHn stack [|x [|x' [|x'' xs /= /ltnW /ltnW /IHn <-]]] /=;
   try by rewrite apop_mergeE.
-rewrite apush_mergeE; last by rewrite /nilp !(size_rev, size_merge).
+rewrite apush_mergeE; first by rewrite /nilp !(size_rev, size_merge).
 by rewrite !(fun_if rev, fun_if (path.merge _ _), fun_if (cons _)).
 Qed.
 
@@ -850,7 +866,7 @@ elim: n (Nil (seq _)) x xs => // n IHn stack x [|y xs /= /ltnSE Hxs].
 have {1}->: [:: x] = condrev (leT x y) [:: x] by rewrite [RHS]if_same.
 move: xs Hxs x y (RS in x :: RS) {-2}(leT x y) (erefl (leT x y)).
 elim=> [_|z xs IHxs /= /ltnW Hxs] x y rs incr incrE.
-  by rewrite /Abstract.sortNrec' apop_mergeE /= incrE mergeEcons; case: ifP.
+  by rewrite apop_mergeE /= incrE mergeEcons; case: ifP.
 rewrite eqbE incrE mergeEcons apush_mergeE ?condrev_nilp // IHn //.
 by have [/[dup] /IHxs -> // ->|] := eqVneq; do 2?case: ifP.
 Qed.
@@ -1316,7 +1332,7 @@ Lemma sorted_mask_sort_in (s : seq T) (m : bitseq) :
   all P s -> sorted leT (mask m s) ->
   {m_s : bitseq | mask m_s (sort _ leT s) = mask m s}.
 Proof.
-move=> ? /(sorted_sort_in sort leT_tr _) <-; last exact: all_mask.
+move=> ? /(sorted_sort_in sort leT_tr _) <-; first exact: all_mask.
 exact: mask_sort_in.
 Qed.
 
@@ -1365,7 +1381,7 @@ Lemma sorted_subseq_sort_in (t s : seq T) :
   {in s &, total leT} -> {in s & &, transitive leT} ->
   subseq t s -> sorted leT t -> subseq t (sort _ leT s).
 Proof.
-move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; last exact/allP/mem_subseq.
+move=> ? leT_tr ? /(sorted_sort_in sort leT_tr) <-; first exact/allP/mem_subseq.
 exact: subseq_sort_in.
 Qed.
 
